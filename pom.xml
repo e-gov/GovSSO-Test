@@ -23,7 +23,7 @@
         <!-- Dependency versions -->
         <groovy.version>3.0.7</groovy.version>
         <spock.version>2.0-groovy-3.0</spock.version>
-        <allure.version>2.13.8</allure.version>
+        <allure.version>2.15.0</allure.version>
         <opensaml.version>3.4.5</opensaml.version>
         <rest-assured.version>4.2.0</rest-assured.version>
         <commons-validator.version>1.7</commons-validator.version>
@@ -85,7 +85,6 @@
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-junit5</artifactId>
             <version>${allure.version}</version>
-
             <exclusions>
                 <exclusion>
                     <groupId>junit</groupId>
@@ -257,6 +256,9 @@
                 <groupId>io.qameta.allure</groupId>
                 <artifactId>allure-maven</artifactId>
                 <version>${allure-maven.version}</version>
+                <configuration>
+                    <reportVersion>${allure.version}</reportVersion>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

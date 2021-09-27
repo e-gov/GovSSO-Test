@@ -15,7 +15,7 @@ import static org.hamcrest.MatcherAssert.assertThat
 
 //TODO: Transferred tests from TARA2 project for preliminary usage
 class OidcAuthenticationRequestSpec extends GovSsoSpecification {
-    FlowTara flow = new FlowTara(props)
+    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -23,7 +23,6 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("")
     def "Authentication request with invalid param values #paramName"() {
         expect:
@@ -45,7 +44,6 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         "client_id"     | "my_client"               || 302        || "invalid_client"            || "Client authentication failed" || "The requested OAuth 2.0 Client does not exist."
     }
 
-    @Unroll
     @Feature("")
     def "Authentication request with different ui_locales: #label"() {
         expect:
@@ -69,7 +67,6 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         "ui_locales" | _          | "Without locale parameter"                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
     }
 
-    @Unroll
     @Feature("")
     def "Authentication request with unknown parameter"() {
         expect:
@@ -80,7 +77,6 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat(initOIDCServiceSession.getHeader("location"), Matchers.containsString("?login_challenge="))
     }
 
-    @Unroll
     @Feature("")
     def "Authentication request with invalid acr_values parameter value"() {
         expect:
@@ -93,7 +89,6 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat(response.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
     }
 
-    @Unroll
     @Feature("")
     def "Authentication request with empty scope"() {
         expect:
@@ -105,7 +100,6 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat(response.body().jsonPath().get("message").toString(), startsWith("Päringus puudub scope parameeter."))
     }
 
-    @Unroll
     @Feature("")
     def "Authentication request with empty optional parameters: #paramName"() {
         expect:
@@ -152,7 +146,6 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         "redirect_uri" | _
     }
 
-    @Unroll
     @Feature("")
     def "Authentication request with empty mandatory parameters: #paramName"() {
         expect:

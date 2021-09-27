@@ -13,7 +13,7 @@ import static org.hamcrest.MatcherAssert.assertThat
 
 class GovSsoDemoTestSpec extends GovSsoSpecification {
 
-    FlowTara flow = new FlowTara(props)
+    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -21,7 +21,6 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("AUTHENTICATION")
     def "authentication with Mobile-ID"() {
         expect:
@@ -35,7 +34,6 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         assertThat("Authorization code should be returned", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code"), not(emptyOrNullString()))
     }
 
-    @Unroll
     @Feature("AUTHENTICATION")
     def "authenticate with Smart-ID"() {
         expect:
@@ -49,7 +47,6 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         assertThat("Authorization code should be returned", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code"), not(emptyOrNullString()))
     }
 
-    @Unroll
     @Feature("AUTHENTICATION")
     def "authenticate with Eidas"() {
         expect:
@@ -63,7 +60,6 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         assertThat("Authorization code should be returned", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code"), not(emptyOrNullString()))
     }
 
-    @Unroll
     @Feature("AUTHENTICATION")
     def "authenticate with ID-Card"() {
         expect:

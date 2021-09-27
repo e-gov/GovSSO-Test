@@ -15,7 +15,7 @@ import static org.hamcrest.MatcherAssert.assertThat
 //TODO: Transferred tests from TARA2 project for preliminary usage
 
 class OidcIdendityTokenSpec extends GovSsoSpecification {
-    FlowTara flow = new FlowTara(props)
+    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -23,7 +23,6 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("")
     def "Verify ID token response"() {
         expect:
@@ -38,7 +37,6 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
         assertTrue(tokenResponse.body().jsonPath().getString("id_token").size() > 1000, "ID token element exists")
     }
 
-    @Unroll
     @Feature("")
     def "Verify ID token mandatory elements"() {
         expect:
@@ -70,7 +68,6 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
         assertTrue(claims.getStringClaim("at_hash").size()  > 20, "Correct at_hash claim exists")
     }
 
-    @Unroll
     @Feature("")
     def "Verify ID token with optional elements by phone scope"() {
         expect:
@@ -89,7 +86,6 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
         assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("phone_number_verified"), equalTo(true))
     }
 
-    @Unroll
     @Feature("")
     def "Verify ID token with optional elements by email scope"() {
         expect:

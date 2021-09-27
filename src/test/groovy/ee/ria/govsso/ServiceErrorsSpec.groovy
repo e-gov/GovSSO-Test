@@ -13,13 +13,12 @@ import static org.hamcrest.MatcherAssert.assertThat
 
 //TODO: Transferred tests from TARA2 project for preliminary usage
 class ServiceErrorsSpec extends GovSsoSpecification {
-    FlowTara flow = new FlowTara(props)
+    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
     }
 
-    @Unroll
     @Feature("")
     def "Filter service errors for end user: #inputValue"() {
         expect:
@@ -37,7 +36,6 @@ class ServiceErrorsSpec extends GovSsoSpecification {
         "service_error"   || 500        || "Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."
     }
 
-    @Unroll
     @Feature("")
     def "Verify error response json"() {
         expect:
@@ -60,7 +58,6 @@ class ServiceErrorsSpec extends GovSsoSpecification {
         assertTrue(response.body().jsonPath().getString("incident_nr").size() > 15)
     }
 
-    @Unroll
     @Feature("")
     def "Verify error response html: general error"() {
         expect:
@@ -78,7 +75,6 @@ class ServiceErrorsSpec extends GovSsoSpecification {
         assertTrue(response.body().htmlPath().getString("**.find { it.@role == 'alert'}.p.text()").contains("Palun saatke e-kiri aadressile help@example.com."))
     }
 
-    @Unroll
     @Feature("")
     def "Verify error response html: invalid client"() {
         expect:

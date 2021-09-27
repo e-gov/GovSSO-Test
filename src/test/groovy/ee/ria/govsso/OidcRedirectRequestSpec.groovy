@@ -12,7 +12,7 @@ import static org.hamcrest.MatcherAssert.assertThat
 
 //TODO: Transferred tests from TARA2 project for preliminary usage
 class OidcRedirectRequestSpec extends GovSsoSpecification {
-    FlowTara flow = new FlowTara(props)
+    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -20,7 +20,6 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("")
     def "Verify redirection url parameters"() {
         expect:
@@ -32,7 +31,6 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
     }
 
-    @Unroll
     @Feature("")
     def "Verify redirection url with invalid scope"() {
         expect:
@@ -45,7 +43,6 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The requested scope is invalid"))
     }
 
-    @Unroll
     @Feature("")
     def "Verify redirection url with invalid state"() {
         expect:
@@ -58,7 +55,6 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The state is missing"))
     }
 
-    @Unroll
     @Feature("")
     def "Verify redirection url with unsupported response type"() {
         expect:
@@ -71,7 +67,6 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The authorization server does not support"))
     }
 
-    @Unroll
     @Feature("")
     def "Verify redirection url with user cancel"() {
         expect:

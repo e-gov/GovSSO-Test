@@ -3,7 +3,6 @@ package ee.ria.govsso
 import io.qameta.allure.Step
 import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.RestAssured
-import io.restassured.http.ContentType
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
 
@@ -13,7 +12,7 @@ import static io.restassured.config.EncoderConfig.encoderConfig
 class Requests {
 
     @Step("Mobile-ID authentication init request")
-    static Response startMidAuthentication(FlowTara flow, String idCode, String phoneNo) {
+    static Response startMidAuthentication(Flow flow, String idCode, String phoneNo) {
         Response response =
                 given()
                         .filter(flow.cookieFilter)
@@ -33,7 +32,7 @@ class Requests {
     }
 
     @Step("Mobile-ID response poll request")
-    static Response pollMid(FlowTara flow) {
+    static Response pollMid(Flow flow) {
         Response response =
                 given()
                         .filter(flow.cookieFilter)
@@ -50,7 +49,7 @@ class Requests {
     }
 
     @Step("Smart-ID response poll request")
-    static Response pollSid(FlowTara flow) {
+    static Response pollSid(Flow flow) {
         Response response =
                 given()
                         .filter(flow.cookieFilter)
@@ -68,7 +67,7 @@ class Requests {
     }
 
     @Step("Follow redirect request")
-    static Response followRedirect(FlowTara flow, String location) {
+    static Response followRedirect(Flow flow, String location) {
         return given()
                 .filter(new AllureRestAssured())
                 .relaxedHTTPSValidation()
@@ -96,7 +95,7 @@ class Requests {
     }
 
     @Step("Login service get request with session id")
-    static Response getRequestWithSessionId(FlowTara flow, String location) {
+    static Response getRequestWithSessionId(Flow flow, String location) {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
@@ -112,7 +111,7 @@ class Requests {
     }
 
     @Step("Login service post request with session id")
-    static Response postRequestWithSessionId(FlowTara flow, String location) {
+    static Response postRequestWithSessionId(Flow flow, String location) {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
@@ -129,7 +128,7 @@ class Requests {
     }
 
     @Step("Follow redirect with cookie request")
-    static Response followRedirectWithCookie(FlowTara flow, String location, Map myCookies) {
+    static Response followRedirectWithCookie(Flow flow, String location, Map myCookies) {
         return given()
                 .filter(flow.cookieFilter)
                 .cookies(myCookies)
@@ -145,7 +144,7 @@ class Requests {
     }
 
     @Step("Get request with cookies and params")
-    static Response getRequestWithCookiesAndParams(FlowTara flow, String url
+    static Response getRequestWithCookiesAndParams(Flow flow, String url
                                                    , Map<String, String> cookies
                                                    , Map<String, String> queryParams
                                                    , Map<String, String> additionalQueryParams) {
@@ -166,7 +165,7 @@ class Requests {
     }
 
     @Step("Get request with params")
-    static Response getRequestWithParams(FlowTara flow, String url
+    static Response getRequestWithParams(Flow flow, String url
                                          , Map<String, String> queryParams
                                          , Map<String, String> additionalQueryParams) {
         return given()
@@ -185,7 +184,7 @@ class Requests {
     }
 
     @Step("Get request with headers and params")
-    static Response getRequestWithHeadersAndParams(FlowTara flow, String url
+    static Response getRequestWithHeadersAndParams(Flow flow, String url
                                                    , Map<String, String> headers
                                                    , Map<String, String> queryParams
                                                    , Map<String, String> additionalQueryParams) {
@@ -205,7 +204,7 @@ class Requests {
                 .extract().response()
     }
     @Step("Post request with cookies and params")
-    static Response postRequestWithCookiesAndParams(FlowTara flow, String url
+    static Response postRequestWithCookiesAndParams(Flow flow, String url
                                                     , Map<String, String> cookies
                                                     , Map<String, String> formParams
                                                     , Map<String, String> additionalFormParams) {
@@ -224,7 +223,7 @@ class Requests {
     }
 
     @Step("Post request with params")
-    static Response postRequestWithParams(FlowTara flow, String url
+    static Response postRequestWithParams(Flow flow, String url
                                           , Map<String, String> formParams
                                           , Map<String, String> additionalFormParams) {
         return given()
@@ -242,7 +241,7 @@ class Requests {
     }
 
     @Step("Get heartbeat")
-    static Response getHeartbeat(FlowTara flow) {
+    static Response getHeartbeat(Flow flow) {
         return given()
                 .filter(new AllureRestAssured())
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
@@ -254,7 +253,7 @@ class Requests {
     }
 
     @Step("Get request with ID-Card authentication")
-    static Response idCardAuthentication(FlowTara flow, Map<String, String> headers) {
+    static Response idCardAuthentication(Flow flow, Map<String, String> headers) {
         return given()
                 .filter(flow.cookieFilter)
                 .headers(headers)
@@ -295,7 +294,7 @@ class Requests {
     }
 
     @Step("Get token")
-    static Response getWebToken(FlowTara flow, String authorizationCode) {
+    static Response getWebToken(Flow flow, String authorizationCode) {
         return given()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
@@ -311,7 +310,7 @@ class Requests {
     }
 
     @Step("Get token response body")
-    static Response getWebTokenResponseBody(FlowTara flow, Map<String, String> formParams) {
+    static Response getWebTokenResponseBody(Flow flow, Map<String, String> formParams) {
         return given()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())

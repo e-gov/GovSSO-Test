@@ -6,11 +6,13 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.path.json.JsonPath
 
 @Canonical
-class FlowGovSso {
+class Flow {
     Properties properties
-    OidcService oidcService
-    SessionService sessionService
-    OidcClient oidcClient
+    TaraOidcService oidcService
+    TaraLoginService loginService
+    TaraOidcClient oidcClient
+    TaraForeignIdpProvider foreignIdpProvider
+    TaraForeignProxyService foreignProxyService
 
     CookieFilter cookieFilter
     String sessionId
@@ -27,16 +29,18 @@ class FlowGovSso {
     String requestMessage
     String relayState
 
-    FlowGovSso(Properties properties) {
+    Flow(Properties properties) {
         this.properties = properties
-        this.sessionService = new SessionService(properties)
-        this.oidcService = new OidcService(properties)
-        this.oidcClient = new OidcClient(properties)
+        this.loginService = new TaraLoginService(properties)
+        this.oidcService = new TaraOidcService(properties)
+        this.oidcClient = new TaraOidcClient(properties)
+        this.foreignIdpProvider = new TaraForeignIdpProvider(properties)
+        this.foreignProxyService = new TaraForeignProxyService(properties)
     }
 }
 
 @Canonical
-class SessionService {
+class TaraLoginService {
     String host
     String port
     String protocol
@@ -86,34 +90,34 @@ class SessionService {
     @Lazy fullAuthLegalConfirmUrl = "${protocol}://${host}${portCheck()}${authLegalConfirmUrl}"
     @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
 
-    SessionService(Properties properties) {
-        this.host = properties."sessionservice.host"
-        this.port = properties."sessionservice.port"
-        this.protocol = properties."sessionservice.protocol"
-        this.nodeHost = properties."sessionservice.node.host"
-        this.nodePort = properties."sessionservice.node.port"
-        this.nodeProtocol = properties."sessionservice.node.protocol"
-        this.initUrl = properties."sessionservice.initUrl"
-        this.midInitUrl = properties."sessionservice.midInitUrl"
-        this.midPollUrl = properties."sessionservice.midPollUrl"
-        this.midCancelUrl = properties."sessionservice.midCancelUrl"
-        this.idCardInitUrl = properties."sessionservice.idCardInitUrl"
-        this.sidInitUrl = properties."sessionservice.sidInitUrl"
-        this.sidPollUrl = properties."sessionservice.sidPollUrl"
-        this.sidCancelUrl = properties."sessionservice.sidCancelUrl"
-        this.authAcceptUrl = properties."sessionservice.authAcceptUrl"
-        this.authRejectUrl = properties."sessionservice.authRejectUrl"
-        this.consentUrl = properties."sessionservice.consentUrl"
-        this.consentConfirmUrl = properties."sessionservice.consentConfirmUrl"
-        this.heartbeatUrl = properties."sessionservice.heartbeatUrl"
-        this.errorUrl = properties."sessionservice.errorUrl"
-        this.eidasInitUrl = properties."sessionservice.eidasInitUrl"
-        this.eidasCallbackUrl = properties."sessionservice.eidasCallbackUrl"
-        this.authLegalInitUrl = properties."sessionservice.authLegalInitUrl"
-        this.authLegalPersonUrl = properties."sessionservice.authLegalPersonUrl"
-        this.authLegalConfirmUrl = properties."sessionservice.authLegalConfirmUrl"
-        this.idCardEndpointUsername = properties."sessionservice.id.username"
-        this.idCardEndpointPassword = properties."sessionservice.id.password"
+    TaraLoginService(Properties properties) {
+        this.host = properties."loginservice.host"
+        this.port = properties."loginservice.port"
+        this.protocol = properties."loginservice.protocol"
+        this.nodeHost = properties."loginservice.node.host"
+        this.nodePort = properties."loginservice.node.port"
+        this.nodeProtocol = properties."loginservice.node.protocol"
+        this.initUrl = properties."loginservice.initUrl"
+        this.midInitUrl = properties."loginservice.midInitUrl"
+        this.midPollUrl = properties."loginservice.midPollUrl"
+        this.midCancelUrl = properties."loginservice.midCancelUrl"
+        this.idCardInitUrl = properties."loginservice.idCardInitUrl"
+        this.sidInitUrl = properties."loginservice.sidInitUrl"
+        this.sidPollUrl = properties."loginservice.sidPollUrl"
+        this.sidCancelUrl = properties."loginservice.sidCancelUrl"
+        this.authAcceptUrl = properties."loginservice.authAcceptUrl"
+        this.authRejectUrl = properties."loginservice.authRejectUrl"
+        this.consentUrl = properties."loginservice.consentUrl"
+        this.consentConfirmUrl = properties."loginservice.consentConfirmUrl"
+        this.heartbeatUrl = properties."loginservice.heartbeatUrl"
+        this.errorUrl = properties."loginservice.errorUrl"
+        this.eidasInitUrl = properties."loginservice.eidasInitUrl"
+        this.eidasCallbackUrl = properties."loginservice.eidasCallbackUrl"
+        this.authLegalInitUrl = properties."loginservice.authLegalInitUrl"
+        this.authLegalPersonUrl = properties."loginservice.authLegalPersonUrl"
+        this.authLegalConfirmUrl = properties."loginservice.authLegalConfirmUrl"
+        this.idCardEndpointUsername = properties."loginservice.id.username"
+        this.idCardEndpointPassword = properties."loginservice.id.password"
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {
@@ -133,7 +137,7 @@ class SessionService {
 }
 
 @Canonical
-class OidcService {
+class TaraOidcService {
     String host
     String port
     String protocol
@@ -147,7 +151,7 @@ class OidcService {
     @Lazy fullConfigurationUrl = "${protocol}://${host}${portCheck()}${configurationUrl}"
     @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
 
-    OidcService(Properties properties) {
+    TaraOidcService(Properties properties) {
         this.host = properties."oidcservice.host"
         this.port = properties."oidcservice.port"
         this.protocol = properties."oidcservice.protocol"
@@ -166,7 +170,7 @@ class OidcService {
 }
 
 @Canonical
-    class OidcClient {
+    class TaraOidcClient {
         String host
         String port
         String protocol
@@ -178,7 +182,7 @@ class OidcService {
 
         @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
-        OidcClient(Properties properties) {
+        TaraOidcClient(Properties properties) {
             this.host = properties."oidcclient.host"
             this.port = properties."oidcclient.port"
             this.protocol = properties."oidcclient.protocol"
@@ -194,5 +198,52 @@ class OidcService {
                 return ""
             }
         }
+}
+
+@Canonical
+class TaraForeignIdpProvider {
+    String host
+    String port
+    String protocol
+    String responseUrl
+    @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
+
+    TaraForeignIdpProvider(Properties properties) {
+        this.host = properties."idp.host"
+        this.port = properties."idp.port"
+        this.protocol = properties."idp.protocol"
+        this.responseUrl = properties."idp.responseUrl"
+    }
+    private String portCheck() {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
+}
+
+@Canonical
+class TaraForeignProxyService {
+    String host
+    String port
+    String protocol
+    String consentUrl
+
+    @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
+
+    TaraForeignProxyService(Properties properties) {
+        this.host = properties."ca-proxyservice.host"
+        this.port = properties."ca-proxyservice.port"
+        this.protocol = properties."ca-proxyservice.protocol"
+        this.consentUrl = properties."ca-proxyservice.consentUrl"
+    }
+    private String portCheck() {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
 }
 

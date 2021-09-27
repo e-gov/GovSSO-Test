@@ -6,7 +6,6 @@ import com.nimbusds.jwt.SignedJWT
 import io.qameta.allure.Allure
 import io.qameta.allure.Step
 import io.restassured.response.Response
-import org.hamcrest.Matchers
 import org.spockframework.lang.Wildcard
 
 import java.text.ParseException
@@ -15,15 +14,13 @@ import static org.hamcrest.CoreMatchers.is
 import static org.hamcrest.Matchers.anyOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
-
-import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.hamcrest.MatcherAssert.assertThat
 
 
 class Steps {
 
     @Step("Initialize authentication sequence in OIDC service with params")
-    static Response startAuthenticationInOidcWithParams(FlowTara flow, Map<String, String> paramsMap) {
+    static Response startAuthenticationInOidcWithParams(Flow flow, Map<String, String> paramsMap) {
         Response initSession = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap, Collections.emptyMap())
         String authCookie = initSession.getCookie("oauth2_authentication_csrf")
         Utils.setParameter(flow.oidcService.cookies, "oauth2_authentication_csrf", authCookie)
@@ -32,13 +29,13 @@ class Steps {
     }
 
     @Step("Initialize authentication sequence in OIDC service with defaults")
-    static Response startAuthenticationInOidc(FlowTara flow) {
+    static Response startAuthenticationInOidc(Flow flow) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         return Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
     }
 
     @Step("Initialize authentication sequence in login service")
-    static Response createLoginSession(FlowTara flow, Response response) {
+    static Response createLoginSession(Flow flow, Response response) {
         Response initLogin = followRedirect(flow, response)
         flow.setSessionId(initLogin.getCookie("SESSION"))
         flow.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
@@ -49,14 +46,14 @@ class Steps {
     }
 
     @Step("Start authentication in TARA and follow redirects")
-    static Response startAuthenticationInTara(FlowTara flow, String scopeList = "openid", String login_locale = "et") {
+    static Response startAuthenticationInTara(Flow flow, String scopeList = "openid", String login_locale = "et") {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, scopeList, login_locale)
         Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
         return createLoginSession(flow, initOIDCServiceSession)
     }
 
     @Step("Polling Mobile-ID authentication response")
-    static Response pollMidResponse(FlowTara flow, long pollingIntevalMillis = 2000L) {
+    static Response pollMidResponse(Flow flow, long pollingIntevalMillis = 2000L) {
         int counter = 0
         Response response = null
         while (counter < 12) {
@@ -71,7 +68,7 @@ class Steps {
     }
 
     @Step("Authenticate with Mobile-ID")
-    static Response authenticateWithMid(FlowTara flow, String idCode, String phoneNo) {
+    static Response authenticateWithMid(Flow flow, String idCode, String phoneNo) {
         Requests.startMidAuthentication(flow, idCode, phoneNo)
         pollMidResponse(flow)
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
@@ -80,7 +77,7 @@ class Steps {
     }
 
     @Step("Authenticate with Smart-ID")
-    static Response authenticateWithSid(FlowTara flow, String idCode) {
+    static Response authenticateWithSid(Flow flow, String idCode) {
         initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
         pollSidResponse(flow)
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
@@ -89,7 +86,7 @@ class Steps {
     }
 
     @Step("Authenticate with ID-Card")
-    static Response authenticateWithIdCard(FlowTara flow, String certificateFileName) {
+    static Response authenticateWithIdCard(Flow flow, String certificateFileName) {
         String certificate = Utils.getCertificateAsString(certificateFileName)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
@@ -101,7 +98,7 @@ class Steps {
     }
 
     @Step("Initialize Smart-ID authentication session")
-    static Response initSidAuthSession(FlowTara flow, String sessionId
+    static Response initSidAuthSession(Flow flow, String sessionId
                                        , Object idCode
                                        , Map additionalParamsMap = Collections.emptyMap()) {
         LinkedHashMap<String, String> formParamsMap = (LinkedHashMap) Collections.emptyMap()
@@ -116,7 +113,7 @@ class Steps {
     }
 
     @Step("Polling Smart-ID authentication response")
-    static Response pollSidResponse(FlowTara flow, long pollingIntevalMillis = 2000L) {
+    static Response pollSidResponse(Flow flow, long pollingIntevalMillis = 2000L) {
         int counter = 0
         Response response = null
         while (counter < 20) {
@@ -139,25 +136,25 @@ class Steps {
     }
 
     @Step("Follow redirect")
-    static Response followRedirect(FlowTara flow, Response response) {
+    static Response followRedirect(Flow flow, Response response) {
         String location = response.then().extract().response().getHeader("location")
         return Requests.followRedirect(flow, location)
     }
 
     @Step("Follow redirect with cookies")
-    static Response followRedirectWithCookies(FlowTara flow, Response response, Map cookies) {
+    static Response followRedirectWithCookies(Flow flow, Response response, Map cookies) {
         String location = response.then().extract().response().getHeader("location")
         return Requests.followRedirectWithCookie(flow, location, cookies)
     }
 
     @Step("Follow redirect with session id")
-    static Response followRedirectWithSessionId(FlowTara flow, Response response) {
+    static Response followRedirectWithSessionId(Flow flow, Response response) {
         String location = response.then().extract().response().getHeader("location")
         return Requests.getRequestWithSessionId(flow, location)
     }
 
     @Step("Confirm or reject consent")
-    static Response submitConsent(FlowTara flow, boolean consentGiven) {
+    static Response submitConsent(Flow flow, boolean consentGiven) {
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
@@ -167,7 +164,7 @@ class Steps {
     }
 
     @Step("Confirm or reject consent and finish authentication process")
-    static Response submitConsentAndFollowRedirects(FlowTara flow, boolean consentGiven, Response consentResponse) {
+    static Response submitConsentAndFollowRedirects(Flow flow, boolean consentGiven, Response consentResponse) {
         if (consentResponse.getStatusCode().toInteger() == 200) {
             consentResponse = submitConsent(flow, consentGiven)
         }
@@ -175,13 +172,13 @@ class Steps {
     }
 
     @Step("Get identity token")
-    static Response getIdentityTokenResponse(FlowTara flow, Response response) {
+    static Response getIdentityTokenResponse(Flow flow, Response response) {
         String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
         return Requests.getWebToken(flow, authorizationCode)
     }
 
     @Step("verify token")
-    static SignedJWT verifyTokenAndReturnSignedJwtObject(FlowTara flow, String token) throws ParseException, JOSEException, IOException {
+    static SignedJWT verifyTokenAndReturnSignedJwtObject(Flow flow, String token) throws ParseException, JOSEException, IOException {
         SignedJWT signedJWT = SignedJWT.parse(token)
         addJsonAttachment("Header", signedJWT.getHeader().toString())
         addJsonAttachment("Payload", signedJWT.getJWTClaimsSet().toString())
@@ -217,7 +214,7 @@ class Steps {
     }
 
     @Step("Authenticate with MID in TARA")
-    static Response authenticateWithMidInTARA(FlowTara flow, String idCode, String phoneNo) {
+    static Response authenticateWithMidInTARA(Flow flow, String idCode, String phoneNo) {
         //TODO: This should be replaced with receiving URL from session service and following redirects. Enable automatic redirect following for this?
         Steps.startAuthenticationInTara(flow)
 
@@ -229,14 +226,14 @@ class Steps {
     }
 
     @Step("Authenticate with SID in TARA")
-    static Response authenticateWithSidInTARA(FlowTara flow, String idCode) {
+    static Response authenticateWithSidInTARA(Flow flow, String idCode) {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response sidAuthResponse = Steps.authenticateWithSid(flow,idCode)
         return Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
     }
 
     @Step("Authenticate with ID-Card in TARA")
-    static Response authenticateWithIdCardInTARA(FlowTara flow) {
+    static Response authenticateWithIdCardInTARA(Flow flow) {
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
         Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
@@ -254,7 +251,7 @@ class Steps {
     }
 
     @Step("Authenticate with eIDAS in TARA")
-    static Response authenticateWithEidasInTARA(FlowTara flow, String country, String username, String password, String loa) {
+    static Response authenticateWithEidasInTARA(Flow flow, String country, String username, String password, String loa) {
         //TODO: This should be replaced with receiving URL from session service and following redirects.
         Steps.startAuthenticationInTara(flow, "openid eidas")
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())

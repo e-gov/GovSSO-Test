@@ -7,7 +7,6 @@ import com.nimbusds.jose.jwk.*
 import com.nimbusds.jwt.SignedJWT
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.lang.RandomStringUtils
-import io.restassured.response.Response
 
 class OpenIdUtils {
     static Boolean isTokenSignatureValid(JWKSet jwkSet, SignedJWT signedJWT) throws JOSEException {
@@ -21,7 +20,7 @@ class OpenIdUtils {
         return signedJWT.verify(verifier)
     }
 
-    static Map<String, String> getAuthorizationParameters(FlowTara flow, String scope = "openid", String uiLocales = "et") {
+    static Map<String, String> getAuthorizationParameters(Flow flow, String scope = "openid", String uiLocales = "et") {
         Map<String, String> queryParams = new HashMap<>()
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))

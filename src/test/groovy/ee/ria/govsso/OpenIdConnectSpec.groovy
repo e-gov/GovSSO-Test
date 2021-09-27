@@ -15,7 +15,7 @@ import static org.hamcrest.MatcherAssert.assertThat
 
 //TODO: Transferred tests from TARA2 project for preliminary usage
 class OpenIdConnectSpec extends GovSsoSpecification {
-    FlowTara flow = new FlowTara(props)
+    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -23,7 +23,6 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("")
     def "Metadata and token key ID matches"() {
         expect:
@@ -36,7 +35,6 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertThat(keyID, equalTo(flow.jwkSet.getKeys().get(0).getKeyID()))
     }
 
-    @Unroll
     @Feature("")
     def "Request a token twice"() {
         expect:
@@ -57,7 +55,6 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertThat("Correct error_description is returned", tokenResponse2.body().jsonPath().getString("error_description"), Matchers.endsWith("The authorization code has already been used."))
     }
 
-    @Unroll
     @Feature("")
     def "Request with invalid authorization code"() {
         expect:
@@ -75,7 +72,6 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertEquals("invalid_grant", response.body().jsonPath().get("error"), "Correct error message is returned")
     }
 
-    @Unroll
     @Feature("")
     def "Request with missing parameter #paramName"() {
         expect:
@@ -100,7 +96,6 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     }
 
 
-    @Unroll
     @Feature("")
     def "Request with invalid parameter value #paramName"() {
         expect:
@@ -124,7 +119,6 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         "code"         | "45678"                   || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
     }
 
-    @Unroll
     @Feature("")
     def "Request with url encoded state and nonce"() {
         expect:

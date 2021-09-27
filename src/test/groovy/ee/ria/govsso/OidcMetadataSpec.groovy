@@ -10,13 +10,12 @@ import static org.junit.jupiter.api.Assertions.*
 
 //TODO: Transferred tests from TARA2 project for preliminary usage
 class OidcMetadataSpec extends GovSsoSpecification {
-    FlowTara flow = new FlowTara(props)
+    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
     }
 
-    @Unroll
     @Feature("")
     def "Verify discovery path #path"() {
         expect:
@@ -32,7 +31,6 @@ class OidcMetadataSpec extends GovSsoSpecification {
         "/oidc/.well-known" || 200
     }
 
-    @Unroll
     @Feature("")
     def "Verify discovery content"() {
         expect:
@@ -72,7 +70,6 @@ class OidcMetadataSpec extends GovSsoSpecification {
         assertEquals((flow.oidcService.baseUrl + "/oidc/jwks").toString(), jsonResponse.getString("jwks_uri"), "Correct jwks uri")
     }
 
-    @Unroll
     @Feature("")
     def "Verify keystore endpoint"() {
         expect:

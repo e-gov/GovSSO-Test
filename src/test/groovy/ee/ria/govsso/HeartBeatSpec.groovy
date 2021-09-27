@@ -1,5 +1,6 @@
 package ee.ria.govsso
 
+import io.qameta.allure.Description
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -12,14 +13,13 @@ import static org.junit.jupiter.api.Assertions.*
 
 //TODO: Transferred tests from TARA2 project for preliminary usage
 class HeartBeatSpec extends GovSsoSpecification {
-    FlowTara flow = new FlowTara(props)
+    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
     }
 
 
-    @Unroll
     @Feature("")
     def "Verify heartbeat response elements"() {
         expect:
@@ -55,7 +55,6 @@ class HeartBeatSpec extends GovSsoSpecification {
         }
     }
 
-    @Unroll
     @Feature("")
     def "Verify heartbeat response headers"() {
         expect:
