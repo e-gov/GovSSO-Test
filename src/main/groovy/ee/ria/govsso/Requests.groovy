@@ -74,7 +74,7 @@ class Requests {
                 .log().cookies()
                 .when()
                 .redirects().follow(false)
-                .urlEncodingEnabled(true)
+                .urlEncodingEnabled(false)
                 .get(location)
                 .then()
                 .extract().response()
@@ -240,13 +240,37 @@ class Requests {
                 .extract().response()
     }
 
-    @Step("Get heartbeat")
-    static Response getHeartbeat(Flow flow) {
+    @Step("Get health")
+    static Response getHealth(Flow flow) {
         return given()
                 .filter(new AllureRestAssured())
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .when()
-                .get(flow.loginService.fullHeartbeatUrl)
+                .get(flow.sessionService.fullHealthUrl)
+                .then()
+                .statusCode(200)
+                .extract().response()
+    }
+
+    @Step("Get readiness")
+    static Response getReadiness(Flow flow) {
+        return given()
+                .filter(new AllureRestAssured())
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .when()
+                .get(flow.sessionService.fullReadinessUrl)
+                .then()
+                .statusCode(200)
+                .extract().response()
+    }
+
+    @Step("Get info")
+    static Response getInfo(Flow flow) {
+        return given()
+                .filter(new AllureRestAssured())
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .when()
+                .get(flow.sessionService.fullInfoUrl)
                 .then()
                 .statusCode(200)
                 .extract().response()
