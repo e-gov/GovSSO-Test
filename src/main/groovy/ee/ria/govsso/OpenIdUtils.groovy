@@ -9,6 +9,8 @@ import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.lang.RandomStringUtils
 
 class OpenIdUtils {
+
+
     static Boolean isTokenSignatureValid(JWKSet jwkSet, SignedJWT signedJWT) throws JOSEException {
         List<JWK> matches = new JWKSelector(new JWKMatcher.Builder()
                 .keyType(KeyType.RSA)
@@ -20,17 +22,31 @@ class OpenIdUtils {
         return signedJWT.verify(verifier)
     }
 
-    static Map<String, String> getAuthorizationParameters(Flow flow, String scope = "openid", String uiLocales = "et") {
+    static Map<String, String> getAuthorizationParametersWithDefaults(Flow flow) {
         Map<String, String> queryParams = new HashMap<>()
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        queryParams.put("ui_locales", uiLocales)
         queryParams.put("response_type", "code")
-        queryParams.put("scope", scope)
-        queryParams.put("client_id",flow.getOidcClient().getClientId())
-        queryParams.put("redirect_uri", flow.getOidcClient().getFullResponseUrl().toString())
+        queryParams.put("scope", "openid")
+        queryParams.put("client_id", flow.getOidcClientA().getClientId())
+        queryParams.put("redirect_uri", flow.getOidcClientA().fullResponseUrl)
         queryParams.put("state", flow.state)
         queryParams.put("nonce", flow.nonce)
+        queryParams.put("ui_locales", "et")
+        return queryParams
+    }
+
+    static Map<String, String> getAuthorizationParameters(Flow flow, String clientId, String fullResponseUrl) {
+        Map<String, String> queryParams = new HashMap<>()
+        flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        queryParams.put("response_type", "code")
+        queryParams.put("scope", "open_id")
+        queryParams.put("client_id", clientId)
+        queryParams.put("redirect_uri", fullResponseUrl)
+        queryParams.put("state", flow.state)
+        queryParams.put("nonce", flow.nonce)
+        queryParams.put("ui_locales", "et")
         return queryParams
     }
 }
