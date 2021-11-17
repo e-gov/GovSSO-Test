@@ -73,7 +73,7 @@ class Steps {
         flow.taraLoginService.setSessionId(initLogin.getCookie("SESSION"))
         flow.taraLoginService.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
         if (initLogin.body().prettyPrint().contains("_csrf")) {
-            flow.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+            flow.taraLoginService.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         }
         return initLogin
     }
@@ -136,7 +136,7 @@ class Steps {
                                        , Object idCode
                                        , Map additionalParamsMap = Collections.emptyMap()) {
         LinkedHashMap<String, String> formParamsMap = (LinkedHashMap) Collections.emptyMap()
-        Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
+        Utils.setParameter(formParamsMap, "_csrf", flow.taraLoginService.csrf)
         if (!(idCode instanceof Wildcard)) {
             Utils.setParameter(formParamsMap, "idCode", idCode)
         }
@@ -201,7 +201,7 @@ class Steps {
         Utils.setParameter(cookiesMap, "SESSION", flow.taraLoginService.sessionId)
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
-        Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
+        Utils.setParameter(formParamsMap, "_csrf", flow.taraLoginService.csrf)
         return Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullConsentConfirmUrl, cookiesMap, formParamsMap, Collections.emptyMap())
     }
 
@@ -211,7 +211,7 @@ class Steps {
         Utils.setParameter(cookiesMap, "SESSION", flow.taraLoginService.sessionId)
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
-        Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
+        Utils.setParameter(formParamsMap, "_csrf", flow.taraLoginService.csrf)
         return Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullConsentConfirmUrl, cookiesMap, formParamsMap, Collections.emptyMap())
     }
 

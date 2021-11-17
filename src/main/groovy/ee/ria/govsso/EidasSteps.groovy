@@ -13,7 +13,7 @@ class EidasSteps {
         if (!(country instanceof Wildcard)) {
             Utils.setParameter(queryParamsMap, "country", country)
         }
-        Utils.setParameter(queryParamsMap, "_csrf", flow.csrf)
+        Utils.setParameter(queryParamsMap, "_csrf", flow.taraLoginService.csrf)
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "SESSION", sessionId)
         return Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullEidasInitUrl, cookieMap, queryParamsMap, additionalParamsMap)
@@ -160,7 +160,7 @@ class EidasSteps {
 
     @Step("Eidas accept authorization result")
     static Response eidasAcceptAuthorizationResult(flow, Response response) {
-        flow.setCsrf(response.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        flow.taraLoginService.setCsrf(response.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         return Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
     }
 

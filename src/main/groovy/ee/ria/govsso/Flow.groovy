@@ -20,7 +20,6 @@ class Flow {
 
     CookieFilter cookieFilter
 
-    String csrf
     String loginChallenge
 
     String state
@@ -124,6 +123,7 @@ class TaraLoginService {
     String idCardEndpointPassword
     String sessionId
     String login_locale
+    String csrf
 
     @Lazy fullInitUrl = "${protocol}://${host}${portCheck()}${initUrl}"
     @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
