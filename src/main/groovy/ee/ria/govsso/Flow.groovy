@@ -11,7 +11,7 @@ class Flow {
     SsoSessionService sessionService
     TaraOidcService taraOidcService
     SsoOidcService ssoOidcService
-    TaraLoginService loginService
+    TaraLoginService taraLoginService
     TaraOidcClient oidcClient
     SsoOidcClientA oidcClientA
     SsoOidcClientB oidcClientB
@@ -19,7 +19,7 @@ class Flow {
     TaraForeignProxyService foreignProxyService
 
     CookieFilter cookieFilter
-    String sessionId
+
     String login_locale
     String csrf
     String loginChallenge
@@ -36,7 +36,7 @@ class Flow {
     Flow(Properties properties) {
         this.properties = properties
         this.sessionService = new SsoSessionService(properties)
-        this.loginService = new TaraLoginService(properties)
+        this.taraLoginService = new TaraLoginService(properties)
         this.taraOidcService = new TaraOidcService(properties)
         this.ssoOidcService = new SsoOidcService(properties)
         this.oidcClient = new TaraOidcClient(properties)
@@ -123,6 +123,7 @@ class TaraLoginService {
     String eidasCallbackUrl
     String idCardEndpointUsername
     String idCardEndpointPassword
+    String sessionId
 
     @Lazy fullInitUrl = "${protocol}://${host}${portCheck()}${initUrl}"
     @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"

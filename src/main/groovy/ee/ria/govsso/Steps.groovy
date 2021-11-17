@@ -70,7 +70,7 @@ class Steps {
     @Step("Initialize authentication sequence in login service")
     static Response createLoginSession(Flow flow, Response response) {
         Response initLogin = followRedirect(flow, response)
-        flow.setSessionId(initLogin.getCookie("SESSION"))
+        flow.taraLoginService.setSessionId(initLogin.getCookie("SESSION"))
         flow.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
         if (initLogin.body().prettyPrint().contains("_csrf")) {
             flow.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
@@ -104,7 +104,7 @@ class Steps {
     static Response authenticateWithMid(Flow flow, String idCode, String phoneNo) {
         Requests.startMidAuthentication(flow, idCode, phoneNo)
         pollMidResponse(flow)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         return consentResponse
@@ -112,9 +112,9 @@ class Steps {
 
     @Step("Authenticate with Smart-ID")
     static Response authenticateWithSid(Flow flow, String idCode) {
-        initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
+        initSidAuthSession(flow, flow.taraLoginService.sessionId, idCode, Collections.emptyMap())
         pollSidResponse(flow)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
         Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
         return followRedirectWithSessionId(flow, oidcServiceResponse)
     }
@@ -125,7 +125,7 @@ class Steps {
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Requests.idCardAuthentication(flow, headersMap)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
         Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
         return followRedirectWithSessionId(flow, oidcServiceResponse)
 
@@ -143,7 +143,7 @@ class Steps {
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "SESSION", sessionId)
         Utils.setParameter(cookieMap, "LOGIN_LOCALE", flow.login_locale)
-        return Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullSidInitUrl, cookieMap, formParamsMap, additionalParamsMap)
+        return Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullSidInitUrl, cookieMap, formParamsMap, additionalParamsMap)
     }
 
     @Step("Polling Smart-ID authentication response")
@@ -198,17 +198,17 @@ class Steps {
     @Step("Confirm or reject consent in TARA")
     static Response submitConsentTara(Flow flow, boolean consentGiven) {
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
+        Utils.setParameter(cookiesMap, "SESSION", flow.taraLoginService.sessionId)
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
         Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
-        return Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, formParamsMap, Collections.emptyMap())
+        return Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullConsentConfirmUrl, cookiesMap, formParamsMap, Collections.emptyMap())
     }
 
     @Step("Confirm or reject consent in GSSO")
     static Response submitConsentSso(Flow flow, boolean consentGiven) {
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
+        Utils.setParameter(cookiesMap, "SESSION", flow.taraLoginService.sessionId)
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
         Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
@@ -299,7 +299,7 @@ class Steps {
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Requests.idCardAuthentication(flow, headersMap)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
 
@@ -314,7 +314,7 @@ class Steps {
     static Response authenticateWithEidasInTARA(Flow flow, String country, String username, String password, String loa) {
         //TODO: This should be replaced with receiving URL from session service and following redirects.
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.taraLoginService.sessionId, country, Collections.emptyMap())
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
         flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))

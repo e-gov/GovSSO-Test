@@ -148,7 +148,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Requests.idCardAuthentication(flow, headersMap)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)

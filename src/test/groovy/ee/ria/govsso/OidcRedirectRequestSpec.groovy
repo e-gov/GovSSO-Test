@@ -5,7 +5,6 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
-import spock.lang.Unroll
 
 import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
@@ -74,8 +73,8 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
-        Response rejectResponse = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
+        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.taraLoginService.sessionId)
+        Response rejectResponse = Requests.getRequestWithCookiesAndParams(flow, flow.taraLoginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
         Response response = Steps.followRedirectWithCookies(flow, rejectResponse, flow.oidcService.cookies)
         assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")

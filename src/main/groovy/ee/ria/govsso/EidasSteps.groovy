@@ -16,7 +16,7 @@ class EidasSteps {
         Utils.setParameter(queryParamsMap, "_csrf", flow.csrf)
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "SESSION", sessionId)
-        return Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullEidasInitUrl, cookieMap, queryParamsMap, additionalParamsMap)
+        return Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullEidasInitUrl, cookieMap, queryParamsMap, additionalParamsMap)
     }
 
     @Step("Eidas service provider request")
@@ -161,7 +161,7 @@ class EidasSteps {
     @Step("Eidas accept authorization result")
     static Response eidasAcceptAuthorizationResult(flow, Response response) {
         flow.setCsrf(response.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
-        return Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        return Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
     }
 
 }
