@@ -55,7 +55,7 @@ class Requests {
                         .filter(flow.cookieFilter)
                         .filter(new AllureRestAssured())
                         .cookie("SESSION", flow.taraLoginService.sessionId)
-                        .cookie("LOGIN_LOCALE", flow.login_locale)
+                        .cookie("LOGIN_LOCALE", flow.taraLoginService.login_locale)
                         .log().cookies()
                         .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()

@@ -71,7 +71,7 @@ class Steps {
     static Response createLoginSession(Flow flow, Response response) {
         Response initLogin = followRedirect(flow, response)
         flow.taraLoginService.setSessionId(initLogin.getCookie("SESSION"))
-        flow.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
+        flow.taraLoginService.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
         if (initLogin.body().prettyPrint().contains("_csrf")) {
             flow.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         }
@@ -142,7 +142,7 @@ class Steps {
         }
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "SESSION", sessionId)
-        Utils.setParameter(cookieMap, "LOGIN_LOCALE", flow.login_locale)
+        Utils.setParameter(cookieMap, "LOGIN_LOCALE", flow.taraLoginService.login_locale)
         return Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullSidInitUrl, cookieMap, formParamsMap, additionalParamsMap)
     }
 
