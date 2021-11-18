@@ -15,7 +15,6 @@ import static org.hamcrest.Matchers.anyOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.junit.jupiter.api.Assertions.assertEquals
 
 class Steps {
 
@@ -91,11 +90,12 @@ class Steps {
 
     @Step("Authenticate with Smart-ID")
     static Response authenticateWithSid(Flow flow, String idCode) {
-        initSidAuthSession(flow, flow.taraLoginService.sessionId, idCode, Collections.emptyMap())
+        Requests.startSidAuthentication(flow, idCode)
         pollSidResponse(flow)
         Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
-        Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
-        return followRedirectWithSessionId(flow, oidcServiceResponse)
+        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraOidcService.cookies)
+        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
+        return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
 
     @Step("Authenticate with ID-Card")
@@ -108,21 +108,6 @@ class Steps {
         Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
         return followRedirectWithSessionId(flow, oidcServiceResponse)
 
-    }
-
-    @Step("Initialize Smart-ID authentication session")
-    static Response initSidAuthSession(Flow flow, String sessionId
-                                       , Object idCode
-                                       , Map additionalParamsMap = Collections.emptyMap()) {
-        LinkedHashMap<String, String> formParamsMap = (LinkedHashMap) Collections.emptyMap()
-        Utils.setParameter(formParamsMap, "_csrf", flow.taraLoginService.csrf)
-        if (!(idCode instanceof Wildcard)) {
-            Utils.setParameter(formParamsMap, "idCode", idCode)
-        }
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "SESSION", sessionId)
-        Utils.setParameter(cookieMap, "LOGIN_LOCALE", flow.taraLoginService.login_locale)
-        return Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullSidInitUrl, cookieMap, formParamsMap, additionalParamsMap)
     }
 
     @Step("Polling Smart-ID authentication response")
@@ -264,10 +249,11 @@ class Steps {
     }
 
     @Step("Authenticate with SID in TARA")
-    static Response authenticateWithSidInTARA(Flow flow, String idCode) {
- //       Steps.startAuthenticationInTara(flow, "openid smartid")
+    static Response authenticateWithSidInTARA(Flow flow, String idCode, Response response) {
+        Steps.startAuthenticationInTara(flow, response.getHeader("location"))
         Response sidAuthResponse = Steps.authenticateWithSid(flow,idCode)
-        return Steps.submitConsentAndFollowRedirectsTara(flow, true, sidAuthResponse)
+// TODO: For SSO consent is never asked in TARA?
+        return Requests.followRedirectWithCookie(flow, sidAuthResponse.getHeader("location"), flow.taraOidcService.cookies)
     }
 
     @Step("Authenticate with ID-Card in TARA")

@@ -48,6 +48,25 @@ class Requests {
         return response
     }
 
+    @Step("Smart-ID authentication init request")
+    static Response startSidAuthentication(Flow flow, String idCode) {
+        Response response =
+                given()
+                        .filter(new AllureRestAssured())
+                        .filter(flow.cookieFilter)
+                        .formParam("idCode", idCode)
+                        .cookie("SESSION", flow.taraLoginService.sessionId)
+                        .formParam("_csrf", flow.taraLoginService.csrf)
+                        .log().cookies()
+                        .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                        .when()
+                        .redirects().follow(false)
+                        .post(flow.taraLoginService.fullSidInitUrl)
+                        .then()
+                        .extract().response()
+        return response
+    }
+
     @Step("Smart-ID response poll request")
     static Response pollSid(Flow flow) {
         Response response =
