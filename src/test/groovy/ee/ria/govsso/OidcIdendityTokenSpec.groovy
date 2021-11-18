@@ -6,6 +6,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
+import spock.lang.Ignore
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
@@ -23,12 +24,13 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
+    @Ignore
     @Feature("")
     def "Verify ID token response"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        //Steps.startAuthenticationInTara(flow)
         Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
         assertEquals("openid", tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
@@ -37,14 +39,15 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
         assertTrue(tokenResponse.body().jsonPath().getString("id_token").size() > 1000, "ID token element exists")
     }
 
+    @Ignore
     @Feature("")
     def "Verify ID token mandatory elements"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        //Steps.startAuthenticationInTara(flow)
         String idCode = "60001017716"
         String phoneNo = "69100366"
         Response midAuthResponse = Steps.authenticateWithMid(flow, idCode, phoneNo)
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
         assertEquals("openid", tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
@@ -68,15 +71,16 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
         assertTrue(claims.getStringClaim("at_hash").size()  > 20, "Correct at_hash claim exists")
     }
 
+    @Ignore
     @Feature("")
     def "Verify ID token with optional elements by phone scope"() {
         expect:
         String scopeList = "openid phone"
-        Steps.startAuthenticationInTara(flow, scopeList)
+ //       Steps.startAuthenticationInTara(flow, scopeList)
         String idCode = "60001017716"
         String phoneNo = "69100366"
         Response midAuthResponse = Steps.authenticateWithMid(flow, idCode, phoneNo)
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
         assertEquals(scopeList, tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
@@ -92,7 +96,7 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
         String scopeList = "openid email"
         Steps.startAuthenticationInTara(flow, scopeList)
         Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, idCardAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
         assertEquals(scopeList, tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")

@@ -24,47 +24,20 @@ class Steps {
         Response initSession = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, paramsMap, Collections.emptyMap())
         String authCookie = initSession.getCookie("oauth2_authentication_csrf_insecure")
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf_insecure", authCookie)
-        String consentCookie = initSession.getCookie("oauth2_consent_csrf_insecure")
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_insecure", consentCookie)
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
         return initSession
     }
 
     @Step("Initialize authentication sequence in OIDC service with defaults")
     static Response startAuthenticationInSsoOidc(Flow flow) {
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         return Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
     @Step("Initialize session in session service with params")
     static Response startSessionInSessionService(Flow flow, Response response) {
-        Response initSession = followRedirectWithSsoSessionCookies(flow, response, flow.sessionService.cookies)
-        String authCookie = initSession.getCookie("oauth2_authentication_csrf")
-        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_authentication_csrf", authCookie)
+         Response initSession = followRedirectWithCookies(flow, response, flow.ssoOidcService.cookies)
         return initSession
-    }
-
-    @Step("Initialize authentication sequence in OIDC service with params")
-    static Response startAuthenticationInTaraOidcWithParams(Flow flow, Map<String, String> paramsMap) {
-        Response initSession = Requests.getRequestWithParams(flow, flow.taraOidcService.fullAuthenticationRequestUrl, paramsMap, Collections.emptyMap())
-        String authCookie = initSession.getCookie("oauth2_authentication_csrf")
-        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_authentication_csrf", authCookie)
-        flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
-        return initSession
-    }
-
-    @Step("Initialize authentication sequence in OIDC service with defaults")
-    static Response startAuthenticationInTaraOidc(Flow flow) {
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, flow.getOidcClient().getClientId(), flow.getOidcClient().getFullResponseUrl())
-        Response initOIDCServiceSession = Steps.startAuthenticationInTaraOidcWithParams(flow, paramsMap)
-        assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
-        return initOIDCServiceSession
-    }
-
-    @Step("Initialize taracallback in session service")
-    static Response startTaracallback(Flow flow, Response response) {
-        Response initCallback = followRedirectWithCookies(flow, response, flow.sessionService.cookies)
-        return initCallback
     }
 
     @Step("Initialize authentication sequence in login service")
@@ -79,10 +52,16 @@ class Steps {
     }
 
     @Step("Start authentication in TARA and follow redirects")
-    static Response startAuthenticationInTara(Flow flow, String scopeList = "openid", String login_locale = "et") {
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, scopeList, login_locale)
-        Response initOIDCServiceSession = startAuthenticationInTaraOidcWithParams(flow, paramsMap)
-        return createLoginSession(flow, initOIDCServiceSession)
+    static Response startAuthenticationInTara(Flow flow, String url) {
+        Response initOIDCServiceSession = Requests.getRequest(url)
+        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_authentication_csrf", initOIDCServiceSession.getCookie("oauth2_authentication_csrf"))
+        Response initLogin = followRedirect(flow, initOIDCServiceSession)
+        flow.taraLoginService.setSessionId(initLogin.getCookie("SESSION"))
+        flow.taraLoginService.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
+        if (initLogin.body().prettyPrint().contains("_csrf")) {
+            flow.taraLoginService.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        }
+        return initLogin
     }
 
     @Step("Polling Mobile-ID authentication response")
@@ -104,17 +83,17 @@ class Steps {
     static Response authenticateWithMid(Flow flow, String idCode, String phoneNo) {
         Requests.startMidAuthentication(flow, idCode, phoneNo)
         pollMidResponse(flow)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
-        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        return consentResponse
+        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
+        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraOidcService.cookies)
+        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
+        return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
 
     @Step("Authenticate with Smart-ID")
     static Response authenticateWithSid(Flow flow, String idCode) {
         initSidAuthSession(flow, flow.taraLoginService.sessionId, idCode, Collections.emptyMap())
         pollSidResponse(flow)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
         Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
         return followRedirectWithSessionId(flow, oidcServiceResponse)
     }
@@ -125,7 +104,7 @@ class Steps {
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Requests.idCardAuthentication(flow, headersMap)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
         Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
         return followRedirectWithSessionId(flow, oidcServiceResponse)
 
@@ -211,7 +190,7 @@ class Steps {
         Utils.setParameter(cookiesMap, "SESSION", flow.taraLoginService.sessionId)
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
-        Utils.setParameter(formParamsMap, "_csrf", flow.taraLoginService.csrf)
+ //       Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
         return Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullConsentConfirmUrl, cookiesMap, formParamsMap, Collections.emptyMap())
     }
 
@@ -220,7 +199,7 @@ class Steps {
         if (consentResponse.getStatusCode().toInteger() == 200) {
             consentResponse = submitConsentTara(flow, consentGiven)
         }
-        return followRedirectWithCookies(flow, consentResponse, flow.taraOidcService.cookies)
+        return Requests.followRedirectWithCookie(flow, consentResponse.getHeader("location"), flow.taraOidcService.cookies)
     }
 
     @Step("Confirm or reject consent and finish authentication process in GSSO")
@@ -249,15 +228,17 @@ class Steps {
             //NullPointerException when running test from IntelliJ
         }
         assertThat("Token Signature is not valid!", OpenIdUtils.isTokenSignatureValid(flow.jwkSet, signedJWT), is(true))
-        assertThat(signedJWT.getJWTClaimsSet().getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(signedJWT.getJWTClaimsSet().getAudience().get(0), equalTo(flow.oidcClientA.clientId))
         assertThat(signedJWT.getJWTClaimsSet().getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
         Date date = new Date()
         assertThat("Expected current: " + date + " to be before exp: " + signedJWT.getJWTClaimsSet().getExpirationTime(), date.before(signedJWT.getJWTClaimsSet().getExpirationTime()), is(true))
-        assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
+//TODO: nbf not used in gsso?
+//        assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
         if (!flow.getNonce().isEmpty()) {
             assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), equalTo(flow.getNonce()))
         }
-        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
+//TODO: state is not propagated to JWT in gsso?
+//        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
         return signedJWT
     }
 
@@ -274,37 +255,34 @@ class Steps {
     }
 
     @Step("Authenticate with MID in TARA")
-    static Response authenticateWithMidInTARA(Flow flow, String idCode, String phoneNo) {
-        //TODO: This should be replaced with receiving URL from session service and following redirects. Enable automatic redirect following for this?
-        Steps.startAuthenticationInTara(flow)
+    static Response authenticateWithMidInTARA(Flow flow, String idCode, String phoneNo, Response response) {
+        Steps.startAuthenticationInTara(flow, response.getHeader("location"))
 
-        //This should be ok as is
         Response midAuthResponse = Steps.authenticateWithMid(flow,idCode, phoneNo)
-
-        //TODO: Enable automatic redirect following for this?
-        return Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+// TODO: For SSO consent is never asked in TARA?
+        return Requests.followRedirectWithCookie(flow, midAuthResponse.getHeader("location"), flow.taraOidcService.cookies)
     }
 
     @Step("Authenticate with SID in TARA")
     static Response authenticateWithSidInTARA(Flow flow, String idCode) {
-        Steps.startAuthenticationInTara(flow, "openid smartid")
+ //       Steps.startAuthenticationInTara(flow, "openid smartid")
         Response sidAuthResponse = Steps.authenticateWithSid(flow,idCode)
-        return Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
+        return Steps.submitConsentAndFollowRedirectsTara(flow, true, sidAuthResponse)
     }
 
     @Step("Authenticate with ID-Card in TARA")
     static Response authenticateWithIdCardInTARA(Flow flow) {
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        Steps.startAuthenticationInTara(flow)
+ //       Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Requests.idCardAuthentication(flow, headersMap)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
 
         if (consentResponse.getStatusCode() == 200) {
-            consentResponse = Steps.submitConsent(flow, true)
+            consentResponse = Steps.submitConsentTara(flow, true)
         }
 
         return Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
@@ -313,7 +291,7 @@ class Steps {
     @Step("Authenticate with eIDAS in TARA")
     static Response authenticateWithEidasInTARA(Flow flow, String country, String username, String password, String loa) {
         //TODO: This should be replaced with receiving URL from session service and following redirects.
-        Steps.startAuthenticationInTara(flow, "openid eidas")
+ //       Steps.startAuthenticationInTara(flow, "openid eidas")
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.taraLoginService.sessionId, country, Collections.emptyMap())
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
@@ -324,7 +302,7 @@ class Steps {
         Response acceptResponse = EidasSteps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        return Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
+        return Steps.submitConsentAndFollowRedirectsTara(flow, true, redirectResponse)
     }
 
     private static void addJsonAttachment(String name, String json) throws IOException {

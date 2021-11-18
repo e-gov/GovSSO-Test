@@ -15,8 +15,8 @@ class Requests {
     static Response startMidAuthentication(Flow flow, String idCode, String phoneNo) {
         Response response =
                 given()
-                        .filter(flow.cookieFilter)
                         .filter(new AllureRestAssured())
+                        .filter(flow.cookieFilter)
                         .formParam("idCode", idCode)
                         .formParam("telephoneNumber", phoneNo)
                         .cookie("SESSION", flow.taraLoginService.sessionId)
@@ -88,7 +88,7 @@ class Requests {
                 .log().cookies()
                 .when()
                 .redirects().follow(false)
-                .urlEncodingEnabled(true)
+                .urlEncodingEnabled(false)
                 .get(location)
                 .then()
                 .extract().response()
@@ -102,7 +102,6 @@ class Requests {
                 .cookie("SESSION", flow.taraLoginService.sessionId)
                 .log().cookies()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .baseUri(flow.taraLoginService.baseUrl)
                 .when()
                 .redirects().follow(false)
                 .get(location)
@@ -110,8 +109,8 @@ class Requests {
                 .extract().response()
     }
 
-    @Step("Login service post request with session id")
-    static Response postRequestWithSessionId(Flow flow, String location) {
+    @Step("Accept authentication in TARA login service")
+    static Response acceptAuthTara(Flow flow, String location) {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
@@ -119,7 +118,6 @@ class Requests {
                 .formParam("_csrf", flow.taraLoginService.csrf)
                 .log().cookies()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .baseUri(flow.taraLoginService.baseUrl)
                 .when()
                 .redirects().follow(false)
                 .post(location)
@@ -177,7 +175,7 @@ class Requests {
                 .relaxedHTTPSValidation()
                 .when()
                 .redirects().follow(false)
-                .urlEncodingEnabled(true)
+                .urlEncodingEnabled(false)
                 .get(url)
                 .then()
                 .extract().response()
@@ -324,8 +322,8 @@ class Requests {
                 .filter(new AllureRestAssured())
                 .formParam("grant_type", "authorization_code")
                 .formParam("code", authorizationCode)
-                .formParam("redirect_uri", flow.oidcClient.fullResponseUrl)
-                .auth().preemptive().basic(flow.oidcClient.clientId, flow.oidcClient.clientSecret)
+                .formParam("redirect_uri", flow.oidcClientA.fullResponseUrl)
+                .auth().preemptive().basic(flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
                 .when()
                 .urlEncodingEnabled(true)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))

@@ -80,7 +80,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     @Feature("")
     def "Authentication request with different ui_locales: #label"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         def value = Utils.setParameter(paramsMap, paramName, paramValue)
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
@@ -103,7 +103,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     @Feature("")
     def "Authentication request with unknown parameter"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         def value = paramsMap.put("my_parameter", "654321")
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
@@ -113,7 +113,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     @Feature("")
     def "Authentication request with invalid acr_values parameter value"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         def value = paramsMap.put("acr_values", "medium")
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
@@ -148,7 +148,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Requests.idCardAuthentication(flow, headersMap)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)

@@ -161,7 +161,7 @@ class EidasSteps {
     @Step("Eidas accept authorization result")
     static Response eidasAcceptAuthorizationResult(flow, Response response) {
         flow.taraLoginService.setCsrf(response.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
-        return Requests.postRequestWithSessionId(flow, flow.taraLoginService.fullAuthAcceptUrl)
+        return Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
     }
 
 }

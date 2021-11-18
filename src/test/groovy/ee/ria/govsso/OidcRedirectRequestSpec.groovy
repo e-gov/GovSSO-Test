@@ -5,6 +5,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
+import spock.lang.Ignore
 
 import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
@@ -19,12 +20,13 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
+    @Ignore
     @Feature("")
     def "Verify redirection url parameters"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+ //       Steps.startAuthenticationInTara(flow)
         Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
-        Response response = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+        Response response = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         assertTrue(Utils.getParamValueFromResponseHeader(response, "code").size() > 60, "Code parameter exists")
         assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
@@ -45,7 +47,7 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
     @Feature("")
     def "Verify redirection url with invalid state"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("state", "ab")
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
@@ -57,7 +59,7 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
     @Feature("")
     def "Verify redirection url with unsupported response type"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("response_type", "token")
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
@@ -66,10 +68,11 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The authorization server does not support"))
     }
 
+    @Ignore
     @Feature("")
     def "Verify redirection url with user cancel"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+ //       Steps.startAuthenticationInTara(flow)
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()

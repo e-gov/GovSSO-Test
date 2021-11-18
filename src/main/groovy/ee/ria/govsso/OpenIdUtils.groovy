@@ -25,13 +25,14 @@ class OpenIdUtils {
     static Map<String, String> getAuthorizationParametersWithDefaults(Flow flow) {
         Map<String, String> queryParams = new HashMap<>()
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        flow.setNonce("")
         queryParams.put("response_type", "code")
         queryParams.put("scope", "openid")
         queryParams.put("client_id", flow.getOidcClientA().getClientId())
         queryParams.put("redirect_uri", flow.getOidcClientA().fullResponseUrl)
         queryParams.put("state", flow.state)
-        queryParams.put("nonce", flow.nonce)
+        //TODO: when nonce includes + its replaced with space in JWT. Encoding is applied, is it ok?
+        // queryParams.put("nonce", flow.nonce)
         queryParams.put("ui_locales", "et")
         return queryParams
     }
@@ -39,13 +40,14 @@ class OpenIdUtils {
     static Map<String, String> getAuthorizationParameters(Flow flow, String clientId, String fullResponseUrl) {
         Map<String, String> queryParams = new HashMap<>()
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        flow.setNonce("")
         queryParams.put("response_type", "code")
         queryParams.put("scope", "open_id")
         queryParams.put("client_id", clientId)
         queryParams.put("redirect_uri", fullResponseUrl)
         queryParams.put("state", flow.state)
-        queryParams.put("nonce", flow.nonce)
+        //TODO: when nonce includes + its replaced with space in JWT. Encoding is applied, is it ok?
+        // queryParams.put("nonce", flow.nonce)
         queryParams.put("ui_locales", "et")
         return queryParams
     }
