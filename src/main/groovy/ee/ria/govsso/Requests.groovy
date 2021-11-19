@@ -220,17 +220,14 @@ class Requests {
                 .then()
                 .extract().response()
     }
+
     @Step("Post request with cookies and params")
-    static Response postRequestWithCookiesAndParams(Flow flow, String url
-                                                    , Map<String, String> cookies
-                                                    , Map<String, String> formParams
-                                                    , Map<String, String> additionalFormParams) {
+    static Response postRequestWithCookiesAndParams(Flow flow, String url, Map<String, String> cookies, Map<String, String> formParams) {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
                 .cookies(cookies)
                 .formParams(formParams)
-                .formParams(additionalFormParams)
                 .log().cookies()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .when()
@@ -240,14 +237,11 @@ class Requests {
     }
 
     @Step("Post request with params")
-    static Response postRequestWithParams(Flow flow, String url
-                                          , Map<String, String> formParams
-                                          , Map<String, String> additionalFormParams) {
+    static Response postRequestWithParams(Flow flow, String url, Map<String, String> formParams) {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
                 .formParams(formParams)
-                .formParams(additionalFormParams)
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .baseUri(flow.taraLoginService.baseUrl)
                 .log().cookies()

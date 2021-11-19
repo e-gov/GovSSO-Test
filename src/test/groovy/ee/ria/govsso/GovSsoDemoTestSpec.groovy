@@ -23,6 +23,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
     }
 
+    @Ignore
     @Feature("AUTHENTICATION")
     def "authentication with Mobile-ID"() {
         expect:
@@ -48,6 +49,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("Eesnimi"))
     }
 
+    @Ignore
     @Feature("AUTHENTICATION")
     def "authenticate with Smart-ID"() {
         expect:
@@ -72,19 +74,30 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         assertThat(claims.getSubject(), equalTo("EE30303039914"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("Eesnimi"))    }
 
-    @Ignore
     @Feature("AUTHENTICATION")
     def "authenticate with Eidas"() {
         expect:
         //TODO: Start authentication in GOVSSO until redirect to TARA
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
 
         //Authenticate in TARA with eIDAS
-        Response authenticationFinishedResponse = Steps.authenticateWithEidasInTARA(flow, "CA", IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
+        Response authenticationFinishedResponse = Steps.authenticateWithEidasInTARA(flow, "CA", IDP_USERNAME, IDP_PASSWORD, EIDASLOA, sessionServiceRedirectToTaraResponse)
 
         //TODO: Follow redirects in GOVSSO and assert
-        assertEquals(302, authenticationFinishedResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat("Authorization code should be returned", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code"), not(emptyOrNullString()))
-    }
+        Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.ssoOidcService.cookies)
+        Response oidcServiceResponse = Steps.followRedirectWithCookies(flow, sessionServiceResponse, flow.ssoOidcService.cookies)
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_insecure", oidcServiceResponse.getCookie("oauth2_consent_csrf_insecure"))
+        Response sessionServiceConsentResponse = Steps.followRedirectWithCookies(flow, oidcServiceResponse, flow.ssoOidcService.cookies)
+        Response oidcServiceConsentResponse = Steps.followRedirectWithCookies(flow, sessionServiceConsentResponse, flow.ssoOidcService.cookies)
+
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
+
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
+        assertThat(claims.getSubject(), equalTo("CA12345"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("Eesnimi"))
+       }
 
     @Ignore
     @Feature("AUTHENTICATION")

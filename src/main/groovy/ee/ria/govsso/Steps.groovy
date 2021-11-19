@@ -6,7 +6,6 @@ import com.nimbusds.jwt.SignedJWT
 import io.qameta.allure.Allure
 import io.qameta.allure.Step
 import io.restassured.response.Response
-import org.spockframework.lang.Wildcard
 
 import java.text.ParseException
 
@@ -110,6 +109,44 @@ class Steps {
 
     }
 
+    @Step("Authenticate with eIDAS")
+    static Response authenticateWithEidas(Flow flow, String country, String username, String password, String loa) {
+        LinkedHashMap<String, String> queryParamsMap = (LinkedHashMap) Collections.emptyMap()
+        Utils.setParameter(queryParamsMap, "country", country)
+        Utils.setParameter(queryParamsMap, "_csrf", flow.taraLoginService.csrf)
+        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(cookieMap, "SESSION", flow.taraLoginService.sessionId)
+        Response initEidasAuthenticationSession = Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullEidasInitUrl, cookieMap, queryParamsMap)
+        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+
+        Response serviceProviderResponse = EidasSteps.eidasServiceProviderRequest(flow, flow.nextEndpoint, flow.relayState, flow.requestMessage)
+        Response specificconnectorResponse = EidasSteps.eidasSpecificConnectorRequest(flow, serviceProviderResponse)
+        Response colleagueResponse = EidasSteps.eidasColleagueRequest(flow, specificconnectorResponse)
+        String endpointUrl = colleagueResponse.body().htmlPath().getString("**.find { it.@id == 'redirectForm' }.@action")
+        String token = colleagueResponse.body().htmlPath().getString("**.find { it.@id == 'token' }.@value")
+        Response eidasProxyResponse = EidasSteps.eidasProxyServiceRequest(flow, endpointUrl, token)
+
+        Response initIdpResponse = EidasSteps.eidasIdpRequest(flow, eidasProxyResponse)
+        Response authorizationRequest = EidasSteps.eidasIdpAuthorizationRequest(flow, initIdpResponse, username, password, loa)
+        Response authorizationResponse = EidasSteps.eidasIdpAuthorizationResponse(flow, authorizationRequest)
+
+        String binaryLightToken = authorizationResponse.body().htmlPath().get("**.find {it.@id == 'binaryLightToken'}.@value")
+        Response consentResponse = EidasSteps.eidasConfirmConsent(flow, binaryLightToken)
+        String endpointUrl2 = consentResponse.body().htmlPath().getString("**.find { it.@id == 'redirectForm' }.@action")
+        String token2 = consentResponse.body().htmlPath().getString("**.find { it.@id == 'token' }.@value")
+        Response eidasProxyResponse2 = EidasSteps.eidasProxyServiceRequest(flow, endpointUrl2, token2)
+        Response colleagueResponse2 = EidasSteps.eidasColleagueResponse(flow, eidasProxyResponse2)
+        Response authorizationResponse2 = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse2)
+        Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse2)
+        flow.taraLoginService.setCsrf(redirectionResponse.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
+        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraOidcService.cookies)
+        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
+        return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
+    }
+
     @Step("Polling Smart-ID authentication response")
     static Response pollSidResponse(Flow flow, long pollingIntevalMillis = 2000L) {
         int counter = 0
@@ -166,7 +203,7 @@ class Steps {
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
         Utils.setParameter(formParamsMap, "_csrf", flow.taraLoginService.csrf)
-        return Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullConsentConfirmUrl, cookiesMap, formParamsMap, Collections.emptyMap())
+        return Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullConsentConfirmUrl, cookiesMap, formParamsMap)
     }
 
     @Step("Confirm or reject consent in GSSO")
@@ -176,15 +213,7 @@ class Steps {
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
  //       Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
-        return Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullConsentConfirmUrl, cookiesMap, formParamsMap, Collections.emptyMap())
-    }
-
-    @Step("Confirm or reject consent and finish authentication process in TARA")
-    static Response submitConsentAndFollowRedirectsTara(Flow flow, boolean consentGiven, Response consentResponse) {
-        if (consentResponse.getStatusCode().toInteger() == 200) {
-            consentResponse = submitConsentTara(flow, consentGiven)
-        }
-        return Requests.followRedirectWithCookie(flow, consentResponse.getHeader("location"), flow.taraOidcService.cookies)
+        return Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullConsentConfirmUrl, cookiesMap, formParamsMap)
     }
 
     @Step("Confirm or reject consent and finish authentication process in GSSO")
@@ -275,20 +304,11 @@ class Steps {
     }
 
     @Step("Authenticate with eIDAS in TARA")
-    static Response authenticateWithEidasInTARA(Flow flow, String country, String username, String password, String loa) {
-        //TODO: This should be replaced with receiving URL from session service and following redirects.
- //       Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.taraLoginService.sessionId, country, Collections.emptyMap())
-        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
-        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, username, password, loa)
-        Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
-        Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
-        Response acceptResponse = EidasSteps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
-        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-        Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        return Steps.submitConsentAndFollowRedirectsTara(flow, true, redirectResponse)
+    static Response authenticateWithEidasInTARA(Flow flow, String country, String username, String password, String loa, Response response) {
+        Steps.startAuthenticationInTara(flow, response.getHeader("location"))
+        Response authenticationResponse = Steps.authenticateWithEidas(flow, country, username, password, loa)
+// TODO: For SSO consent is never asked in TARA?
+        return Requests.followRedirectWithCookie(flow, authenticationResponse.getHeader("location"), flow.taraOidcService.cookies)
     }
 
     private static void addJsonAttachment(String name, String json) throws IOException {
