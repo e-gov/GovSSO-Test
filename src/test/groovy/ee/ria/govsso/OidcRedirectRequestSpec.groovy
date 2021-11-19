@@ -25,7 +25,7 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
     def "Verify redirection url parameters"() {
         expect:
  //       Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response midAuthResponse = TaraSteps.authenticateWithMid(flow,"60001017716", "69100366")
         Response response = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         assertTrue(Utils.getParamValueFromResponseHeader(response, "code").size() > 60, "Code parameter exists")

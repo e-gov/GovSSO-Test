@@ -29,7 +29,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     def "Metadata and token key ID matches"() {
         expect:
  //       Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Response midAuthResponse = TaraSteps.authenticateWithMid(flow,"60001017727" , "69200366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals(200, tokenResponse.statusCode(), "Correct HTTP status code is returned")
@@ -44,7 +44,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Response midAuthResponse = TaraSteps.authenticateWithMid(flow,"60001017727" , "69200366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
         // 1
@@ -64,7 +64,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Response midAuthResponse = TaraSteps.authenticateWithMid(flow,"60001017727" , "69200366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
 
@@ -132,7 +132,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         Response initOIDCServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response midAuthResponse = TaraSteps.authenticateWithMid(flow,"60001017716", "69100366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
