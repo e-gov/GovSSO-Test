@@ -32,6 +32,7 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
     }
 
+    @Ignore
     @Feature("")
     def "Verify redirection url with invalid scope"() {
         expect:
@@ -44,6 +45,7 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The requested scope is invalid"))
     }
 
+    @Ignore
     @Feature("")
     def "Verify redirection url with invalid state"() {
         expect:
@@ -56,6 +58,7 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The state is missing"))
     }
 
+    @Ignore
     @Feature("")
     def "Verify redirection url with unsupported response type"() {
         expect:

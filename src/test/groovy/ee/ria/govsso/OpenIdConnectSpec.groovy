@@ -36,7 +36,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         String keyID = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
         assertThat(keyID, equalTo(flow.jwkSet.getKeys().get(0).getKeyID()))
     }
-
+    @Ignore
     @Feature("")
     def "Request a token twice"() {
         expect:
@@ -56,7 +56,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertEquals("invalid_grant", tokenResponse2.body().jsonPath().get("error"), "Correct error message is returned")
         assertThat("Correct error_description is returned", tokenResponse2.body().jsonPath().getString("error_description"), Matchers.endsWith("The authorization code has already been used."))
     }
-
+    @Ignore
     @Feature("")
     def "Request with invalid authorization code"() {
         expect:
@@ -73,7 +73,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
         assertEquals("invalid_grant", response.body().jsonPath().get("error"), "Correct error message is returned")
     }
-
+    @Ignore
     @Feature("")
     def "Request with missing parameter #paramName"() {
         expect:
@@ -97,7 +97,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         "redirect_uri" || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
     }
 
-
+    @Ignore
     @Feature("")
     def "Request with invalid parameter value #paramName"() {
         expect:
@@ -120,7 +120,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         "grant_type"   | "token"                   || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
         "code"         | "45678"                   || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
     }
-
+    @Ignore
     @Feature("")
     def "Request with url encoded state and nonce"() {
         expect:

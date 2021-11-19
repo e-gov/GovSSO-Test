@@ -5,12 +5,8 @@ import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Ignore
 
-import static org.hamcrest.Matchers.emptyOrNullString
 import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.not
-import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
 
 class GovSsoDemoTestSpec extends GovSsoSpecification {

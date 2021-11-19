@@ -33,7 +33,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertTrue(response.getHeader("location").startsWith(flow.sessionService.baseUrl))
         assertTrue(response.getHeader("location").endsWith(flow.getLoginChallenge()))
     }
-
+    @Ignore
     @Feature("")
     def "Start SSO authentication with invalid parameter: #paramKey"() {
         expect:
@@ -56,6 +56,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         "additional_param"  | "invalid"  | "invalid_request"           | ""
     }
 
+    @Ignore
     @Feature("")
     def "Start SSO authentication with missing parameter: #missingParam"() {
         expect:
@@ -99,7 +100,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         "ui_locales" | "EN"       | "English with big letters"                || "National authentication service - Secure authentication for e-services"
         "ui_locales" | _          | "Without locale parameter"                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
     }
-
+    @Ignore
     @Feature("")
     def "Authentication request with unknown parameter"() {
         expect:
@@ -109,7 +110,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
         assertThat(initOIDCServiceSession.getHeader("location"), Matchers.containsString("?login_challenge="))
     }
-
+    @Ignore
     @Feature("")
     def "Authentication request with invalid acr_values parameter value"() {
         expect:
@@ -122,6 +123,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat(response.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
     }
 
+    @Ignore
     @Feature("")
     def "Authentication request with empty scope"() {
         expect:
@@ -132,7 +134,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), startsWith("Päringus puudub scope parameeter."))
     }
-
+    @Ignore
     @Feature("")
     def "Authentication request with empty optional parameters: #paramName"() {
         expect:
@@ -178,7 +180,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         "acr_values" | _
         "redirect_uri" | _
     }
-
+    @Ignore
     @Feature("")
     def "Authentication request with empty mandatory parameters: #paramName"() {
         expect:

@@ -90,6 +90,7 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
         assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("phone_number_verified"), equalTo(true))
     }
 
+    @Ignore
     @Feature("")
     def "Verify ID token with optional elements by email scope"() {
         expect:
