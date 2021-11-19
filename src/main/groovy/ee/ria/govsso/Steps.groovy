@@ -98,15 +98,18 @@ class Steps {
     }
 
     @Step("Authenticate with ID-Card")
-    static Response authenticateWithIdCard(Flow flow, String certificateFileName) {
-        String certificate = Utils.getCertificateAsString(certificateFileName)
+    static Response authenticateWithIdCard(Flow flow, String certificatePath) {
+        String certificate = Utils.getCertificateAsString(certificatePath)
+
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Requests.idCardAuthentication(flow, headersMap)
         Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
-        Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
-        return followRedirectWithSessionId(flow, oidcServiceResponse)
 
+        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraOidcService.cookies)
+        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
+
+        return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
 
     @Step("Authenticate with eIDAS")
@@ -271,8 +274,7 @@ class Steps {
     @Step("Authenticate with MID in TARA")
     static Response authenticateWithMidInTARA(Flow flow, String idCode, String phoneNo, Response response) {
         Steps.startAuthenticationInTara(flow, response.getHeader("location"))
-
-        Response midAuthResponse = Steps.authenticateWithMid(flow,idCode, phoneNo)
+        Response midAuthResponse = Steps.authenticateWithMid(flow, idCode, phoneNo)
 // TODO: For SSO consent is never asked in TARA?
         return Requests.followRedirectWithCookie(flow, midAuthResponse.getHeader("location"), flow.taraOidcService.cookies)
     }
@@ -280,35 +282,25 @@ class Steps {
     @Step("Authenticate with SID in TARA")
     static Response authenticateWithSidInTARA(Flow flow, String idCode, Response response) {
         Steps.startAuthenticationInTara(flow, response.getHeader("location"))
-        Response sidAuthResponse = Steps.authenticateWithSid(flow,idCode)
+        Response sidAuthResponse = Steps.authenticateWithSid(flow, idCode)
 // TODO: For SSO consent is never asked in TARA?
         return Requests.followRedirectWithCookie(flow, sidAuthResponse.getHeader("location"), flow.taraOidcService.cookies)
     }
 
     @Step("Authenticate with ID-Card in TARA")
-    static Response authenticateWithIdCardInTARA(Flow flow) {
-        String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
- //       Steps.startAuthenticationInTara(flow)
-        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
-        Requests.idCardAuthentication(flow, headersMap)
-        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
-        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-
-        if (consentResponse.getStatusCode() == 200) {
-            consentResponse = Steps.submitConsentTara(flow, true)
-        }
-
-        return Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
+    static Response authenticateWithIdCardInTARA(Flow flow, Response response) {
+        Steps.startAuthenticationInTara(flow, response.getHeader("location"))
+        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
+// TODO: For SSO consent is never asked in TARA?
+        return Requests.followRedirectWithCookie(flow, idCardAuthResponse.getHeader("location"), flow.taraOidcService.cookies)
     }
 
     @Step("Authenticate with eIDAS in TARA")
     static Response authenticateWithEidasInTARA(Flow flow, String country, String username, String password, String loa, Response response) {
         Steps.startAuthenticationInTara(flow, response.getHeader("location"))
-        Response authenticationResponse = Steps.authenticateWithEidas(flow, country, username, password, loa)
+        Response eidasAuthResponse = Steps.authenticateWithEidas(flow, country, username, password, loa)
 // TODO: For SSO consent is never asked in TARA?
-        return Requests.followRedirectWithCookie(flow, authenticationResponse.getHeader("location"), flow.taraOidcService.cookies)
+        return Requests.followRedirectWithCookie(flow, eidasAuthResponse.getHeader("location"), flow.taraOidcService.cookies)
     }
 
     private static void addJsonAttachment(String name, String json) throws IOException {
