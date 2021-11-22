@@ -4,6 +4,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
+import spock.lang.Ignore
 
 import java.time.ZonedDateTime
 
@@ -18,6 +19,7 @@ class ServiceErrorsSpec extends GovSsoSpecification {
         flow.cookieFilter = new CookieFilter()
     }
 
+    @Ignore
     @Feature("")
     def "Filter service errors for end user: #inputValue"() {
         expect:
@@ -35,6 +37,7 @@ class ServiceErrorsSpec extends GovSsoSpecification {
         "service_error"   || 500        || "Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."
     }
 
+    @Ignore
     @Feature("")
     def "Verify error response json"() {
         expect:
@@ -57,6 +60,7 @@ class ServiceErrorsSpec extends GovSsoSpecification {
         assertTrue(response.body().jsonPath().getString("incident_nr").size() > 15)
     }
 
+    @Ignore
     @Feature("")
     def "Verify error response html: general error"() {
         expect:
@@ -74,6 +78,7 @@ class ServiceErrorsSpec extends GovSsoSpecification {
         assertTrue(response.body().htmlPath().getString("**.find { it.@role == 'alert'}.p.text()").contains("Palun saatke e-kiri aadressile help@example.com."))
     }
 
+    @Ignore
     @Feature("")
     def "Verify error response html: invalid client"() {
         expect:

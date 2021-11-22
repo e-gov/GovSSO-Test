@@ -151,7 +151,6 @@ class TaraService {
     String authLegalInitUrl
     String authLegalPersonUrl
     String authLegalConfirmUrl
-    String errorUrl
     String eidasInitUrl
     String eidasCallbackUrl
     String idCardEndpointUsername
@@ -169,7 +168,6 @@ class TaraService {
     @Lazy fullAuthAcceptUrl = "${protocol}://${host}${portCheck()}${authAcceptUrl}"
     @Lazy fullAuthRejectUrl = "${protocol}://${host}${portCheck()}${authRejectUrl}"
     @Lazy fullConsentConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
-    @Lazy fullErrorUrl = "${protocol}://${host}${portCheck()}${errorUrl}"
     @Lazy fullEidasInitUrl = "${protocol}://${host}${portCheck()}${eidasInitUrl}"
 
     TaraService(Properties properties) {
@@ -192,7 +190,6 @@ class TaraService {
         this.consentUrl = properties."taraservice.consentUrl"
         this.consentConfirmUrl = properties."taraservice.consentConfirmUrl"
         this.heartbeatUrl = properties."taraservice.heartbeatUrl"
-        this.errorUrl = properties."taraservice.errorUrl"
         this.eidasInitUrl = properties."taraservice.eidasInitUrl"
         this.eidasCallbackUrl = properties."taraservice.eidasCallbackUrl"
         this.authLegalInitUrl = properties."taraservice.authLegalInitUrl"
