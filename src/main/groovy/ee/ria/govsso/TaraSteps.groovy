@@ -121,12 +121,12 @@ class TaraSteps {
     @Step("Start authentication in TARA and follow redirects")
     static Response startAuthenticationInTara(Flow flow, String url) {
         Response initOIDCServiceSession = Requests.getRequest(url)
-        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_authentication_csrf", initOIDCServiceSession.getCookie("oauth2_authentication_csrf"))
+        Utils.setParameter(flow.taraService.cookies, "oauth2_authentication_csrf", initOIDCServiceSession.getCookie("oauth2_authentication_csrf"))
         Response initLogin = Steps.followRedirect(flow, initOIDCServiceSession)
-        flow.taraLoginService.setSessionId(initLogin.getCookie("SESSION"))
-        flow.taraLoginService.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
+        flow.taraService.setSessionId(initLogin.getCookie("SESSION"))
+        flow.taraService.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
         if (initLogin.body().prettyPrint().contains("_csrf")) {
-            flow.taraLoginService.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+            flow.taraService.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         }
         return initLogin
     }
@@ -134,10 +134,10 @@ class TaraSteps {
     @Step("Initialize authentication sequence in login service")
     static Response createLoginSession(Flow flow, Response response) {
         Response initLogin = Steps.followRedirect(flow, response)
-        flow.taraLoginService.setSessionId(initLogin.getCookie("SESSION"))
-        flow.taraLoginService.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
+        flow.taraService.setSessionId(initLogin.getCookie("SESSION"))
+        flow.taraService.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
         if (initLogin.body().prettyPrint().contains("_csrf")) {
-            flow.taraLoginService.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+            flow.taraService.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         }
         return initLogin
     }
@@ -162,9 +162,9 @@ class TaraSteps {
     static Response authenticateWithMid(Flow flow, String idCode, String phoneNo) {
         Requests.startMidAuthentication(flow, idCode, phoneNo)
         pollMidResponse(flow)
-        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
-        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraOidcService.cookies)
-        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
+        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraService.fullAuthAcceptUrl)
+        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraService.cookies)
+        Utils.setParameter(flow.taraService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
         return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
 
@@ -172,9 +172,9 @@ class TaraSteps {
     static Response authenticateWithSid(Flow flow, String idCode) {
         Requests.startSidAuthentication(flow, idCode)
         pollSidResponse(flow)
-        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
-        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraOidcService.cookies)
-        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
+        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraService.fullAuthAcceptUrl)
+        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraService.cookies)
+        Utils.setParameter(flow.taraService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
         return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
 
@@ -185,10 +185,10 @@ class TaraSteps {
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Requests.idCardAuthentication(flow, headersMap)
-        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraService.fullAuthAcceptUrl)
 
-        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraOidcService.cookies)
-        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
+        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraService.cookies)
+        Utils.setParameter(flow.taraService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
 
         return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
@@ -197,10 +197,10 @@ class TaraSteps {
     static Response authenticateWithEidas(Flow flow, String country, String username, String password, String loa) {
         LinkedHashMap<String, String> queryParamsMap = (LinkedHashMap) Collections.emptyMap()
         Utils.setParameter(queryParamsMap, "country", country)
-        Utils.setParameter(queryParamsMap, "_csrf", flow.taraLoginService.csrf)
+        Utils.setParameter(queryParamsMap, "_csrf", flow.taraService.csrf)
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "SESSION", flow.taraLoginService.sessionId)
-        Response initEidasAuthenticationSession = Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullEidasInitUrl, cookieMap, queryParamsMap)
+        Utils.setParameter(cookieMap, "SESSION", flow.taraService.sessionId)
+        Response initEidasAuthenticationSession = Requests.postRequestWithCookiesAndParams(flow, flow.taraService.fullEidasInitUrl, cookieMap, queryParamsMap)
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
         flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
@@ -224,10 +224,10 @@ class TaraSteps {
         Response colleagueResponse2 = TaraSteps.eidasColleagueResponse(flow, eidasProxyResponse2)
         Response authorizationResponse2 = TaraSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse2)
         Response redirectionResponse = TaraSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse2)
-        flow.taraLoginService.setCsrf(redirectionResponse.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
-        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
-        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraOidcService.cookies)
-        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
+        flow.taraService.setCsrf(redirectionResponse.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraService.fullAuthAcceptUrl)
+        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraService.cookies)
+        Utils.setParameter(flow.taraService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
         return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
 
@@ -249,11 +249,11 @@ class TaraSteps {
     @Step("Confirm or reject consent in TARA")
     static Response submitConsentTara(Flow flow, boolean consentGiven) {
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "SESSION", flow.taraLoginService.sessionId)
+        Utils.setParameter(cookiesMap, "SESSION", flow.taraService.sessionId)
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
-        Utils.setParameter(formParamsMap, "_csrf", flow.taraLoginService.csrf)
-        return Requests.postRequestWithCookiesAndParams(flow, flow.taraLoginService.fullConsentConfirmUrl, cookiesMap, formParamsMap)
+        Utils.setParameter(formParamsMap, "_csrf", flow.taraService.csrf)
+        return Requests.postRequestWithCookiesAndParams(flow, flow.taraService.fullConsentConfirmUrl, cookiesMap, formParamsMap)
     }
 
     @Step("Authenticate with MID in TARA")
@@ -261,7 +261,7 @@ class TaraSteps {
         startAuthenticationInTara(flow, response.getHeader("location"))
         Response midAuthResponse = authenticateWithMid(flow, idCode, phoneNo)
 // TODO: For SSO consent is never asked in TARA?
-        return Requests.followRedirectWithCookie(flow, midAuthResponse.getHeader("location"), flow.taraOidcService.cookies)
+        return Requests.followRedirectWithCookie(flow, midAuthResponse.getHeader("location"), flow.taraService.cookies)
     }
 
     @Step("Authenticate with SID in TARA")
@@ -269,7 +269,7 @@ class TaraSteps {
         startAuthenticationInTara(flow, response.getHeader("location"))
         Response sidAuthResponse = authenticateWithSid(flow, idCode)
 // TODO: For SSO consent is never asked in TARA?
-        return Requests.followRedirectWithCookie(flow, sidAuthResponse.getHeader("location"), flow.taraOidcService.cookies)
+        return Requests.followRedirectWithCookie(flow, sidAuthResponse.getHeader("location"), flow.taraService.cookies)
     }
 
     @Step("Authenticate with ID-Card in TARA")
@@ -277,7 +277,7 @@ class TaraSteps {
         startAuthenticationInTara(flow, response.getHeader("location"))
         Response idCardAuthResponse = authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
 // TODO: For SSO consent is never asked in TARA?
-        return Requests.followRedirectWithCookie(flow, idCardAuthResponse.getHeader("location"), flow.taraOidcService.cookies)
+        return Requests.followRedirectWithCookie(flow, idCardAuthResponse.getHeader("location"), flow.taraService.cookies)
     }
 
     @Step("Authenticate with eIDAS in TARA")
@@ -285,7 +285,7 @@ class TaraSteps {
         startAuthenticationInTara(flow, response.getHeader("location"))
         Response eidasAuthResponse = authenticateWithEidas(flow, country, username, password, loa)
 // TODO: For SSO consent is never asked in TARA?
-        return Requests.followRedirectWithCookie(flow, eidasAuthResponse.getHeader("location"), flow.taraOidcService.cookies)
+        return Requests.followRedirectWithCookie(flow, eidasAuthResponse.getHeader("location"), flow.taraService.cookies)
     }
 
 }

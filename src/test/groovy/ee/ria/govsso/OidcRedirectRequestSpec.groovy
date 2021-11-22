@@ -16,8 +16,8 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
+        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
+        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
     }
 
     @Ignore
@@ -79,8 +79,8 @@ class OidcRedirectRequestSpec extends GovSsoSpecification {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.taraLoginService.sessionId)
-        Response rejectResponse = Requests.getRequestWithCookiesAndParams(flow, flow.taraLoginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
+        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.taraService.sessionId)
+        Response rejectResponse = Requests.getRequestWithCookiesAndParams(flow, flow.taraService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
         Response response = Steps.followRedirectWithCookies(flow, rejectResponse, flow.oidcService.cookies)
         assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")

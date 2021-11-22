@@ -9,13 +9,12 @@ import io.restassured.path.json.JsonPath
 class Flow {
     Properties properties
     SsoSessionService sessionService
-    TaraOidcService taraOidcService
     SsoOidcService ssoOidcService
-    TaraLoginService taraLoginService
-    SsoOidcClientA oidcClientA
-    SsoOidcClientB oidcClientB
+    TaraService taraService
     TaraForeignIdpProvider foreignIdpProvider
     TaraForeignProxyService foreignProxyService
+    SsoOidcClientA oidcClientA
+    SsoOidcClientB oidcClientB
 
     CookieFilter cookieFilter
 
@@ -33,13 +32,12 @@ class Flow {
     Flow(Properties properties) {
         this.properties = properties
         this.sessionService = new SsoSessionService(properties)
-        this.taraLoginService = new TaraLoginService(properties)
-        this.taraOidcService = new TaraOidcService(properties)
         this.ssoOidcService = new SsoOidcService(properties)
-        this.oidcClientA = new SsoOidcClientA(properties)
-        this.oidcClientB = new SsoOidcClientB(properties)
+        this.taraService = new TaraService(properties)
         this.foreignIdpProvider = new TaraForeignIdpProvider(properties)
         this.foreignProxyService = new TaraForeignProxyService(properties)
+        this.oidcClientA = new SsoOidcClientA(properties)
+        this.oidcClientB = new SsoOidcClientB(properties)
     }
 }
 
@@ -91,7 +89,46 @@ class SsoSessionService {
 }
 
 @Canonical
-class TaraLoginService {
+class SsoOidcService {
+    String host
+    String port
+    String protocol
+    String authenticationRequestUrl
+    String revocationUrl
+    String logoutUrl
+    String jwksUrl
+    String configurationUrl
+    HashMap <String, String> cookies
+
+    @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${portCheck()}${authenticationRequestUrl}"
+    @Lazy fullRevocationUrl = "${protocol}://${host}${portCheck()}${revocationUrl}"
+    @Lazy fullLogoutUrl = "${protocol}://${host}${portCheck()}${logoutUrl}"
+    @Lazy fullJwksUrl = "${protocol}://${host}${portCheck()}${jwksUrl}"
+    @Lazy fullConfigurationUrl = "${protocol}://${host}${portCheck()}${configurationUrl}"
+    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
+
+    SsoOidcService(Properties properties) {
+        this.host = properties."ssooidcservice.host"
+        this.port = properties."ssooidcservice.port"
+        this.protocol = properties."ssooidcservice.protocol"
+        this.authenticationRequestUrl = properties."ssooidcservice.authenticationRequestUrl"
+        this.revocationUrl = properties."ssooidcservice.revocation"
+        this.logoutUrl = properties."ssooidcservice.logout"
+        this.jwksUrl = properties."ssooidcservice.jwksUrl"
+        this.configurationUrl = properties."ssooidcservice.configurationUrl"
+        this.cookies = new HashMap<String, String>()
+    }
+    private String portCheck() {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
+}
+
+@Canonical
+class TaraService {
     String host
     String port
     String protocol
@@ -122,6 +159,7 @@ class TaraLoginService {
     String sessionId
     String login_locale
     String csrf
+    HashMap <String, String> cookies
 
     @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
     @Lazy fullMidPollUrl = "${protocol}://${host}${portCheck()}${midPollUrl}"
@@ -133,36 +171,36 @@ class TaraLoginService {
     @Lazy fullConsentConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
     @Lazy fullErrorUrl = "${protocol}://${host}${portCheck()}${errorUrl}"
     @Lazy fullEidasInitUrl = "${protocol}://${host}${portCheck()}${eidasInitUrl}"
-    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
 
-    TaraLoginService(Properties properties) {
-        this.host = properties."loginservice.host"
-        this.port = properties."loginservice.port"
-        this.protocol = properties."loginservice.protocol"
-        this.nodeHost = properties."loginservice.node.host"
-        this.nodePort = properties."loginservice.node.port"
-        this.nodeProtocol = properties."loginservice.node.protocol"
-        this.initUrl = properties."loginservice.initUrl"
-        this.midInitUrl = properties."loginservice.midInitUrl"
-        this.midPollUrl = properties."loginservice.midPollUrl"
-        this.midCancelUrl = properties."loginservice.midCancelUrl"
-        this.idCardInitUrl = properties."loginservice.idCardInitUrl"
-        this.sidInitUrl = properties."loginservice.sidInitUrl"
-        this.sidPollUrl = properties."loginservice.sidPollUrl"
-        this.sidCancelUrl = properties."loginservice.sidCancelUrl"
-        this.authAcceptUrl = properties."loginservice.authAcceptUrl"
-        this.authRejectUrl = properties."loginservice.authRejectUrl"
-        this.consentUrl = properties."loginservice.consentUrl"
-        this.consentConfirmUrl = properties."loginservice.consentConfirmUrl"
-        this.heartbeatUrl = properties."loginservice.heartbeatUrl"
-        this.errorUrl = properties."loginservice.errorUrl"
-        this.eidasInitUrl = properties."loginservice.eidasInitUrl"
-        this.eidasCallbackUrl = properties."loginservice.eidasCallbackUrl"
-        this.authLegalInitUrl = properties."loginservice.authLegalInitUrl"
-        this.authLegalPersonUrl = properties."loginservice.authLegalPersonUrl"
-        this.authLegalConfirmUrl = properties."loginservice.authLegalConfirmUrl"
-        this.idCardEndpointUsername = properties."loginservice.id.username"
-        this.idCardEndpointPassword = properties."loginservice.id.password"
+    TaraService(Properties properties) {
+        this.host = properties."taraservice.host"
+        this.port = properties."taraservice.port"
+        this.protocol = properties."taraservice.protocol"
+        this.nodeHost = properties."taraservice.node.host"
+        this.nodePort = properties."taraservice.node.port"
+        this.nodeProtocol = properties."taraservice.node.protocol"
+        this.initUrl = properties."taraservice.initUrl"
+        this.midInitUrl = properties."taraservice.midInitUrl"
+        this.midPollUrl = properties."taraservice.midPollUrl"
+        this.midCancelUrl = properties."taraservice.midCancelUrl"
+        this.idCardInitUrl = properties."taraservice.idCardInitUrl"
+        this.sidInitUrl = properties."taraservice.sidInitUrl"
+        this.sidPollUrl = properties."taraservice.sidPollUrl"
+        this.sidCancelUrl = properties."taraservice.sidCancelUrl"
+        this.authAcceptUrl = properties."taraservice.authAcceptUrl"
+        this.authRejectUrl = properties."taraservice.authRejectUrl"
+        this.consentUrl = properties."taraservice.consentUrl"
+        this.consentConfirmUrl = properties."taraservice.consentConfirmUrl"
+        this.heartbeatUrl = properties."taraservice.heartbeatUrl"
+        this.errorUrl = properties."taraservice.errorUrl"
+        this.eidasInitUrl = properties."taraservice.eidasInitUrl"
+        this.eidasCallbackUrl = properties."taraservice.eidasCallbackUrl"
+        this.authLegalInitUrl = properties."taraservice.authLegalInitUrl"
+        this.authLegalPersonUrl = properties."taraservice.authLegalPersonUrl"
+        this.authLegalConfirmUrl = properties."taraservice.authLegalConfirmUrl"
+        this.idCardEndpointUsername = properties."taraservice.id.username"
+        this.idCardEndpointPassword = properties."taraservice.id.password"
+        this.cookies = new HashMap<String, String>()
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {
@@ -182,28 +220,18 @@ class TaraLoginService {
 }
 
 @Canonical
-class TaraOidcService {
+class TaraForeignIdpProvider {
     String host
     String port
     String protocol
-    String authenticationRequestUrl
-    String jwksUrl
-    String configurationUrl
-    HashMap <String, String> cookies
+    String responseUrl
+    @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
-    @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${portCheck()}${authenticationRequestUrl}"
-    @Lazy fullJwksUrl = "${protocol}://${host}${portCheck()}${jwksUrl}"
-    @Lazy fullConfigurationUrl = "${protocol}://${host}${portCheck()}${configurationUrl}"
-    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
-
-    TaraOidcService(Properties properties) {
-        this.host = properties."taraoidcservice.host"
-        this.port = properties."taraoidcservice.port"
-        this.protocol = properties."taraoidcservice.protocol"
-        this.authenticationRequestUrl = properties."taraoidcservice.authenticationRequestUrl"
-        this.jwksUrl = properties."taraoidcservice.jwksUrl"
-        this.configurationUrl = properties."taraoidcservice.configurationUrl"
-        this.cookies = new HashMap<String, String>()
+    TaraForeignIdpProvider(Properties properties) {
+        this.host = properties."idp.host"
+        this.port = properties."idp.port"
+        this.protocol = properties."idp.protocol"
+        this.responseUrl = properties."idp.responseUrl"
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {
@@ -215,34 +243,19 @@ class TaraOidcService {
 }
 
 @Canonical
-class SsoOidcService {
+class TaraForeignProxyService {
     String host
     String port
     String protocol
-    String authenticationRequestUrl
-    String revocationUrl
-    String logoutUrl
-    String jwksUrl
-    String configurationUrl
-    HashMap <String, String> cookies
+    String consentUrl
 
-    @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${portCheck()}${authenticationRequestUrl}"
-    @Lazy fullRevocationUrl = "${protocol}://${host}${portCheck()}${revocationUrl}"
-    @Lazy fullLogoutUrl = "${protocol}://${host}${portCheck()}${logoutUrl}"
-    @Lazy fullJwksUrl = "${protocol}://${host}${portCheck()}${jwksUrl}"
-    @Lazy fullConfigurationUrl = "${protocol}://${host}${portCheck()}${configurationUrl}"
-    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
+    @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
 
-    SsoOidcService(Properties properties) {
-        this.host = properties."ssooidcservice.host"
-        this.port = properties."ssooidcservice.port"
-        this.protocol = properties."ssooidcservice.protocol"
-        this.authenticationRequestUrl = properties."ssooidcservice.authenticationRequestUrl"
-        this.revocationUrl = properties."ssooidcservice.revocation"
-        this.logoutUrl = properties."ssooidcservice.logout"
-        this.jwksUrl = properties."ssooidcservice.jwksUrl"
-        this.configurationUrl = properties."ssooidcservice.configurationUrl"
-        this.cookies = new HashMap<String, String>()
+    TaraForeignProxyService(Properties properties) {
+        this.host = properties."ca-proxyservice.host"
+        this.port = properties."ca-proxyservice.port"
+        this.protocol = properties."ca-proxyservice.protocol"
+        this.consentUrl = properties."ca-proxyservice.consentUrl"
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {
@@ -305,53 +318,6 @@ class SsoOidcClientB {
         this.clientId = properties."ssooidcclientb.clientId"
         this.clientSecret = properties."ssooidcclientb.secret"
         this.cookies = new HashMap<String, String>()
-    }
-    private String portCheck() {
-        if (port != null && port.isInteger()) {
-            return ":${port}"
-        } else {
-            return ""
-        }
-    }
-}
-
-@Canonical
-class TaraForeignIdpProvider {
-    String host
-    String port
-    String protocol
-    String responseUrl
-    @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
-
-    TaraForeignIdpProvider(Properties properties) {
-        this.host = properties."idp.host"
-        this.port = properties."idp.port"
-        this.protocol = properties."idp.protocol"
-        this.responseUrl = properties."idp.responseUrl"
-    }
-    private String portCheck() {
-        if (port != null && port.isInteger()) {
-            return ":${port}"
-        } else {
-            return ""
-        }
-    }
-}
-
-@Canonical
-class TaraForeignProxyService {
-    String host
-    String port
-    String protocol
-    String consentUrl
-
-    @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
-
-    TaraForeignProxyService(Properties properties) {
-        this.host = properties."ca-proxyservice.host"
-        this.port = properties."ca-proxyservice.port"
-        this.protocol = properties."ca-proxyservice.protocol"
-        this.consentUrl = properties."ca-proxyservice.consentUrl"
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {

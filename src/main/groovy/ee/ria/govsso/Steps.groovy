@@ -40,8 +40,8 @@ class Steps {
 
     @Step("Getting OAuth2 cookies")
     static Response getOAuthCookies(flow, Response response) {
-        Response oidcServiceResponse = followRedirectWithCookies(flow, response, flow.taraOidcService.cookies)
-        Utils.setParameter(flow.taraOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
+        Response oidcServiceResponse = followRedirectWithCookies(flow, response, flow.taraService.cookies)
+        Utils.setParameter(flow.taraService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
         return oidcServiceResponse
     }
 
@@ -74,7 +74,7 @@ class Steps {
     @Step("Confirm or reject consent in GSSO")
     static Response submitConsentSso(Flow flow, boolean consentGiven) {
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "SESSION", flow.taraLoginService.sessionId)
+        Utils.setParameter(cookiesMap, "SESSION", flow.taraService.sessionId)
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
  //       Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
