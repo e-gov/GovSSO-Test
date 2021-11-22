@@ -25,7 +25,7 @@ class Requests {
                         .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()
                         .redirects().follow(false)
-                        .post(flow.taraService.fullMidInitUrl)
+                        .post(flow.taraService.taraloginBaseUrl + flow.taraService.midInitUrl)
                         .then()
                         .extract().response()
         return response
@@ -42,7 +42,7 @@ class Requests {
                         .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()
                         .redirects().follow(false)
-                        .get(flow.taraService.fullMidPollUrl)
+                        .get(flow.taraService.taraloginBaseUrl + flow.taraService.midPollUrl)
                         .then()
                         .extract().response()
         return response
@@ -61,7 +61,7 @@ class Requests {
                         .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()
                         .redirects().follow(false)
-                        .post(flow.taraService.fullSidInitUrl)
+                        .post(flow.taraService.taraloginBaseUrl+flow.taraService.sidInitUrl)
                         .then()
                         .extract().response()
         return response
@@ -79,7 +79,7 @@ class Requests {
                         .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()
                         .redirects().follow(false)
-                        .get(flow.taraService.fullSidPollUrl)
+                        .get(flow.taraService.taraloginBaseUrl + flow.taraService.sidPollUrl)
                         .then()
                         .extract().response()
         return response

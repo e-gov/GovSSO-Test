@@ -129,9 +129,6 @@ class SsoOidcService {
 
 @Canonical
 class TaraService {
-    String host
-    String port
-    String protocol
     String nodeHost
     String nodePort
     String nodeProtocol
@@ -156,21 +153,11 @@ class TaraService {
     String login_locale
     String csrf
     HashMap <String, String> cookies
+    String taraloginBaseUrl
 
-    @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
-    @Lazy fullMidPollUrl = "${protocol}://${host}${portCheck()}${midPollUrl}"
     @Lazy fullIdCardInitUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${idCardInitUrl}"
-    @Lazy fullSidInitUrl = "${protocol}://${host}${portCheck()}${sidInitUrl}"
-    @Lazy fullSidPollUrl = "${protocol}://${host}${portCheck()}${sidPollUrl}"
-    @Lazy fullAuthAcceptUrl = "${protocol}://${host}${portCheck()}${authAcceptUrl}"
-    @Lazy fullAuthRejectUrl = "${protocol}://${host}${portCheck()}${authRejectUrl}"
-    @Lazy fullConsentConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
-    @Lazy fullEidasInitUrl = "${protocol}://${host}${portCheck()}${eidasInitUrl}"
 
     TaraService(Properties properties) {
-        this.host = properties."taraservice.host"
-        this.port = properties."taraservice.port"
-        this.protocol = properties."taraservice.protocol"
         this.nodeHost = properties."taraservice.node.host"
         this.nodePort = properties."taraservice.node.port"
         this.nodeProtocol = properties."taraservice.node.protocol"
@@ -193,14 +180,6 @@ class TaraService {
         this.idCardEndpointPassword = properties."taraservice.id.password"
         this.cookies = new HashMap<String, String>()
     }
-    private String portCheck() {
-        if (port != null && port.isInteger()) {
-            return ":${port}"
-        } else {
-            return ""
-        }
-    }
-
     private String nodePortCheck() {
         if (nodePort != null && nodePort.isInteger()) {
             return ":${nodePort}"
