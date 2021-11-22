@@ -138,16 +138,13 @@ class TaraService {
     String initUrl
     String midInitUrl
     String midPollUrl
-    String midCancelUrl
     String idCardInitUrl
     String sidInitUrl
     String sidPollUrl
-    String sidCancelUrl
     String authAcceptUrl
     String authRejectUrl
     String consentUrl
     String consentConfirmUrl
-    String heartbeatUrl
     String authLegalInitUrl
     String authLegalPersonUrl
     String authLegalConfirmUrl
@@ -180,16 +177,13 @@ class TaraService {
         this.initUrl = properties."taraservice.initUrl"
         this.midInitUrl = properties."taraservice.midInitUrl"
         this.midPollUrl = properties."taraservice.midPollUrl"
-        this.midCancelUrl = properties."taraservice.midCancelUrl"
         this.idCardInitUrl = properties."taraservice.idCardInitUrl"
         this.sidInitUrl = properties."taraservice.sidInitUrl"
         this.sidPollUrl = properties."taraservice.sidPollUrl"
-        this.sidCancelUrl = properties."taraservice.sidCancelUrl"
         this.authAcceptUrl = properties."taraservice.authAcceptUrl"
         this.authRejectUrl = properties."taraservice.authRejectUrl"
         this.consentUrl = properties."taraservice.consentUrl"
         this.consentConfirmUrl = properties."taraservice.consentConfirmUrl"
-        this.heartbeatUrl = properties."taraservice.heartbeatUrl"
         this.eidasInitUrl = properties."taraservice.eidasInitUrl"
         this.eidasCallbackUrl = properties."taraservice.eidasCallbackUrl"
         this.authLegalInitUrl = properties."taraservice.authLegalInitUrl"
