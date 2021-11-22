@@ -12,7 +12,6 @@ class Flow {
     TaraOidcService taraOidcService
     SsoOidcService ssoOidcService
     TaraLoginService taraLoginService
-    TaraOidcClient oidcClient
     SsoOidcClientA oidcClientA
     SsoOidcClientB oidcClientB
     TaraForeignIdpProvider foreignIdpProvider
@@ -37,7 +36,6 @@ class Flow {
         this.taraLoginService = new TaraLoginService(properties)
         this.taraOidcService = new TaraOidcService(properties)
         this.ssoOidcService = new SsoOidcService(properties)
-        this.oidcClient = new TaraOidcClient(properties)
         this.oidcClientA = new SsoOidcClientA(properties)
         this.oidcClientB = new SsoOidcClientB(properties)
         this.foreignIdpProvider = new TaraForeignIdpProvider(properties)
@@ -125,25 +123,16 @@ class TaraLoginService {
     String login_locale
     String csrf
 
-    @Lazy fullInitUrl = "${protocol}://${host}${portCheck()}${initUrl}"
     @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
     @Lazy fullMidPollUrl = "${protocol}://${host}${portCheck()}${midPollUrl}"
-    @Lazy fullMidCancelUrl = "${protocol}://${host}${portCheck()}${midCancelUrl}"
     @Lazy fullIdCardInitUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${idCardInitUrl}"
     @Lazy fullSidInitUrl = "${protocol}://${host}${portCheck()}${sidInitUrl}"
     @Lazy fullSidPollUrl = "${protocol}://${host}${portCheck()}${sidPollUrl}"
-    @Lazy fullSidCancelUrl = "${protocol}://${host}${portCheck()}${sidCancelUrl}"
     @Lazy fullAuthAcceptUrl = "${protocol}://${host}${portCheck()}${authAcceptUrl}"
     @Lazy fullAuthRejectUrl = "${protocol}://${host}${portCheck()}${authRejectUrl}"
-    @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
     @Lazy fullConsentConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
-    @Lazy fullHeartbeatUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${heartbeatUrl}"
     @Lazy fullErrorUrl = "${protocol}://${host}${portCheck()}${errorUrl}"
     @Lazy fullEidasInitUrl = "${protocol}://${host}${portCheck()}${eidasInitUrl}"
-    @Lazy fullEidasCallbackUrl = "${protocol}://${host}${portCheck()}${eidasCallbackUrl}"
-    @Lazy fullAuthLegalInitUrl = "${protocol}://${host}${portCheck()}${authLegalInitUrl}"
-    @Lazy fullAuthLegalPersonUrl = "${protocol}://${host}${portCheck()}${authLegalPersonUrl}"
-    @Lazy fullAuthLegalConfirmUrl = "${protocol}://${host}${portCheck()}${authLegalConfirmUrl}"
     @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
 
     TaraLoginService(Properties properties) {
@@ -253,37 +242,6 @@ class SsoOidcService {
         this.logoutUrl = properties."ssooidcservice.logout"
         this.jwksUrl = properties."ssooidcservice.jwksUrl"
         this.configurationUrl = properties."ssooidcservice.configurationUrl"
-        this.cookies = new HashMap<String, String>()
-    }
-    private String portCheck() {
-        if (port != null && port.isInteger()) {
-            return ":${port}"
-        } else {
-            return ""
-        }
-    }
-}
-
-@Canonical
-class TaraOidcClient {
-    String host
-    String port
-    String protocol
-    String responseUrl
-    String requestUrl
-    String clientId
-    String clientSecret
-    HashMap <String, String> cookies
-
-    @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
-
-    TaraOidcClient(Properties properties) {
-        this.host = properties."taraoidcclient.host"
-        this.port = properties."taraoidcclient.port"
-        this.protocol = properties."taraoidcclient.protocol"
-        this.responseUrl = properties."taraoidcclient.responseUrl"
-        this.clientId = properties."taraoidcclient.clientId"
-        this.clientSecret = properties."taraoidcclient.secret"
         this.cookies = new HashMap<String, String>()
     }
     private String portCheck() {
