@@ -14,18 +14,10 @@ class MonitoringSpec extends GovSsoSpecification {
         expect:
         Response health = Requests.getHealth(flow)
         health.then()
-                .body("status", Matchers.oneOf("UP", "DOWN"))
+                .body("status", Matchers.is("UP"))
                 .body("groups", Matchers.hasItems("readiness", "liveness"))
 
-        String serviceStatus = health.body().jsonPath().get("status")
-        switch (serviceStatus) {
-            case "UP" :
-                assertEquals(200, health.statusCode(), "Correct health HTTP status code is returned")
-                break
-            case "DOWN" :
-                assertEquals(503, health.statusCode(), "Correct health HTTP status code is returned if some component is down")
-                break
-        }
+        assertEquals(200, health.statusCode(), "Correct health HTTP status code is returned")
     }
 
     @Feature("")
@@ -35,15 +27,7 @@ class MonitoringSpec extends GovSsoSpecification {
         readiness.then()
                 .body("status", Matchers.oneOf("UP", "DOWN"))
 
-        String serviceStatus = readiness.body().jsonPath().get("status")
-        switch (serviceStatus) {
-            case "UP" :
-                assertEquals(200, readiness.statusCode(), "Correct heartbeat HTTP status code is returned")
-                break
-            case "DOWN" :
-                assertEquals(503, readiness.statusCode(), "Correct heartbeat HTTP status code is returned if some component is down")
-                break
-        }
+        assertEquals(200, readiness.statusCode(), "Correct health HTTP status code is returned")
     }
 
     @Feature("")
