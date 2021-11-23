@@ -34,4 +34,17 @@ class Utils {
     static String getCertificateAsString(String filename) {
         return new File(filename).readLines().join()
     }
+
+    static void storeTaraServiceUrltoflow(Flow flow, String url) {
+        URL rawUrl = new URL(url)
+        flow.taraService.taraloginBaseUrl = rawUrl.getProtocol() + "://" + rawUrl.getHost() + getPortIfPresent(rawUrl)
+    }
+
+    static String getPortIfPresent(URL url) {
+        String port = ""
+        if (url.getPort() != -1) {
+            port = ":" + url.getPort()
+        }
+        return port
+    }
 }

@@ -9,14 +9,12 @@ import io.restassured.path.json.JsonPath
 class Flow {
     Properties properties
     SsoSessionService sessionService
-    TaraOidcService taraOidcService
     SsoOidcService ssoOidcService
-    TaraLoginService taraLoginService
-    TaraOidcClient oidcClient
-    SsoOidcClientA oidcClientA
-    SsoOidcClientB oidcClientB
+    TaraService taraService
     TaraForeignIdpProvider foreignIdpProvider
     TaraForeignProxyService foreignProxyService
+    SsoOidcClientA oidcClientA
+    SsoOidcClientB oidcClientB
 
     CookieFilter cookieFilter
 
@@ -34,14 +32,12 @@ class Flow {
     Flow(Properties properties) {
         this.properties = properties
         this.sessionService = new SsoSessionService(properties)
-        this.taraLoginService = new TaraLoginService(properties)
-        this.taraOidcService = new TaraOidcService(properties)
         this.ssoOidcService = new SsoOidcService(properties)
-        this.oidcClient = new TaraOidcClient(properties)
-        this.oidcClientA = new SsoOidcClientA(properties)
-        this.oidcClientB = new SsoOidcClientB(properties)
+        this.taraService = new TaraService(properties)
         this.foreignIdpProvider = new TaraForeignIdpProvider(properties)
         this.foreignProxyService = new TaraForeignProxyService(properties)
+        this.oidcClientA = new SsoOidcClientA(properties)
+        this.oidcClientB = new SsoOidcClientB(properties)
     }
 }
 
@@ -93,139 +89,6 @@ class SsoSessionService {
 }
 
 @Canonical
-class TaraLoginService {
-    String host
-    String port
-    String protocol
-    String nodeHost
-    String nodePort
-    String nodeProtocol
-    String initUrl
-    String midInitUrl
-    String midPollUrl
-    String midCancelUrl
-    String idCardInitUrl
-    String sidInitUrl
-    String sidPollUrl
-    String sidCancelUrl
-    String authAcceptUrl
-    String authRejectUrl
-    String consentUrl
-    String consentConfirmUrl
-    String heartbeatUrl
-    String authLegalInitUrl
-    String authLegalPersonUrl
-    String authLegalConfirmUrl
-    String errorUrl
-    String eidasInitUrl
-    String eidasCallbackUrl
-    String idCardEndpointUsername
-    String idCardEndpointPassword
-    String sessionId
-    String login_locale
-    String csrf
-
-    @Lazy fullInitUrl = "${protocol}://${host}${portCheck()}${initUrl}"
-    @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
-    @Lazy fullMidPollUrl = "${protocol}://${host}${portCheck()}${midPollUrl}"
-    @Lazy fullMidCancelUrl = "${protocol}://${host}${portCheck()}${midCancelUrl}"
-    @Lazy fullIdCardInitUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${idCardInitUrl}"
-    @Lazy fullSidInitUrl = "${protocol}://${host}${portCheck()}${sidInitUrl}"
-    @Lazy fullSidPollUrl = "${protocol}://${host}${portCheck()}${sidPollUrl}"
-    @Lazy fullSidCancelUrl = "${protocol}://${host}${portCheck()}${sidCancelUrl}"
-    @Lazy fullAuthAcceptUrl = "${protocol}://${host}${portCheck()}${authAcceptUrl}"
-    @Lazy fullAuthRejectUrl = "${protocol}://${host}${portCheck()}${authRejectUrl}"
-    @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
-    @Lazy fullConsentConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
-    @Lazy fullHeartbeatUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${heartbeatUrl}"
-    @Lazy fullErrorUrl = "${protocol}://${host}${portCheck()}${errorUrl}"
-    @Lazy fullEidasInitUrl = "${protocol}://${host}${portCheck()}${eidasInitUrl}"
-    @Lazy fullEidasCallbackUrl = "${protocol}://${host}${portCheck()}${eidasCallbackUrl}"
-    @Lazy fullAuthLegalInitUrl = "${protocol}://${host}${portCheck()}${authLegalInitUrl}"
-    @Lazy fullAuthLegalPersonUrl = "${protocol}://${host}${portCheck()}${authLegalPersonUrl}"
-    @Lazy fullAuthLegalConfirmUrl = "${protocol}://${host}${portCheck()}${authLegalConfirmUrl}"
-    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
-
-    TaraLoginService(Properties properties) {
-        this.host = properties."loginservice.host"
-        this.port = properties."loginservice.port"
-        this.protocol = properties."loginservice.protocol"
-        this.nodeHost = properties."loginservice.node.host"
-        this.nodePort = properties."loginservice.node.port"
-        this.nodeProtocol = properties."loginservice.node.protocol"
-        this.initUrl = properties."loginservice.initUrl"
-        this.midInitUrl = properties."loginservice.midInitUrl"
-        this.midPollUrl = properties."loginservice.midPollUrl"
-        this.midCancelUrl = properties."loginservice.midCancelUrl"
-        this.idCardInitUrl = properties."loginservice.idCardInitUrl"
-        this.sidInitUrl = properties."loginservice.sidInitUrl"
-        this.sidPollUrl = properties."loginservice.sidPollUrl"
-        this.sidCancelUrl = properties."loginservice.sidCancelUrl"
-        this.authAcceptUrl = properties."loginservice.authAcceptUrl"
-        this.authRejectUrl = properties."loginservice.authRejectUrl"
-        this.consentUrl = properties."loginservice.consentUrl"
-        this.consentConfirmUrl = properties."loginservice.consentConfirmUrl"
-        this.heartbeatUrl = properties."loginservice.heartbeatUrl"
-        this.errorUrl = properties."loginservice.errorUrl"
-        this.eidasInitUrl = properties."loginservice.eidasInitUrl"
-        this.eidasCallbackUrl = properties."loginservice.eidasCallbackUrl"
-        this.authLegalInitUrl = properties."loginservice.authLegalInitUrl"
-        this.authLegalPersonUrl = properties."loginservice.authLegalPersonUrl"
-        this.authLegalConfirmUrl = properties."loginservice.authLegalConfirmUrl"
-        this.idCardEndpointUsername = properties."loginservice.id.username"
-        this.idCardEndpointPassword = properties."loginservice.id.password"
-    }
-    private String portCheck() {
-        if (port != null && port.isInteger()) {
-            return ":${port}"
-        } else {
-            return ""
-        }
-    }
-
-    private String nodePortCheck() {
-        if (nodePort != null && nodePort.isInteger()) {
-            return ":${nodePort}"
-        } else {
-            return ""
-        }
-    }
-}
-
-@Canonical
-class TaraOidcService {
-    String host
-    String port
-    String protocol
-    String authenticationRequestUrl
-    String jwksUrl
-    String configurationUrl
-    HashMap <String, String> cookies
-
-    @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${portCheck()}${authenticationRequestUrl}"
-    @Lazy fullJwksUrl = "${protocol}://${host}${portCheck()}${jwksUrl}"
-    @Lazy fullConfigurationUrl = "${protocol}://${host}${portCheck()}${configurationUrl}"
-    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
-
-    TaraOidcService(Properties properties) {
-        this.host = properties."taraoidcservice.host"
-        this.port = properties."taraoidcservice.port"
-        this.protocol = properties."taraoidcservice.protocol"
-        this.authenticationRequestUrl = properties."taraoidcservice.authenticationRequestUrl"
-        this.jwksUrl = properties."taraoidcservice.jwksUrl"
-        this.configurationUrl = properties."taraoidcservice.configurationUrl"
-        this.cookies = new HashMap<String, String>()
-    }
-    private String portCheck() {
-        if (port != null && port.isInteger()) {
-            return ":${port}"
-        } else {
-            return ""
-        }
-    }
-}
-
-@Canonical
 class SsoOidcService {
     String host
     String port
@@ -265,26 +128,104 @@ class SsoOidcService {
 }
 
 @Canonical
-class TaraOidcClient {
+class TaraService {
+    String nodeHost
+    String nodePort
+    String nodeProtocol
+    String initUrl
+    String midInitUrl
+    String midPollUrl
+    String idCardInitUrl
+    String sidInitUrl
+    String sidPollUrl
+    String authAcceptUrl
+    String authRejectUrl
+    String consentUrl
+    String consentConfirmUrl
+    String authLegalInitUrl
+    String authLegalPersonUrl
+    String authLegalConfirmUrl
+    String eidasInitUrl
+    String eidasCallbackUrl
+    String idCardEndpointUsername
+    String idCardEndpointPassword
+    String sessionId
+    String login_locale
+    String csrf
+    HashMap <String, String> cookies
+    String taraloginBaseUrl
+
+    @Lazy fullIdCardInitUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${idCardInitUrl}"
+
+    TaraService(Properties properties) {
+        this.nodeHost = properties."taraservice.node.host"
+        this.nodePort = properties."taraservice.node.port"
+        this.nodeProtocol = properties."taraservice.node.protocol"
+        this.initUrl = properties."taraservice.initUrl"
+        this.midInitUrl = properties."taraservice.midInitUrl"
+        this.midPollUrl = properties."taraservice.midPollUrl"
+        this.idCardInitUrl = properties."taraservice.idCardInitUrl"
+        this.sidInitUrl = properties."taraservice.sidInitUrl"
+        this.sidPollUrl = properties."taraservice.sidPollUrl"
+        this.authAcceptUrl = properties."taraservice.authAcceptUrl"
+        this.authRejectUrl = properties."taraservice.authRejectUrl"
+        this.consentUrl = properties."taraservice.consentUrl"
+        this.consentConfirmUrl = properties."taraservice.consentConfirmUrl"
+        this.eidasInitUrl = properties."taraservice.eidasInitUrl"
+        this.eidasCallbackUrl = properties."taraservice.eidasCallbackUrl"
+        this.authLegalInitUrl = properties."taraservice.authLegalInitUrl"
+        this.authLegalPersonUrl = properties."taraservice.authLegalPersonUrl"
+        this.authLegalConfirmUrl = properties."taraservice.authLegalConfirmUrl"
+        this.idCardEndpointUsername = properties."taraservice.id.username"
+        this.idCardEndpointPassword = properties."taraservice.id.password"
+        this.cookies = new HashMap<String, String>()
+    }
+    private String nodePortCheck() {
+        if (nodePort != null && nodePort.isInteger()) {
+            return ":${nodePort}"
+        } else {
+            return ""
+        }
+    }
+}
+
+@Canonical
+class TaraForeignIdpProvider {
     String host
     String port
     String protocol
     String responseUrl
-    String requestUrl
-    String clientId
-    String clientSecret
-    HashMap <String, String> cookies
-
     @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
-    TaraOidcClient(Properties properties) {
-        this.host = properties."taraoidcclient.host"
-        this.port = properties."taraoidcclient.port"
-        this.protocol = properties."taraoidcclient.protocol"
-        this.responseUrl = properties."taraoidcclient.responseUrl"
-        this.clientId = properties."taraoidcclient.clientId"
-        this.clientSecret = properties."taraoidcclient.secret"
-        this.cookies = new HashMap<String, String>()
+    TaraForeignIdpProvider(Properties properties) {
+        this.host = properties."idp.host"
+        this.port = properties."idp.port"
+        this.protocol = properties."idp.protocol"
+        this.responseUrl = properties."idp.responseUrl"
+    }
+    private String portCheck() {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
+}
+
+@Canonical
+class TaraForeignProxyService {
+    String host
+    String port
+    String protocol
+    String consentUrl
+
+    @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
+
+    TaraForeignProxyService(Properties properties) {
+        this.host = properties."ca-proxyservice.host"
+        this.port = properties."ca-proxyservice.port"
+        this.protocol = properties."ca-proxyservice.protocol"
+        this.consentUrl = properties."ca-proxyservice.consentUrl"
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {
@@ -347,53 +288,6 @@ class SsoOidcClientB {
         this.clientId = properties."ssooidcclientb.clientId"
         this.clientSecret = properties."ssooidcclientb.secret"
         this.cookies = new HashMap<String, String>()
-    }
-    private String portCheck() {
-        if (port != null && port.isInteger()) {
-            return ":${port}"
-        } else {
-            return ""
-        }
-    }
-}
-
-@Canonical
-class TaraForeignIdpProvider {
-    String host
-    String port
-    String protocol
-    String responseUrl
-    @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
-
-    TaraForeignIdpProvider(Properties properties) {
-        this.host = properties."idp.host"
-        this.port = properties."idp.port"
-        this.protocol = properties."idp.protocol"
-        this.responseUrl = properties."idp.responseUrl"
-    }
-    private String portCheck() {
-        if (port != null && port.isInteger()) {
-            return ":${port}"
-        } else {
-            return ""
-        }
-    }
-}
-
-@Canonical
-class TaraForeignProxyService {
-    String host
-    String port
-    String protocol
-    String consentUrl
-
-    @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
-
-    TaraForeignProxyService(Properties properties) {
-        this.host = properties."ca-proxyservice.host"
-        this.port = properties."ca-proxyservice.port"
-        this.protocol = properties."ca-proxyservice.protocol"
-        this.consentUrl = properties."ca-proxyservice.consentUrl"
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {

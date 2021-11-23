@@ -150,7 +150,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Requests.idCardAuthentication(flow, headersMap)
-        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraLoginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.acceptAuthTara(flow, flow.taraService.fullAuthAcceptUrl)
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
@@ -188,7 +188,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
         def value = Utils.setParameter(paramsMap, paramName, paramValue)
 
-        Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, value,  Collections.emptyMap())
+        Response response = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, value,  Collections.emptyMap())
         assertEquals(expectedErrorDescription ,Utils.getParamValueFromResponseHeader(response, "error_description"), "Error description parameter exists")
 
         where:

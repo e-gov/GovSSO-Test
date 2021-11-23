@@ -27,7 +27,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
 
         //Authenticate in TARA with Mid
-        Response authenticationFinishedResponse = Steps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
 
         //TODO: Follow redirects in GOVSSO and assert
         Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.ssoOidcService.cookies)
@@ -52,7 +52,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
 
         //Authenticate in TARA with Sid
-        Response authenticationFinishedResponse = Steps.authenticateWithSidInTARA(flow, "30303039914", sessionServiceRedirectToTaraResponse)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithSidInTARA(flow, "30303039914", sessionServiceRedirectToTaraResponse)
 
         //TODO: Follow redirects in GOVSSO and assert
         Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.ssoOidcService.cookies)
@@ -76,7 +76,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
 
         //Authenticate in TARA with ID-Card
-        Response authenticationFinishedResponse = Steps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
 
         //TODO: Follow redirects in GOVSSO and assert
         Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.ssoOidcService.cookies)
@@ -101,7 +101,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
 
         //Authenticate in TARA with eIDAS
-        Response authenticationFinishedResponse = Steps.authenticateWithEidasInTARA(flow, "CA", IDP_USERNAME, IDP_PASSWORD, EIDASLOA, sessionServiceRedirectToTaraResponse)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithEidasInTARA(flow, "CA", IDP_USERNAME, IDP_PASSWORD, EIDASLOA, sessionServiceRedirectToTaraResponse)
 
         //TODO: Follow redirects in GOVSSO and assert
         Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.ssoOidcService.cookies)

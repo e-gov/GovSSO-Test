@@ -7,7 +7,6 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
 import spock.lang.Ignore
-import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
 import static org.junit.jupiter.api.Assertions.*
@@ -20,8 +19,8 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
+        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
+        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
     }
 
     @Ignore
@@ -29,7 +28,7 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
     def "Verify ID token response"() {
         expect:
         //Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response midAuthResponse = TaraSteps.authenticateWithMid(flow,"60001017716", "69100366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
@@ -46,7 +45,7 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
         //Steps.startAuthenticationInTara(flow)
         String idCode = "60001017716"
         String phoneNo = "69100366"
-        Response midAuthResponse = Steps.authenticateWithMid(flow, idCode, phoneNo)
+        Response midAuthResponse = TaraSteps.authenticateWithMid(flow, idCode, phoneNo)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
@@ -79,7 +78,7 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
  //       Steps.startAuthenticationInTara(flow, scopeList)
         String idCode = "60001017716"
         String phoneNo = "69100366"
-        Response midAuthResponse = Steps.authenticateWithMid(flow, idCode, phoneNo)
+        Response midAuthResponse = TaraSteps.authenticateWithMid(flow, idCode, phoneNo)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
@@ -95,8 +94,8 @@ class OidcIdendityTokenSpec extends GovSsoSpecification {
     def "Verify ID token with optional elements by email scope"() {
         expect:
         String scopeList = "openid email"
-        Steps.startAuthenticationInTara(flow, scopeList)
-        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
+        TaraSteps.startAuthenticationInTara(flow, scopeList)
+        Response idCardAuthResponse = TaraSteps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, idCardAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
