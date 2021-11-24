@@ -349,7 +349,7 @@ class Requests {
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .formParams(formParams)
-                .auth().preemptive().basic(flow.oidcClient.clientId, flow.oidcClient.clientSecret)
+                .auth().preemptive().basic(flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
                 .when()
                 .urlEncodingEnabled(true)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
