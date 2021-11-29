@@ -71,7 +71,7 @@ class Steps {
         return Requests.getRequestWithSessionId(flow, location)
     }
 
-    @Step("Confirm or reject consent in GSSO")
+    @Step("Confirm or reject consent in GOVSSO")
     static Response submitConsentSso(Flow flow, boolean consentGiven) {
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookiesMap, "SESSION", flow.taraService.sessionId)
@@ -81,7 +81,7 @@ class Steps {
         return Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullConsentConfirmUrl, cookiesMap, formParamsMap)
     }
 
-    @Step("Confirm or reject consent and finish authentication process in GSSO")
+    @Step("Confirm or reject consent and finish authentication process in GOVSSO")
     static Response submitConsentAndFollowRedirectsSso(Flow flow, boolean consentGiven, Response consentResponse) {
         if (consentResponse.getStatusCode().toInteger() == 200) {
             consentResponse = submitConsentSso(flow, consentGiven)
@@ -111,12 +111,12 @@ class Steps {
         assertThat(signedJWT.getJWTClaimsSet().getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
         Date date = new Date()
         assertThat("Expected current: " + date + " to be before exp: " + signedJWT.getJWTClaimsSet().getExpirationTime(), date.before(signedJWT.getJWTClaimsSet().getExpirationTime()), is(true))
-//TODO: nbf not used in gsso?
+//TODO: nbf not used in govsso?
 //        assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
         if (!flow.getNonce().isEmpty()) {
             assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), equalTo(flow.getNonce()))
         }
-//TODO: state is not propagated to JWT in gsso?
+//TODO: state is not propagated to JWT in govsso?
 //        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
         return signedJWT
     }

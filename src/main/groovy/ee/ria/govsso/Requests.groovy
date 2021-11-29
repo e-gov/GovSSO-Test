@@ -11,79 +11,6 @@ import static io.restassured.config.EncoderConfig.encoderConfig
 
 class Requests {
 
-    @Step("Mobile-ID authentication init request")
-    static Response startMidAuthentication(Flow flow, String idCode, String phoneNo) {
-        Response response =
-                given()
-                        .filter(new AllureRestAssured())
-                        .filter(flow.cookieFilter)
-                        .formParam("idCode", idCode)
-                        .formParam("telephoneNumber", phoneNo)
-                        .cookie("SESSION", flow.taraService.sessionId)
-                        .formParam("_csrf", flow.taraService.csrf)
-                        .log().cookies()
-                        .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                        .when()
-                        .redirects().follow(false)
-                        .post(flow.taraService.taraloginBaseUrl + flow.taraService.midInitUrl)
-                        .then()
-                        .extract().response()
-        return response
-    }
-
-    @Step("Mobile-ID response poll request")
-    static Response pollMid(Flow flow) {
-        Response response =
-                given()
-                        .filter(flow.cookieFilter)
-                        .filter(new AllureRestAssured())
-                        .cookie("SESSION", flow.taraService.sessionId)
-                        .log().cookies()
-                        .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                        .when()
-                        .redirects().follow(false)
-                        .get(flow.taraService.taraloginBaseUrl + flow.taraService.midPollUrl)
-                        .then()
-                        .extract().response()
-        return response
-    }
-
-    @Step("Smart-ID authentication init request")
-    static Response startSidAuthentication(Flow flow, String idCode) {
-        Response response =
-                given()
-                        .filter(new AllureRestAssured())
-                        .filter(flow.cookieFilter)
-                        .formParam("idCode", idCode)
-                        .cookie("SESSION", flow.taraService.sessionId)
-                        .formParam("_csrf", flow.taraService.csrf)
-                        .log().cookies()
-                        .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                        .when()
-                        .redirects().follow(false)
-                        .post(flow.taraService.taraloginBaseUrl+flow.taraService.sidInitUrl)
-                        .then()
-                        .extract().response()
-        return response
-    }
-
-    @Step("Smart-ID response poll request")
-    static Response pollSid(Flow flow) {
-        Response response =
-                given()
-                        .filter(flow.cookieFilter)
-                        .filter(new AllureRestAssured())
-                        .cookie("SESSION", flow.taraService.sessionId)
-                        .cookie("LOGIN_LOCALE", flow.taraService.login_locale)
-                        .log().cookies()
-                        .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                        .when()
-                        .redirects().follow(false)
-                        .get(flow.taraService.taraloginBaseUrl + flow.taraService.sidPollUrl)
-                        .then()
-                        .extract().response()
-        return response
-    }
 
     @Step("Follow redirect request")
     static Response followRedirect(Flow flow, String location) {
@@ -124,22 +51,6 @@ class Requests {
                 .when()
                 .redirects().follow(false)
                 .get(location)
-                .then()
-                .extract().response()
-    }
-
-    @Step("Accept authentication in TARA login service")
-    static Response acceptAuthTara(Flow flow, String location) {
-        return given()
-                .filter(flow.cookieFilter)
-                .filter(new AllureRestAssured())
-                .cookie("SESSION", flow.taraService.sessionId)
-                .formParam("_csrf", flow.taraService.csrf)
-                .log().cookies()
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .when()
-                .redirects().follow(false)
-                .post(location)
                 .then()
                 .extract().response()
     }
