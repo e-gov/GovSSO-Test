@@ -1,19 +1,8 @@
 package ee.ria.govsso
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.nimbusds.jose.JOSEException
 import com.nimbusds.jwt.SignedJWT
-import io.qameta.allure.Allure
 import io.qameta.allure.Step
 import io.restassured.response.Response
-
-import java.text.ParseException
-
-import static org.hamcrest.CoreMatchers.is
-import static org.hamcrest.Matchers.anyOf
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.MatcherAssert.assertThat
 
 class Steps {
 
@@ -92,7 +81,11 @@ class Steps {
     @Step("Get identity token")
     static Response getIdentityTokenResponse(Flow flow, Response response) {
         String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
-        return Requests.getWebToken(flow, authorizationCode)
+        Response webTokenResponse = Requests.getWebToken(flow, authorizationCode)
+        SignedJWT signedJWT = SignedJWT.parse(webTokenResponse.getBody().jsonPath().get("id_token"))
+        Utils.addJsonAttachment("Header", signedJWT.getHeader().toString())
+        Utils.addJsonAttachment("Payload", signedJWT.getJWTClaimsSet().toString())
+        return webTokenResponse
     }
 
     @Step("Follow redirects to client application")

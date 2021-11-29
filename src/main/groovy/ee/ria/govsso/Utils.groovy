@@ -1,5 +1,7 @@
 package ee.ria.govsso
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import io.qameta.allure.Allure
 import org.spockframework.lang.Wildcard
 import io.restassured.response.Response
 
@@ -46,5 +48,12 @@ class Utils {
             port = ":" + url.getPort()
         }
         return port
+    }
+
+    static void addJsonAttachment(String name, String json) throws IOException {
+        ObjectMapper mapper = new ObjectMapper()
+        Object jsonObject = mapper.readValue(json, Object.class)
+        String prettyJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject)
+        Allure.addAttachment(name, "application/json", prettyJson, "json")
     }
 }
