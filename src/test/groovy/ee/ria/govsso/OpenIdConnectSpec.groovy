@@ -46,12 +46,8 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
-        Response midAuthResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
-        Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, midAuthResponse, flow.ssoOidcService.cookies)
-        Response oidcServiceResponse = Steps.followRedirectWithCookies(flow, sessionServiceResponse, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_insecure", oidcServiceResponse.getCookie("oauth2_consent_csrf_insecure"))
-        Response sessionServiceConsentResponse = Steps.followRedirectWithCookies(flow, oidcServiceResponse, flow.ssoOidcService.cookies)
-        Response oidcServiceConsentResponse = Steps.followRedirectWithCookies(flow, sessionServiceConsentResponse, flow.ssoOidcService.cookies)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
+        Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcServiceConsentResponse, "code")
         // 1
         Requests.getWebToken(flow, authorizationCode)
@@ -68,12 +64,8 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
-        Response midAuthResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
-        Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, midAuthResponse, flow.ssoOidcService.cookies)
-        Response oidcServiceResponse = Steps.followRedirectWithCookies(flow, sessionServiceResponse, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_insecure", oidcServiceResponse.getCookie("oauth2_consent_csrf_insecure"))
-        Response sessionServiceConsentResponse = Steps.followRedirectWithCookies(flow, oidcServiceResponse, flow.ssoOidcService.cookies)
-        Response oidcServiceConsentResponse = Steps.followRedirectWithCookies(flow, sessionServiceConsentResponse, flow.ssoOidcService.cookies)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
+        Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcServiceConsentResponse, "code")
 
         Response response = Requests.getWebToken(flow, authorizationCode + "e")
@@ -139,12 +131,8 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         paramsMap.put("nonce", "testȺ田\uD83D\uDE0D&additional=1 %20")
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
-        Response midAuthResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
-        Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, midAuthResponse, flow.ssoOidcService.cookies)
-        Response oidcServiceResponse = Steps.followRedirectWithCookies(flow, sessionServiceResponse, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_insecure", oidcServiceResponse.getCookie("oauth2_consent_csrf_insecure"))
-        Response sessionServiceConsentResponse = Steps.followRedirectWithCookies(flow, oidcServiceResponse, flow.ssoOidcService.cookies)
-        Response oidcServiceConsentResponse = Steps.followRedirectWithCookies(flow, sessionServiceConsentResponse, flow.ssoOidcService.cookies)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
+        Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
 
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
 

@@ -133,6 +133,14 @@ class Steps {
         assertThat(response.getHeader("X-XSS-Protection"), equalTo("1; mode=block"))
     }
 
+    @Step("Follow redirects to client application")
+    static Response followRedirectsToClientApplication (Flow flow, Response authenticationFinishedResponse) {
+        Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.ssoOidcService.cookies)
+        Response oidcServiceResponse = Steps.followRedirectWithCookies(flow, sessionServiceResponse, flow.ssoOidcService.cookies)
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_insecure", oidcServiceResponse.getCookie("oauth2_consent_csrf_insecure"))
+        Response sessionServiceConsentResponse = Steps.followRedirectWithCookies(flow, oidcServiceResponse, flow.ssoOidcService.cookies)
+        return Steps.followRedirectWithCookies(flow, sessionServiceConsentResponse, flow.ssoOidcService.cookies)
+    }
 
     private static void addJsonAttachment(String name, String json) throws IOException {
         ObjectMapper mapper = new ObjectMapper()
