@@ -31,7 +31,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
 
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
         assertThat(claims.getSubject(), equalTo("EE60001017716"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("Eesnimi"))
@@ -49,7 +49,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
 
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
         assertThat(claims.getSubject(), equalTo("EE30303039914"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("Eesnimi"))    }
@@ -66,7 +66,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
 
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
         assertThat(claims.getSubject(), equalTo("EE38001085718"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("Eesnimi"))
@@ -84,7 +84,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
 
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
         assertThat(claims.getSubject(), equalTo("CA12345"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("Eesnimi"))

@@ -48,7 +48,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
 
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertTrue(claims.getJWTID().size() > 35, "Correct jti claim exists")
         assertThat("Correct issuer claim", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
@@ -75,7 +75,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
         assertEquals(scopeList, tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE" + idCode))
         assertThat("Phone_number claim exists", claims.getStringClaim("phone_number"), equalTo("+372" + phoneNo))
         assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("phone_number_verified"), equalTo(true))
@@ -92,7 +92,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
         assertEquals(scopeList, tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE38001085718"))
         assertThat("Phone_number claim exists", claims.getStringClaim("email"), equalTo("38001085718@eesti.ee"))
         assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("email_verified"), equalTo(false))

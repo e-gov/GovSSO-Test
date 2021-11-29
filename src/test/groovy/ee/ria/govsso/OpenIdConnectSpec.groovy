@@ -37,7 +37,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
 
         assertEquals(200, tokenResponse.statusCode(), "Correct HTTP status code is returned")
-        String keyID = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
+        String keyID = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
         assertThat(keyID, equalTo(flow.jwkSet.getKeys().get(0).getKeyID()))
     }
 
@@ -136,7 +136,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
 
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getClaim("nonce"), equalTo(paramsMap.get("nonce")))
         assertThat(claims.getClaim("state"), equalTo(paramsMap.get("state")))
     }

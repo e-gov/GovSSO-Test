@@ -95,44 +95,6 @@ class Steps {
         return Requests.getWebToken(flow, authorizationCode)
     }
 
-    @Step("verify token")
-    static SignedJWT verifyTokenAndReturnSignedJwtObject(Flow flow, String token) throws ParseException, JOSEException, IOException {
-        SignedJWT signedJWT = SignedJWT.parse(token)
-        addJsonAttachment("Header", signedJWT.getHeader().toString())
-        addJsonAttachment("Payload", signedJWT.getJWTClaimsSet().toString())
-        try {
-            Allure.link("View Token in jwt.io", new io.qameta.allure.model.Link().toString(),
-                    "https://jwt.io/#debugger-io?token=" + token)
-        } catch (Exception e) {
-            //NullPointerException when running test from IntelliJ
-        }
-        assertThat("Token Signature is not valid!", OpenIdUtils.isTokenSignatureValid(flow.jwkSet, signedJWT), is(true))
-        assertThat(signedJWT.getJWTClaimsSet().getAudience().get(0), equalTo(flow.oidcClientA.clientId))
-        assertThat(signedJWT.getJWTClaimsSet().getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        Date date = new Date()
-        assertThat("Expected current: " + date + " to be before exp: " + signedJWT.getJWTClaimsSet().getExpirationTime(), date.before(signedJWT.getJWTClaimsSet().getExpirationTime()), is(true))
-//TODO: nbf not used in govsso?
-//        assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
-        if (!flow.getNonce().isEmpty()) {
-            assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), equalTo(flow.getNonce()))
-        }
-//TODO: state is not propagated to JWT in govsso?
-//        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
-        return signedJWT
-    }
-
-    @Step("verify response headers")
-    static void verifyResponseHeaders(Response response) {
-        assertThat(response.getHeader("X-Frame-Options"), equalTo("DENY"))
-        String policyString = "connect-src 'self'; default-src 'none'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'; block-all-mixed-content"
-        assertThat(response.getHeader("Content-Security-Policy"), equalTo(policyString))
-        assertThat(response.getHeader("Strict-Transport-Security"), anyOf(containsString("max-age=16070400"), containsString("max-age=31536000")))
-        assertThat(response.getHeader("Strict-Transport-Security"), containsString("includeSubDomains"))
-        assertThat(response.getHeader("Cache-Control"), equalTo("no-cache, no-store, max-age=0, must-revalidate"))
-        assertThat(response.getHeader("X-Content-Type-Options"), equalTo("nosniff"))
-        assertThat(response.getHeader("X-XSS-Protection"), equalTo("1; mode=block"))
-    }
-
     @Step("Follow redirects to client application")
     static Response followRedirectsToClientApplication (Flow flow, Response authenticationFinishedResponse) {
         Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.ssoOidcService.cookies)
@@ -142,10 +104,5 @@ class Steps {
         return Steps.followRedirectWithCookies(flow, sessionServiceConsentResponse, flow.ssoOidcService.cookies)
     }
 
-    private static void addJsonAttachment(String name, String json) throws IOException {
-        ObjectMapper mapper = new ObjectMapper()
-        Object jsonObject = mapper.readValue(json, Object.class)
-        String prettyJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject)
-        Allure.addAttachment(name, "application/json", prettyJson, "json")
-    }
+
 }
