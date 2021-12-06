@@ -99,7 +99,6 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         "ui_locales" | _          | "Without locale parameter"                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
     }
 
-    @Ignore
     @Feature("OIDC_REQUEST")
     def "Authentication request with unknown parameter"() {
         expect:
