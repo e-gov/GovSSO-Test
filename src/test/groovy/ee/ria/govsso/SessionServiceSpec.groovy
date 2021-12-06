@@ -4,6 +4,7 @@ import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import spock.lang.Unroll
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
@@ -18,7 +19,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
     }
 
-    @Feature("SESSION_SERVICE")
+    @Feature("LOGIN_INIT_REDIRECT_TO_TARA")
     def "Correct request with query parameters from session service to TARA"() {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
@@ -32,7 +33,33 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertTrue(sessionServiceRedirectToTaraResponse.getHeader("location").contains("nonce"), "Query parameters contain nonce")
         assertTrue(sessionServiceRedirectToTaraResponse.getHeader("location").contains("client_id"), "Query parameters contain client_id")
     }
-    @Feature("SESSION_SERVICE")
+
+    @Unroll
+    @Feature("LOGIN_INIT_ENDPOINT")
+    @Feature("LOGIN_INIT_GET_LOGIN")
+    def "Incorrect login challenge: #reason"() {
+        expect:
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(paramsMap, paramKey, paramValue)
+
+        Response initLoginResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullInitUrl, paramsMap, Collections.emptyMap())
+
+        assertEquals(statusCode, initLoginResponse.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals(error, initLoginResponse.jsonPath().getString("error"), "Correct error is returned")
+        assertTrue(initLoginResponse.jsonPath().getString("message").startsWith(message), "Correct message is returned")
+
+        where:
+        reason               | paramKey          | paramValue | statusCode | error                    | message
+        "Empty value"        | "login_challenge" | ""         | 400        | "Bad Request"            | "authInit.loginChallenge: only characters and numbers allowed"
+        "Illegal characters" | "login_challenge" | "123_!?#"  | 400        | "Bad Request"            | "authInit.loginChallenge: only characters and numbers allowed"
+        "Missing parameter"  | ""                | ""         | 400        | "Bad Request"            | "Required request parameter 'login_challenge' for method parameter type String is not present"
+        "Incorrect parameter"| "login_"          | "a"*32     | 400        | "Bad Request"            | "Required request parameter 'login_challenge' for method parameter type String is not present"
+        "Not matching value" | "login_challenge" | "a"*32     | 500        | "Internal Server Error"  | "404 Not Found from GET"
+        "Over maxLength"     | "login_challenge" | "a"*33     | 500        | "Internal Server Error"  | "404 Not Found from GET"
+        "Under minLength"    | "login_challenge" | "a"*31     | 500        | "Internal Server Error"  | "404 Not Found from GET"
+    }
+
+    @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct request with query parameters from TARA is returned to session service"() {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
@@ -47,7 +74,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals(Utils.getParamValueFromResponseHeader(sessionServiceRedirectToTaraResponse, "state"), Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "state"), "Query contains correct state parameter value")
     }
 
-    @Feature("SESSION_SERVICE")
+    @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct redirect URL with incorrect state parameter is returned from TARA"() {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
@@ -57,7 +84,6 @@ class SessionServiceSpec extends GovSsoSpecification {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "state", "incorrect_state")
         Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse,"code"))
-        Utils.setParameter(paramsMap, "scope", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "scope"))
 
         Response sessionServiceResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullTaraCallbackUrl, paramsMap, Collections.emptyMap())
 
@@ -65,7 +91,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals("Invalid TARA callback state", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
     }
 
-    @Feature("SESSION_SERVICE")
+    @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct redirect URL with incorrect code parameter is returned from TARA"() {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
@@ -75,7 +101,6 @@ class SessionServiceSpec extends GovSsoSpecification {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "code", "incorrect_code")
         Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse,"state"))
-        Utils.setParameter(paramsMap, "scope", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "scope"))
 
         Response sessionServiceResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullTaraCallbackUrl, paramsMap, Collections.emptyMap())
 
@@ -85,25 +110,57 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals(errorMessage, sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
     }
 
-    @Feature("SESSION_SERVICE")
-    def "Correct redirect URL with incorrect SESSION cookie is returned from TARA"() {
+    @Unroll
+    @Feature("LOGIN_TARACALLBACK_ENDPOINT")
+    def "Correct redirect URL with incorrect SESSION cookie is returned from TARA: #reason"() {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
 
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap,"SESSION", "incorrect_session_cookie")
+        Utils.setParameter(cookieMap, cookieKey, cookieValue)
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse,"state"))
         Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse,"code"))
-        Utils.setParameter(paramsMap, "scope", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "scope"))
 
         Response sessionServiceResponse = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
 
-        assertEquals(500, sessionServiceResponse.getStatusCode(), "Correct HTTP status code is returned")
-        assertEquals("Missing session attribute 'sso.session' of type SsoSession", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
+        assertEquals(statusCode, sessionServiceResponse.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals(error, sessionServiceResponse.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals(message, sessionServiceResponse.jsonPath().getString("message"), "Correct message is returned")
+
+        where:
+        reason               | cookieKey | cookieValue | statusCode | error                    | message
+        "Empty value"        | "SESSION" | ""          | 500        | "Internal Server Error"  | "Missing session attribute 'sso.session' of type SsoSession"
+        "Illegal characters" | "SESSION" | "123_!?#"   | 500        | "Internal Server Error"  | "Missing session attribute 'sso.session' of type SsoSession"
+        "Not matching value" | "SESSION" | "a"*48      | 500        | "Internal Server Error"  | "Missing session attribute 'sso.session' of type SsoSession"
+        "Over maxLength"     | "SESSION" | "a"*49      | 500        | "Internal Server Error"  | "Missing session attribute 'sso.session' of type SsoSession"
+        "Under minLength"    | "SESSION" | "a"*47      | 500        | "Internal Server Error"  | "Missing session attribute 'sso.session' of type SsoSession"
     }
 
+    @Unroll
+    @Feature("CONSENT_INIT_ENDPOINT")
+    def "Incorrect consent challenge: #reason"() {
+        expect:
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(paramsMap, paramKey, paramValue)
+
+        Response consentResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullConsentUrl, paramsMap, Collections.emptyMap())
+
+        assertEquals(statusCode, consentResponse.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals(error, consentResponse.jsonPath().getString("error"), "Correct error is returned")
+        assertTrue(consentResponse.jsonPath().getString("message").startsWith(message), "Correct message is returned")
+
+        where:
+        reason               | paramKey            | paramValue | statusCode | error                    | message
+        "Empty value"        | "consent_challenge" | ""         | 400        | "Bad Request"            | "authConsent.consentChallenge: only characters and numbers allowed"
+        "Illegal characters" | "consent_challenge" | "123_!?#"  | 400        | "Bad Request"            | "authConsent.consentChallenge: only characters and numbers allowed"
+        "Missing parameter"  | ""                  | ""         | 400        | "Bad Request"            | "Required request parameter 'consent_challenge' for method parameter type String is not present"
+        "Incorrect parameter"| "consent_"          | "a"*32     | 400        | "Bad Request"            | "Required request parameter 'consent_challenge' for method parameter type String is not present"
+        "Not matching value" | "consent_challenge" | "a"*32     | 500        | "Internal Server Error"  | "404 Not Found from PUT"
+        "Over maxLength"     | "consent_challenge" | "a"*33     | 500        | "Internal Server Error"  | "404 Not Found from PUT"
+        "Under minLength"    | "consent_challenge" | "a"*31     | 500        | "Internal Server Error"  | "404 Not Found from PUT"
+    }
 }
