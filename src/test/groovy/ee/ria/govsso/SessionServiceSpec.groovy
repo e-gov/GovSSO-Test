@@ -44,19 +44,19 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response initLoginResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullInitUrl, paramsMap, Collections.emptyMap())
 
-        assertEquals(statusCode, initLoginResponse.getStatusCode(), "Correct HTTP status code is returned")
-        assertEquals(error, initLoginResponse.jsonPath().getString("error"), "Correct error is returned")
-        assertTrue(initLoginResponse.jsonPath().getString("message").startsWith(message), "Correct message is returned")
+        assertEquals(400, initLoginResponse.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", initLoginResponse.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("Invalid request.", initLoginResponse.jsonPath().getString("message"), "Correct message is returned")
 
         where:
-        reason               | paramKey          | paramValue | statusCode | error                    | message
-        "Empty value"        | "login_challenge" | ""         | 400        | "Bad Request"            | "authInit.loginChallenge: only characters and numbers allowed"
-        "Illegal characters" | "login_challenge" | "123_!?#"  | 400        | "Bad Request"            | "authInit.loginChallenge: only characters and numbers allowed"
-        "Missing parameter"  | ""                | ""         | 400        | "Bad Request"            | "Required request parameter 'login_challenge' for method parameter type String is not present"
-        "Incorrect parameter"| "login_"          | "a"*32     | 400        | "Bad Request"            | "Required request parameter 'login_challenge' for method parameter type String is not present"
-        "Not matching value" | "login_challenge" | "a"*32     | 500        | "Internal Server Error"  | "404 Not Found from GET"
-        "Over maxLength"     | "login_challenge" | "a"*33     | 500        | "Internal Server Error"  | "404 Not Found from GET"
-        "Under minLength"    | "login_challenge" | "a"*31     | 500        | "Internal Server Error"  | "404 Not Found from GET"
+        reason               | paramKey          | paramValue
+        "Empty value"        | "login_challenge" | ""
+        "Illegal characters" | "login_challenge" | "123_!?#"
+        "Missing parameter"  | ""                | ""
+        "Incorrect parameter"| "login_"          | "a"*32
+        "Not matching value" | "login_challenge" | "a"*32
+        "Over maxLength"     | "login_challenge" | "a"*33
+        "Under minLength"    | "login_challenge" | "a"*31
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
@@ -82,13 +82,14 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "state", "incorrect_state")
+        Utils.setParameter(paramsMap, "state", "")
         Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse,"code"))
 
         Response sessionServiceResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullTaraCallbackUrl, paramsMap, Collections.emptyMap())
 
-        assertEquals(500, sessionServiceResponse.getStatusCode(), "Correct HTTP status code is returned")
-        assertEquals("Invalid TARA callback state", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
+        assertEquals(400, sessionServiceResponse.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", sessionServiceResponse.getBody().jsonPath().get("error"), "Correct error message is returned")
+        assertEquals("Invalid request.", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
@@ -99,15 +100,14 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "code", "incorrect_code")
+        Utils.setParameter(paramsMap, "code", "")
         Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse,"state"))
 
         Response sessionServiceResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullTaraCallbackUrl, paramsMap, Collections.emptyMap())
 
-        String errorMessage = "ErrorCode:invalid_grant, Error description:The provided authorization grant (e.g., authorization code, resource owner credentials) or refresh token is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client., Status Code:400"
-
-        assertEquals(500, sessionServiceResponse.getStatusCode())
-        assertEquals(errorMessage, sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
+        assertEquals(400, sessionServiceResponse.getStatusCode())
+        assertEquals("USER_INPUT", sessionServiceResponse.getBody().jsonPath().get("error"), "Correct error message is returned")
+        assertEquals("Invalid request.", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Unroll
@@ -127,17 +127,17 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response sessionServiceResponse = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
 
-        assertEquals(statusCode, sessionServiceResponse.getStatusCode(), "Correct HTTP status code is returned")
-        assertEquals(error, sessionServiceResponse.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals(message, sessionServiceResponse.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals(500, sessionServiceResponse.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("TECHNICAL_GENERAL", sessionServiceResponse.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("An unexpected error occurred. Please try again later.", sessionServiceResponse.jsonPath().getString("message"), "Correct message is returned")
 
         where:
-        reason               | cookieKey | cookieValue | statusCode | error                    | message
-        "Empty value"        | "SESSION" | ""          | 500        | "Internal Server Error"  | "Missing session attribute 'sso.session' of type SsoSession"
-        "Illegal characters" | "SESSION" | "123_!?#"   | 500        | "Internal Server Error"  | "Missing session attribute 'sso.session' of type SsoSession"
-        "Not matching value" | "SESSION" | "a"*48      | 500        | "Internal Server Error"  | "Missing session attribute 'sso.session' of type SsoSession"
-        "Over maxLength"     | "SESSION" | "a"*49      | 500        | "Internal Server Error"  | "Missing session attribute 'sso.session' of type SsoSession"
-        "Under minLength"    | "SESSION" | "a"*47      | 500        | "Internal Server Error"  | "Missing session attribute 'sso.session' of type SsoSession"
+        reason               | cookieKey | cookieValue
+        "Empty value"        | "SESSION" | ""
+        "Illegal characters" | "SESSION" | "123_!?#"
+        "Not matching value" | "SESSION" | "a"*48
+        "Over maxLength"     | "SESSION" | "a"*49
+        "Under minLength"    | "SESSION" | "a"*47
     }
 
     @Unroll
@@ -149,18 +149,18 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response consentResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullConsentUrl, paramsMap, Collections.emptyMap())
 
-        assertEquals(statusCode, consentResponse.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals(status, consentResponse.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals(error, consentResponse.jsonPath().getString("error"), "Correct error is returned")
-        assertTrue(consentResponse.jsonPath().getString("message").startsWith(message), "Correct message is returned")
+        assertEquals(errorMessage, consentResponse.jsonPath().getString("message"), "Correct message is returned")
 
         where:
-        reason               | paramKey            | paramValue | statusCode | error                    | message
-        "Empty value"        | "consent_challenge" | ""         | 400        | "Bad Request"            | "authConsent.consentChallenge: only characters and numbers allowed"
-        "Illegal characters" | "consent_challenge" | "123_!?#"  | 400        | "Bad Request"            | "authConsent.consentChallenge: only characters and numbers allowed"
-        "Missing parameter"  | ""                  | ""         | 400        | "Bad Request"            | "Required request parameter 'consent_challenge' for method parameter type String is not present"
-        "Incorrect parameter"| "consent_"          | "a"*32     | 400        | "Bad Request"            | "Required request parameter 'consent_challenge' for method parameter type String is not present"
-        "Not matching value" | "consent_challenge" | "a"*32     | 500        | "Internal Server Error"  | "404 Not Found from PUT"
-        "Over maxLength"     | "consent_challenge" | "a"*33     | 500        | "Internal Server Error"  | "404 Not Found from PUT"
-        "Under minLength"    | "consent_challenge" | "a"*31     | 500        | "Internal Server Error"  | "404 Not Found from PUT"
+        reason               | paramKey            | paramValue | status | error                | errorMessage
+        "Empty value"        | "consent_challenge" | ""         | 400    | "USER_INPUT"         | "Invalid request."
+        "Illegal characters" | "consent_challenge" | "123_!?#"  | 400    | "USER_INPUT"         | "Invalid request."
+        "Missing parameter"  | ""                  | ""         | 400    | "USER_INPUT"         | "Invalid request."
+        "Incorrect parameter"| "consent_"          | "a"*32     | 400    | "USER_INPUT"         | "Invalid request."
+        "Not matching value" | "consent_challenge" | "a"*32     | 500    | "TECHNICAL_GENERAL"  | "An unexpected error occurred. Please try again later."
+        "Over maxLength"     | "consent_challenge" | "a"*33     | 400    | "USER_INPUT"         | "Invalid request."
+        "Under minLength"    | "consent_challenge" | "a"*31     | 400    | "USER_INPUT"         | "Invalid request."
     }
 }
