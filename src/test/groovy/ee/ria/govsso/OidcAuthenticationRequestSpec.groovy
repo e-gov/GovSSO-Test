@@ -6,6 +6,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Ignore
+import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.startsWith
@@ -32,6 +33,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertTrue(response.getHeader("location").endsWith(flow.getLoginChallenge()))
     }
 
+    @Unroll
     @Feature("OIDC_REQUEST")
     def "Start SSO authentication with invalid parameter: #paramKey"() {
         expect:
@@ -53,6 +55,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         "redirect_uri"      | "invalid"  | "invalid_request"           | "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
     }
 
+    @Unroll
     @Feature("OIDC_REQUEST")
     def "Start SSO authentication with missing parameter: #missingParam"() {
         expect:
@@ -120,5 +123,71 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
+    }
+
+    @Unroll
+    @Feature("OIDC")
+    def "Incorrect OIDC login verifier request: #reason"() {
+        expect:
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
+        Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.ssoOidcService.cookies)
+
+        HashMap<String, String> queryParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(queryParams, "client_id", Utils.getParamValueFromResponseHeader(callbackResponse, clientId))
+        Utils.setParameter(queryParams, "login_verifier", Utils.getParamValueFromResponseHeader(callbackResponse, loginVerifier))
+        Utils.setParameter(queryParams, "redirect_uri", Utils.getParamValueFromResponseHeader(callbackResponse, redirectUri))
+        Utils.setParameter(queryParams, "response_type", Utils.getParamValueFromResponseHeader(callbackResponse, responseType))
+        Utils.setParameter(queryParams, "scope", Utils.getParamValueFromResponseHeader(callbackResponse, scope))
+        Utils.setParameter(queryParams, "state", Utils.getParamValueFromResponseHeader(callbackResponse, state))
+
+        Response oidcServiceAuthResponse = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.cookies, queryParams, Collections.emptyMap())
+
+        assertEquals(302, oidcServiceAuthResponse.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals(error, Utils.getParamValueFromResponseHeader(oidcServiceAuthResponse,"error_description"), "Correct HTTP status code is returned")
+
+        where:
+        reason                    | clientId    | loginVerifier    | redirectUri    | responseType    | scope       | state   | error
+        "Incorrect client_id"     | "scope"     | "login_verifier" | "redirect_uri" | "response_type" | "scope"     | "state" | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
+        "Incorrect login_verifier"| "client_id" | "scope"          | "redirect_uri" | "response_type" | "scope"     | "state" | "The resource owner or authorization server denied the request. The login verifier has already been used, has not been granted, or is invalid."
+        "Incorrect redirect_uri"  | "client_id" | "login_verifier" | "scope"        | "response_type" | "scope"     | "state" | "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
+        "Incorrect response_type" | "client_id" | "login_verifier" | "redirect_uri" | "scope"         | "scope"     | "state" | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'openid'."
+        "Incorrect scope"         | "client_id" | "login_verifier" | "redirect_uri" | "response_type" | "client_id" | "state" | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'client-a'."
+        "Incorrect state"         | "client_id" | "login_verifier" | "redirect_uri" | "response_type" | "scope"     | "scope" | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
+    }
+
+    @Unroll
+    @Feature("OIDC")
+    def "Incorrect OIDC consent verifier request: #reason"() {
+        expect:
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
+        Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.ssoOidcService.cookies)
+        Response loginVerifierResponse = Steps.followRedirectWithCookies(flow, callbackResponse, flow.ssoOidcService.cookies)
+        Response consentResponse = Steps.followRedirectWithCookies(flow, loginVerifierResponse, flow.ssoOidcService.cookies)
+
+        HashMap<String, String> queryParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(queryParams, "client_id", Utils.getParamValueFromResponseHeader(consentResponse, clientId))
+        Utils.setParameter(queryParams, "consent_verifier", Utils.getParamValueFromResponseHeader(consentResponse, consentVerifier))
+        Utils.setParameter(queryParams, "redirect_uri", Utils.getParamValueFromResponseHeader(consentResponse, redirectUri))
+        Utils.setParameter(queryParams, "response_type", Utils.getParamValueFromResponseHeader(consentResponse, responseType))
+        Utils.setParameter(queryParams, "scope", Utils.getParamValueFromResponseHeader(consentResponse, scope))
+        Utils.setParameter(queryParams, "state", Utils.getParamValueFromResponseHeader(consentResponse, state))
+
+        Response oidcServiceAuthResponse = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.cookies, queryParams, Collections.emptyMap())
+
+        assertEquals(302, oidcServiceAuthResponse.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals(error, Utils.getParamValueFromResponseHeader(oidcServiceAuthResponse,"error_description"), "Correct HTTP status code is returned")
+
+        where:
+        reason                       | clientId    | consentVerifier    | redirectUri    | responseType    | scope       | state   | error
+        "Incorrect client_id"        | "scope"     | "consent_verifier" | "redirect_uri" | "response_type" | "scope"     | "state" | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
+        "Incorrect consent_verifier" | "client_id" | "scope"            | "redirect_uri" | "response_type" | "scope"     | "state" | "The resource owner or authorization server denied the request. The consent verifier has already been used, has not been granted, or is invalid."
+        "Incorrect redirect_uri"     | "client_id" | "consent_verifier" | "scope"        | "response_type" | "scope"     | "state" | "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
+        "Incorrect responseType"     | "client_id" | "consent_verifier" | "redirect_uri" | "scope"         | "scope"     | "state" | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'openid'."
+        "Incorrect scope"            | "client_id" | "consent_verifier" | "redirect_uri" | "response_type" | "client_id" | "state" | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'client-a'."
+        "Incorrect state"            | "client_id" | "consent_verifier" | "redirect_uri" | "response_type" | "scope"     | "scope" | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
     }
 }
