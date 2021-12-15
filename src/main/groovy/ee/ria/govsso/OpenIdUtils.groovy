@@ -30,14 +30,13 @@ class OpenIdUtils {
     static Map<String, String> getAuthorizationParametersWithDefaults(Flow flow) {
         Map<String, String> queryParams = new HashMap<>()
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        flow.setNonce("")
+        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         queryParams.put("response_type", "code")
         queryParams.put("scope", "openid")
         queryParams.put("client_id", flow.getOidcClientA().getClientId())
         queryParams.put("redirect_uri", flow.getOidcClientA().fullResponseUrl)
         queryParams.put("state", flow.state)
-        //TODO: when nonce includes + its replaced with space in JWT. Encoding is applied, is it ok?
-        // queryParams.put("nonce", flow.nonce)
+        queryParams.put("nonce", flow.nonce)
         queryParams.put("ui_locales", "et")
         return queryParams
     }
@@ -45,14 +44,13 @@ class OpenIdUtils {
     static Map<String, String> getAuthorizationParameters(Flow flow, String clientId, String fullResponseUrl) {
         Map<String, String> queryParams = new HashMap<>()
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        flow.setNonce("")
+        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         queryParams.put("response_type", "code")
         queryParams.put("scope", "open_id")
         queryParams.put("client_id", clientId)
         queryParams.put("redirect_uri", fullResponseUrl)
         queryParams.put("state", flow.state)
-        //TODO: when nonce includes + its replaced with space in JWT. Encoding is applied, is it ok?
-        // queryParams.put("nonce", flow.nonce)
+        queryParams.put("nonce", flow.nonce)
         queryParams.put("ui_locales", "et")
         return queryParams
     }
@@ -64,12 +62,12 @@ class OpenIdUtils {
         MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getIssuer(), Matchers.equalTo(flow.openIdServiceConfiguration.get("issuer")))
         Date date = new Date()
         MatcherAssert.assertThat("Expected current: " + date + " to be before exp: " + signedJWT.getJWTClaimsSet().getExpirationTime(), date.before(signedJWT.getJWTClaimsSet().getExpirationTime()), CoreMatchers.is(true))
-//TODO: nbf not used in govsso?
+        //TODO: nbf implemented later
 //        assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
         if (!flow.getNonce().isEmpty()) {
             MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), Matchers.equalTo(flow.getNonce()))
         }
-//TODO: state is not propagated to JWT in govsso?
+        //TODO: state is not propagated to JWT in govsso?
 //        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
         return signedJWT
     }

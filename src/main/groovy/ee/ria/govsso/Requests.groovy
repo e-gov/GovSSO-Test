@@ -105,7 +105,7 @@ class Requests {
                 .relaxedHTTPSValidation()
                 .when()
                 .redirects().follow(false)
-                .urlEncodingEnabled(false)
+                .urlEncodingEnabled(true)
                 .get(url)
                 .then()
                 .extract().response()
