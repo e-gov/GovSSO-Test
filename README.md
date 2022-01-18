@@ -56,10 +56,12 @@ Description of values:
 | sessionservice.protocol | http | Service protocol. |
 | sessionservice.host | session-service | Service URL. |
 | sessionservice.port | 14080 | Service port. |
-| sessionservice.initUrl | /auth/init | Service authentication start endpoint. |
-| sessionservice.consentUrl | /auth/consent | Service consent selection endpoint. |
+| sessionservice.initUrl | /login/init | Service authentication start endpoint. |
+| sessionservice.continueSessionUrl | /login/continuesession | Service session continuation endpoint. |
+| sessionservice.reauthenticateUrl | /login/reauthenticate | Service reauthentication endpoint. |
+| sessionservice.consentUrl | /consent/init | Service consent selection endpoint. |
 | sessionservice.consentConfirmUrl | /auth/consent/confirm | Service consent confirmation endpoint. |
-| sessionservice.taraCallbackUrl | /auth/taracallback | Service authentication redirect endpoint. |
+| sessionservice.taraCallbackUrl | /login/taracallback | Service authentication redirect endpoint. |
 | sessionservice.healthUrl | /actuator/health | Service health endpoint. |
 | sessionservice.readinessUrl | /actuator/health/readiness | Service readiness endpoint. |
 | sessionservice.infoUrl | /actuator/info | Service info endpoint. |
