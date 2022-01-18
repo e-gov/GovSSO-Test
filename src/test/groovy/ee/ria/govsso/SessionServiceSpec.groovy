@@ -22,7 +22,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_REDIRECT_TO_TARA")
     def "Correct request with query parameters from session service to TARA"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
 
         assertEquals(302, sessionServiceRedirectToTaraResponse.getStatusCode(), "Correct HTTP status code is returned")
@@ -49,20 +49,20 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals("Invalid request.", initLoginResponse.jsonPath().getString("message"), "Correct message is returned")
 
         where:
-        reason               | paramKey          | paramValue
-        "Empty value"        | "login_challenge" | ""
-        "Illegal characters" | "login_challenge" | "123_!?#"
-        "Missing parameter"  | ""                | ""
-        "Incorrect parameter"| "login_"          | "a"*32
-        "Not matching value" | "login_challenge" | "a"*32
-        "Over maxLength"     | "login_challenge" | "a"*33
-        "Under minLength"    | "login_challenge" | "a"*31
+        reason                | paramKey          | paramValue
+        "Empty value"         | "login_challenge" | ""
+        "Illegal characters"  | "login_challenge" | "123_!?#"
+        "Missing parameter"   | ""                | ""
+        "Incorrect parameter" | "login_"          | "a" * 32
+        "Not matching value"  | "login_challenge" | "a" * 32
+        "Over maxLength"      | "login_challenge" | "a" * 33
+        "Under minLength"     | "login_challenge" | "a" * 31
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct request with query parameters from TARA is returned to session service"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
 
@@ -77,13 +77,13 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct redirect URL with incorrect state parameter is returned from TARA"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "state", "")
-        Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse,"code"))
+        Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code"))
 
         Response sessionServiceResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullTaraCallbackUrl, paramsMap, Collections.emptyMap())
 
@@ -95,13 +95,13 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct redirect URL with incorrect code parameter is returned from TARA"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "code", "")
-        Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse,"state"))
+        Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "state"))
 
         Response sessionServiceResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullTaraCallbackUrl, paramsMap, Collections.emptyMap())
 
@@ -114,7 +114,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct redirect URL with incorrect SESSION cookie is returned from TARA: #reason"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
 
@@ -122,8 +122,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(cookieMap, cookieKey, cookieValue)
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse,"state"))
-        Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse,"code"))
+        Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "state"))
+        Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code"))
 
         Response sessionServiceResponse = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
 
@@ -135,9 +135,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         reason               | cookieKey | cookieValue
         "Empty value"        | "SESSION" | ""
         "Illegal characters" | "SESSION" | "123_!?#"
-        "Not matching value" | "SESSION" | "a"*48
-        "Over maxLength"     | "SESSION" | "a"*49
-        "Under minLength"    | "SESSION" | "a"*47
+        "Not matching value" | "SESSION" | "a" * 48
+        "Over maxLength"     | "SESSION" | "a" * 49
+        "Under minLength"    | "SESSION" | "a" * 47
     }
 
     @Unroll
@@ -154,13 +154,25 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals(errorMessage, consentResponse.jsonPath().getString("message"), "Correct message is returned")
 
         where:
-        reason               | paramKey            | paramValue | status | error                | errorMessage
-        "Empty value"        | "consent_challenge" | ""         | 400    | "USER_INPUT"         | "Invalid request."
-        "Illegal characters" | "consent_challenge" | "123_!?#"  | 400    | "USER_INPUT"         | "Invalid request."
-        "Missing parameter"  | ""                  | ""         | 400    | "USER_INPUT"         | "Invalid request."
-        "Incorrect parameter"| "consent_"          | "a"*32     | 400    | "USER_INPUT"         | "Invalid request."
-        "Not matching value" | "consent_challenge" | "a"*32     | 500    | "TECHNICAL_GENERAL"  | "An unexpected error occurred. Please try again later."
-        "Over maxLength"     | "consent_challenge" | "a"*33     | 400    | "USER_INPUT"         | "Invalid request."
-        "Under minLength"    | "consent_challenge" | "a"*31     | 400    | "USER_INPUT"         | "Invalid request."
+        reason                | paramKey            | paramValue | status | error               | errorMessage
+        "Empty value"         | "consent_challenge" | ""         | 400    | "USER_INPUT"        | "Invalid request."
+        "Illegal characters"  | "consent_challenge" | "123_!?#"  | 400    | "USER_INPUT"        | "Invalid request."
+        "Missing parameter"   | ""                  | ""         | 400    | "USER_INPUT"        | "Invalid request."
+        "Incorrect parameter" | "consent_"          | "a" * 32   | 400    | "USER_INPUT"        | "Invalid request."
+        "Not matching value"  | "consent_challenge" | "a" * 32   | 500    | "TECHNICAL_GENERAL" | "An unexpected error occurred. Please try again later."
+        "Over maxLength"      | "consent_challenge" | "a" * 33   | 400    | "USER_INPUT"        | "Invalid request."
+        "Under minLength"     | "consent_challenge" | "a" * 31   | 400    | "USER_INPUT"        | "Invalid request."
+    }
+
+    @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
+    def "Continue session request without existing session"() {
+        expect:
+        Response oidcAuthenticate = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcAuthenticate)
+        Response continueSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
+
+        assertEquals(400, continueSession.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("Invalid request.", continueSession.jsonPath().getString("message"), "Correct message is returned")
     }
 }

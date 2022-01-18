@@ -47,6 +47,8 @@ class SsoSessionService {
     String port
     String protocol
     String initUrl
+    String continueSessionUrl
+    String reauthenticateUrl
     String taraCallbackUrl
     String consentUrl
     String consentConfirmUrl
@@ -57,6 +59,8 @@ class SsoSessionService {
 
     @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
     @Lazy fullInitUrl = "${protocol}://${host}${portCheck()}${initUrl}"
+    @Lazy fullContinueSessionUrl = "${protocol}://${host}${portCheck()}${continueSessionUrl}"
+    @Lazy fullReauthenticateUrl = "${protocol}://${host}${portCheck()}${reauthenticateUrl}"
     @Lazy fullTaraCallbackUrl = "${protocol}://${host}${portCheck()}${taraCallbackUrl}"
     @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
     @Lazy fullConsentConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
@@ -69,6 +73,8 @@ class SsoSessionService {
         this.port = properties."sessionservice.port"
         this.protocol = properties."sessionservice.protocol"
         this.initUrl = properties."sessionservice.initUrl"
+        this.continueSessionUrl = properties."sessionservice.continueSessionUrl"
+        this.reauthenticateUrl = properties."sessionservice.reauthenticateUrl"
         this.taraCallbackUrl = properties."sessionservice.taraCallbackUrl"
         this.consentUrl = properties."sessionservice.consentUrl"
         this.consentConfirmUrl = properties."sessionservice.consentConfirmUrl"

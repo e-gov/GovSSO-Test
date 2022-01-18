@@ -24,12 +24,12 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token response"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
         Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
 
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
 
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
         assertEquals("openid", tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
@@ -41,14 +41,14 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token mandatory elements"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
         Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
 
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertTrue(claims.getJWTID().size() > 35, "Correct jti claim exists")
         assertThat("Correct issuer claim", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
@@ -72,10 +72,10 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         String phoneNo = "69100366"
         Response midAuthResponse = TaraSteps.authenticateWithMid(flow, idCode, phoneNo)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
         assertEquals(scopeList, tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE" + idCode))
         assertThat("Phone_number claim exists", claims.getStringClaim("phone_number"), equalTo("+372" + phoneNo))
         assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("phone_number_verified"), equalTo(true))
@@ -89,10 +89,10 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         TaraSteps.startAuthenticationInTara(flow, scopeList)
         Response idCardAuthResponse = TaraSteps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, idCardAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, authenticationFinishedResponse)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
         assertEquals(scopeList, tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE38001085718"))
         assertThat("Phone_number claim exists", claims.getStringClaim("email"), equalTo("38001085718@eesti.ee"))
         assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("email_verified"), equalTo(false))

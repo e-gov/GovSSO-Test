@@ -129,7 +129,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     @Feature("OIDC")
     def "Incorrect OIDC login verifier request: #reason"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
         Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.ssoOidcService.cookies)
@@ -161,7 +161,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     @Feature("OIDC")
     def "Incorrect OIDC consent verifier request: #reason"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
         Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.ssoOidcService.cookies)

@@ -25,7 +25,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     @Feature("OPENID_CONNECT")
     def "Metadata and token key ID matches"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response midAuthResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
         Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, midAuthResponse, flow.ssoOidcService.cookies)
@@ -34,25 +34,25 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         Response sessionServiceConsentResponse = Steps.followRedirectWithCookies(flow, oidcServiceResponse, flow.ssoOidcService.cookies)
         Response oidcServiceConsentResponse = Steps.followRedirectWithCookies(flow, sessionServiceConsentResponse, flow.ssoOidcService.cookies)
 
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
 
         assertEquals(200, tokenResponse.statusCode(), "Correct HTTP status code is returned")
-        String keyID = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
+        String keyID = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
         assertThat(keyID, equalTo(flow.jwkSet.getKeys().get(0).getKeyID()))
     }
 
     @Feature("OPENID_CONNECT")
     def "Request a token twice"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
         Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcServiceConsentResponse, "code")
         // 1
-        Requests.getWebToken(flow, authorizationCode)
+        Requests.getWebTokenWithDefaults(flow, authorizationCode)
         // 2
-        Response tokenResponse2 = Requests.getWebToken(flow, authorizationCode)
+        Response tokenResponse2 = Requests.getWebTokenWithDefaults(flow, authorizationCode)
         assertEquals(400, tokenResponse2.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct Content-Type is returned", tokenResponse2.getContentType(), startsWith("application/json"))
         assertEquals("invalid_grant", tokenResponse2.body().jsonPath().get("error"), "Correct error message is returned")
@@ -62,13 +62,13 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     @Feature("OPENID_CONNECT")
     def "Request with invalid authorization code"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
         Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcServiceConsentResponse, "code")
 
-        Response response = Requests.getWebToken(flow, authorizationCode + "e")
+        Response response = Requests.getWebTokenWithDefaults(flow, authorizationCode + "e")
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
         assertEquals("invalid_grant", response.body().jsonPath().get("error"), "Correct error message is returned")
@@ -134,9 +134,9 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
         Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
 
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getClaim("nonce"), equalTo(paramsMap.get("nonce")))
         assertThat(claims.getClaim("state"), equalTo(paramsMap.get("state")))
     }

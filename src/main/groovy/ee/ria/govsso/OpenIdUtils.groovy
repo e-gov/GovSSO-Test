@@ -37,6 +37,7 @@ class OpenIdUtils {
         queryParams.put("redirect_uri", flow.getOidcClientA().fullResponseUrl)
         queryParams.put("state", flow.state)
         queryParams.put("nonce", flow.nonce)
+        queryParams.put("prompt", "consent")
         queryParams.put("ui_locales", "et")
         return queryParams
     }
@@ -46,16 +47,17 @@ class OpenIdUtils {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         queryParams.put("response_type", "code")
-        queryParams.put("scope", "open_id")
+        queryParams.put("scope", "openid")
         queryParams.put("client_id", clientId)
         queryParams.put("redirect_uri", fullResponseUrl)
         queryParams.put("state", flow.state)
         queryParams.put("nonce", flow.nonce)
+        queryParams.put("prompt", "consent")
         queryParams.put("ui_locales", "et")
         return queryParams
     }
 
-    static SignedJWT verifyTokenAndReturnSignedJwtObject(Flow flow, String token) throws ParseException, JOSEException, IOException {
+    static SignedJWT verifyTokenAndReturnSignedJwtObjectWithDefaults(Flow flow, String token) throws ParseException, JOSEException, IOException {
         SignedJWT signedJWT = SignedJWT.parse(token)
         MatcherAssert.assertThat("Token Signature is not valid!", isTokenSignatureValid(flow.jwkSet, signedJWT), CoreMatchers.is(true))
         MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getAudience().get(0), Matchers.equalTo(flow.oidcClientA.clientId))
@@ -71,4 +73,22 @@ class OpenIdUtils {
 //        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
         return signedJWT
     }
+
+    static SignedJWT verifyTokenAndReturnSignedJwtObject(Flow flow, String token, String clientId) throws ParseException, JOSEException, IOException {
+        SignedJWT signedJWT = SignedJWT.parse(token)
+        MatcherAssert.assertThat("Token Signature is not valid!", isTokenSignatureValid(flow.jwkSet, signedJWT), CoreMatchers.is(true))
+        MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getAudience().get(0), Matchers.equalTo(clientId))
+        MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getIssuer(), Matchers.equalTo(flow.openIdServiceConfiguration.get("issuer")))
+        Date date = new Date()
+        MatcherAssert.assertThat("Expected current: " + date + " to be before exp: " + signedJWT.getJWTClaimsSet().getExpirationTime(), date.before(signedJWT.getJWTClaimsSet().getExpirationTime()), CoreMatchers.is(true))
+        //TODO: nbf implemented later
+//        assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
+        if (!flow.getNonce().isEmpty()) {
+            MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), Matchers.equalTo(flow.getNonce()))
+        }
+        //TODO: state is not propagated to JWT in govsso?
+//        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
+        return signedJWT
+    }
+
 }

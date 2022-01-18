@@ -15,6 +15,7 @@ class Requests {
     @Step("Follow redirect request")
     static Response followRedirect(Flow flow, String location) {
         return given()
+                .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
                 .relaxedHTTPSValidation()
                 .log().cookies()
@@ -86,7 +87,7 @@ class Requests {
                 .relaxedHTTPSValidation()
                 .when()
                 .redirects().follow(false)
-                .urlEncodingEnabled(false)
+                .urlEncodingEnabled(true)
                 .get(url)
                 .then()
                 .extract().response()
@@ -156,6 +157,22 @@ class Requests {
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .log().cookies()
                 .when()
+                .post(url)
+                .then()
+                .extract().response()
+    }
+
+    @Step("Post request with cookies")
+    static Response postRequestWithCookies(Flow flow, String url, Map<String, String> cookies) {
+        return given()
+                .filter(flow.cookieFilter)
+                .cookies(cookies)
+                .filter(new AllureRestAssured())
+                .log().cookies()
+                .relaxedHTTPSValidation()
+                .when()
+                .redirects().follow(false)
+                .urlEncodingEnabled(true)
                 .post(url)
                 .then()
                 .extract().response()
@@ -238,8 +255,8 @@ class Requests {
                 .extract().body().asInputStream()
     }
 
-    @Step("Get token")
-    static Response getWebToken(Flow flow, String authorizationCode) {
+    @Step("Get token with defaults")
+    static Response getWebTokenWithDefaults(Flow flow, String authorizationCode) {
         return given()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
@@ -247,6 +264,22 @@ class Requests {
                 .formParam("code", authorizationCode)
                 .formParam("redirect_uri", flow.oidcClientA.fullResponseUrl)
                 .auth().preemptive().basic(flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
+                .when()
+                .urlEncodingEnabled(true)
+                .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
+                .then()
+                .extract().response()
+    }
+
+    @Step("Get token")
+    static Response getWebToken(Flow flow, String authorizationCode, String clientId, String clientSecret, String redirectUrl) {
+        return given()
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .formParam("grant_type", "authorization_code")
+                .formParam("code", authorizationCode)
+                .formParam("redirect_uri", redirectUrl)
+                .auth().preemptive().basic(clientId, clientSecret)
                 .when()
                 .urlEncodingEnabled(true)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
