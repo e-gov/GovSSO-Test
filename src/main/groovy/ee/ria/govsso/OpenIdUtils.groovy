@@ -69,8 +69,6 @@ class OpenIdUtils {
         if (!flow.getNonce().isEmpty()) {
             MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), Matchers.equalTo(flow.getNonce()))
         }
-        //TODO: state is not propagated to JWT in govsso?
-//        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
         return signedJWT
     }
 
@@ -86,9 +84,6 @@ class OpenIdUtils {
         if (!flow.getNonce().isEmpty()) {
             MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), Matchers.equalTo(flow.getNonce()))
         }
-        //TODO: state is not propagated to JWT in govsso?
-//        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
         return signedJWT
     }
-
 }
