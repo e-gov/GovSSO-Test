@@ -159,7 +159,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         "Illegal characters"  | "consent_challenge" | "123_!?#"  | 400    | "USER_INPUT"        | "Invalid request."
         "Missing parameter"   | ""                  | ""         | 400    | "USER_INPUT"        | "Invalid request."
         "Incorrect parameter" | "consent_"          | "a" * 32   | 400    | "USER_INPUT"        | "Invalid request."
-        "Not matching value"  | "consent_challenge" | "a" * 32   | 500    | "TECHNICAL_GENERAL" | "An unexpected error occurred. Please try again later."
+        "Not matching value"  | "consent_challenge" | "a" * 32   | 400    | "USER_INPUT"        | "Invalid request."
         "Over maxLength"      | "consent_challenge" | "a" * 33   | 400    | "USER_INPUT"        | "Invalid request."
         "Under minLength"     | "consent_challenge" | "a" * 31   | 400    | "USER_INPUT"        | "Invalid request."
     }

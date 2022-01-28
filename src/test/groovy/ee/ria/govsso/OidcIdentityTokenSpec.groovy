@@ -8,6 +8,7 @@ import io.restassured.response.Response
 import spock.lang.Ignore
 
 import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.matchesPattern
 import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
 
@@ -50,15 +51,20 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertTrue(claims.getJWTID().size() > 35, "Correct jti claim exists")
-        assertThat("Correct issuer claim", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
+        assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
+        assertThat("Correct issuer", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
+        assertThat("Correct audience", claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
         Date date = new Date()
-        assertTrue(Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L, "Correct iat claim")
+        assertThat("Correct authentication time", Math.abs(date.getTime() - claims.getDateClaim("auth_time").getTime()) < 10000L)
+        assertThat("Correct issued at time", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
+        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(3600000L))
+        assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["mID"]))
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE60001017716"))
-        assertThat("Correct date of birth", claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"),  equalTo("12.12.2012"))
-        assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes").get("given_name"),  equalTo("Eesnimi"))
-        assertThat("Correct family name", claims.getJSONObjectClaim("profile_attributes").get("family_name"),  equalTo("Perenimi"))
-        assertThat("Correct LoA level", claims.getStringClaim("acr"), equalTo("high"))
+        assertThat("Correct date of birth", claims.getClaim("birthdate"),  equalTo("2000-01-01"))
+        assertThat("Correct given name", claims.getClaim("given_name"),  equalTo("ONE"))
+        assertThat("Correct family name", claims.getClaim("family_name"),  equalTo("TESTNUMBER"))
+        assertThat("Correct LoA level", claims.getClaim("acr"), equalTo("high"))
+        assertThat("Correct UUID pattern for session ID", claims.getClaim("sid"), matchesPattern("([a-f0-9]{7}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertTrue(claims.getStringClaim("at_hash").size()  > 20, "Correct at_hash claim exists")
     }
 

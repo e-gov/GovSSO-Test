@@ -35,7 +35,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
         assertThat(claims.getSubject(), equalTo("EE60001017716"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("Eesnimi"))
+        assertThat(claims.getClaim("given_name"), equalTo("ONE"))
     }
 
     @Feature("AUTHENTICATION")
@@ -53,7 +53,8 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
         assertThat(claims.getSubject(), equalTo("EE30303039914"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("Eesnimi"))    }
+        assertThat(claims.getClaim("given_name"), equalTo("QUALIFIED OK1"))
+    }
 
     @Feature("AUTHENTICATION")
     def "Authenticate with ID-Card"() {
@@ -70,7 +71,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
         assertThat(claims.getSubject(), equalTo("EE38001085718"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("Eesnimi"))
+        assertThat(claims.getClaim("given_name"), equalTo("JAAK-KRISTJAN"))
     }
 
     @Feature("AUTHENTICATION")
@@ -88,7 +89,7 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
         assertThat(claims.getSubject(), equalTo("CA12345"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("Eesnimi"))
+        assertThat(claims.getClaim("given_name"), equalTo("javier"))
        }
 
     @Feature("AUTHENTICATION")
