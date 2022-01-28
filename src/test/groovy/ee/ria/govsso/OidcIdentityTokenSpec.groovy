@@ -64,7 +64,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct given name", claims.getClaim("given_name"),  equalTo("ONE"))
         assertThat("Correct family name", claims.getClaim("family_name"),  equalTo("TESTNUMBER"))
         assertThat("Correct LoA level", claims.getClaim("acr"), equalTo("high"))
-        assertThat("Correct UUID pattern for session ID", claims.getClaim("sid"), matchesPattern("([a-f0-9]{7}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
+        assertThat("Correct UUID pattern for session ID", claims.getClaim("sid"), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertTrue(claims.getStringClaim("at_hash").size()  > 20, "Correct at_hash claim exists")
     }
 
