@@ -4,6 +4,8 @@ package ee.ria.govsso
 import com.nimbusds.jwt.SignedJWT
 import io.qameta.allure.Step
 import io.restassured.response.Response
+import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.equalTo
 
 class Steps {
 
@@ -18,13 +20,13 @@ class Steps {
     @Step("Initialize authentication sequence in OIDC service with defaults")
     static Response startAuthenticationInSsoOidcWithDefaults(Flow flow) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        return Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
     @Step("Initialize authentication sequence in OIDC service")
     static Response startAuthenticationInSsoOidc(Flow flow, String clientId, String fullResponseUrl) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, fullResponseUrl)
-        return Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
     @Step("Initialize session in session service with params")
@@ -105,28 +107,44 @@ class Steps {
 
     @Step("Follow redirects to client application")
     static Response followRedirectsToClientApplication (Flow flow, Response authenticationFinishedResponse) {
-        Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.ssoOidcService.cookies)
-        Response oidcServiceResponse = Steps.followRedirectWithCookies(flow, sessionServiceResponse, flow.ssoOidcService.cookies)
+        Response sessionServiceResponse = followRedirectWithCookies(flow, authenticationFinishedResponse, flow.ssoOidcService.cookies)
+        verifyResponseHeaders(sessionServiceResponse)
+        Response oidcServiceResponse = followRedirectWithCookies(flow, sessionServiceResponse, flow.ssoOidcService.cookies)
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_insecure", oidcServiceResponse.getCookie("oauth2_consent_csrf_insecure"))
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_session_insecure", oidcServiceResponse.getCookie("oauth2_authentication_session_insecure"))
-        Response sessionServiceConsentResponse = Steps.followRedirectWithCookies(flow, oidcServiceResponse, flow.ssoOidcService.cookies)
-        return Steps.followRedirectWithCookies(flow, sessionServiceConsentResponse, flow.ssoOidcService.cookies)
+        Response sessionServiceConsentResponse = followRedirectWithCookies(flow, oidcServiceResponse, flow.ssoOidcService.cookies)
+        verifyResponseHeaders(sessionServiceResponse)
+        return followRedirectWithCookies(flow, sessionServiceConsentResponse, flow.ssoOidcService.cookies)
     }
 
     @Step("Follow redirects to client application with existing session")
     static Response followRedirectsToClientApplicationWithExistingSession (Flow flow, Response response, String clientId, String clientSecret, String fullResponseUrl) {
-        Response oidcServiceResponse1 = Steps.followRedirect(flow, response)
-        Response consentResponse = Steps.followRedirect(flow, oidcServiceResponse1)
-        Response oidcServiceResponse2 = Steps.followRedirect(flow, consentResponse)
-        return Steps.getIdentityTokenResponse(flow, oidcServiceResponse2, clientId, clientSecret, fullResponseUrl)
+        Response oidcServiceResponse1 = followRedirect(flow, response)
+        Response consentResponse = followRedirect(flow, oidcServiceResponse1)
+        Response oidcServiceResponse2 = followRedirect(flow, consentResponse)
+        return getIdentityTokenResponse(flow, oidcServiceResponse2, clientId, clientSecret, fullResponseUrl)
     }
 
     @Step("Create initial session in GOVSSO with Mobile-ID in Client-A")
     static Response authenticateWithMidInGovsso(flow) {
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
+        Response oidcServiceInitResponse = startAuthenticationInSsoOidcWithDefaults(flow)
+        Response sessionServiceRedirectToTaraResponse = startSessionInSessionService(flow, oidcServiceInitResponse)
+        verifyResponseHeaders(sessionServiceRedirectToTaraResponse)
         Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
-        Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
-        return Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
+        Response oidcServiceConsentResponse = followRedirectsToClientApplication(flow, authenticationFinishedResponse)
+        return getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
+    }
+
+    //TODO: review after TLS update
+    @Step("verify response headers")
+    static void verifyResponseHeaders(Response response) {
+        assertThat(response.getHeader("X-Frame-Options"), equalTo("DENY"))
+        String policyString = "connect-src 'self'; default-src 'none'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'; block-all-mixed-content"
+        assertThat(response.getHeader("Content-Security-Policy"), equalTo(policyString))
+//        assertThat(response.getHeader("Strict-Transport-Security"), anyOf(containsString("max-age=16070400"), containsString("max-age=31536000")))
+//        assertThat(response.getHeader("Strict-Transport-Security"), containsString("includeSubDomains"))
+        assertThat(response.getHeader("Cache-Control"), equalTo("no-cache, no-store, max-age=0, must-revalidate"))
+        assertThat(response.getHeader("X-Content-Type-Options"), equalTo("nosniff"))
+        assertThat(response.getHeader("X-XSS-Protection"), equalTo("0"))
     }
 }
