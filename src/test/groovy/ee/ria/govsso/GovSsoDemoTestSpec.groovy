@@ -9,6 +9,7 @@ import io.restassured.response.Response
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotEquals
 
 class GovSsoDemoTestSpec extends GovSsoSpecification {
 
@@ -108,5 +109,30 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         assertEquals(flow.oidcClientB.clientId, claimsClientB.getAudience().get(0), "Correct aud value")
         assertEquals("EE60001017716", claimsClientB.getSubject(), "Correct subject value")
         assertEquals(claimsClientA.getClaim("sid"), claimsClientB.getClaim("sid"), "Correct session ID")
+    }
+
+    @Feature("AUTHENTICATION")
+    @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
+    def "Authentication with Mobile-ID in client-A and reauthenticate in client-B"() {
+        expect:
+        Response createSession = Steps.authenticateWithMidInGovsso(flow)
+        JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+        Response reauthenticateResponse = Requests.postRequestWithCookies(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies)
+        Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, reauthenticateResponse)
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", sessionServiceRedirectToTaraResponse.getCookie("oauth2_authentication_csrf"))
+        Response followRedirect = Steps.followRedirect(flow, sessionServiceRedirectToTaraResponse)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, followRedirect)
+        Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
+
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, oidcServiceConsentResponse, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token"), flow.oidcClientB.clientId).getJWTClaimsSet()
+        assertEquals(flow.oidcClientB.clientId, claimsClientB.getAudience().get(0), "Correct aud value")
+        assertEquals("EE38001085718", claimsClientB.getSubject(), "Correct subject value")
+        assertEquals("JAAK-KRISTJAN", claimsClientB.getClaim("given_name"), "Correct given name")
+        assertNotEquals(claimsClientA.getClaim("sid"), claimsClientB.getClaim("sid"), "New session ID")
     }
 }

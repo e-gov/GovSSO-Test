@@ -175,4 +175,60 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error is returned")
         assertEquals("Invalid request.", continueSession.jsonPath().getString("message"), "Correct message is returned")
     }
+
+    @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
+    def "Continue session with invalid session cookie"() {
+        expect:
+        Steps.authenticateWithMidInGovsso(flow)
+
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+
+        Utils.setParameter(flow.sessionService.cookies, "SESSION", "a"*48)
+        Response continueWithExistingSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
+
+        assertEquals(500, continueWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("TECHNICAL_GENERAL", continueWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("An unexpected error occurred. Please try again later.", continueWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+    }
+
+    @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
+    def "Reauthenticate with invalid session cookie"() {
+        expect:
+        Steps.authenticateWithMidInGovsso(flow)
+
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+
+        Utils.setParameter(flow.sessionService.cookies, "SESSION", "a"*48)
+        Response reauthenticateWithExistingSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies)
+
+        assertEquals(500, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("TECHNICAL_GENERAL", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("An unexpected error occurred. Please try again later.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+    }
+
+    @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
+    def "Continue session without existing session"() {
+        expect:
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+        Response continueSessionResponse = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
+
+        assertEquals(400, continueSessionResponse.jsonPath().get("status"), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", continueSessionResponse.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("Invalid request.", continueSessionResponse.jsonPath().getString("message"), "Correct message is returned")
+    }
+
+    @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
+    def "Reauthenticate without existing session"() {
+        expect:
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+        Response reauthenticateResponse = Requests.postRequestWithCookies(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies)
+
+        assertEquals(400, reauthenticateResponse.jsonPath().get("status"), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", reauthenticateResponse.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("Invalid request.", reauthenticateResponse.jsonPath().getString("message"), "Correct message is returned")
+    }
 }
