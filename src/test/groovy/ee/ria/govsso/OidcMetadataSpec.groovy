@@ -44,7 +44,7 @@ class OidcMetadataSpec extends GovSsoSpecification {
         assertEquals((flow.ssoOidcService.fullLogoutUrl).toString(), jsonResponse.getString("end_session_endpoint"), "Correct session end endpoint")
 
         List<String> claimsSupported = jsonResponse.getList("claims_supported")
-        def claimsList = ["sub", "acr", "amr", "at_has", "aud", "auth_time", "exp", "iat", "iss", "jti", "nonce", "profile_attributes.date_of_birth", "profile_attributes.family_name", "profile_attributes.given_name", "sid"]
+        def claimsList = ["sub", "acr", "amr", "at_hash", "aud", "auth_time", "exp", "iat", "iss", "jti", "nonce", "birthdate", "family_name", "given_name", "sid"]
         claimsList.each {
             assertTrue(claimsSupported.contains(it), "Claims supported. Contains $it")
         }

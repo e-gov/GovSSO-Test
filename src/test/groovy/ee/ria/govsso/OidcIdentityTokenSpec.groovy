@@ -35,7 +35,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
         assertEquals("openid", tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
         assertTrue(tokenResponse.body().jsonPath().getString("access_token").size() > 32, "Access token element exists")
-        assertTrue(tokenResponse.body().jsonPath().getInt("expires_in") > 60, "Expires in element exists")
+        assertTrue(tokenResponse.body().jsonPath().getInt("expires_in") <= 1, "Expires in element exists")
         assertTrue(tokenResponse.body().jsonPath().getString("id_token").size() > 1000, "ID token element exists")
     }
 
@@ -57,7 +57,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Date date = new Date()
         assertThat("Correct authentication time", Math.abs(date.getTime() - claims.getDateClaim("auth_time").getTime()) < 10000L)
         assertThat("Correct issued at time", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
-        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(3600000L))
+        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(900000L))
         assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["mID"]))
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE60001017716"))
         assertThat("Correct date of birth", claims.getClaim("birthdate"),  equalTo("2000-01-01"))

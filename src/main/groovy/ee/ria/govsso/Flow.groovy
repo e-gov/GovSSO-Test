@@ -44,8 +44,11 @@ class Flow {
 @Canonical
 class SsoSessionService {
     String host
+    String nodeHost
     String port
+    String nodePort
     String protocol
+    String nodeProtocol
     String initUrl
     String continueSessionUrl
     String reauthenticateUrl
@@ -57,21 +60,24 @@ class SsoSessionService {
     String infoUrl
     HashMap <String, String> cookies
 
-    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
-    @Lazy fullInitUrl = "${protocol}://${host}${portCheck()}${initUrl}"
-    @Lazy fullContinueSessionUrl = "${protocol}://${host}${portCheck()}${continueSessionUrl}"
-    @Lazy fullReauthenticateUrl = "${protocol}://${host}${portCheck()}${reauthenticateUrl}"
-    @Lazy fullTaraCallbackUrl = "${protocol}://${host}${portCheck()}${taraCallbackUrl}"
-    @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
-    @Lazy fullConsentConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
-    @Lazy fullHealthUrl = "${protocol}://${host}${portCheck()}${healthUrl}"
-    @Lazy fullReadinessUrl = "${protocol}://${host}${portCheck()}${readinessUrl}"
-    @Lazy fullInfoUrl = "${protocol}://${host}${portCheck()}${infoUrl}"
+    @Lazy baseUrl = "${protocol}://${host}"
+    @Lazy fullInitUrl = "${protocol}://${host}${initUrl}"
+    @Lazy fullContinueSessionUrl = "${protocol}://${host}${continueSessionUrl}"
+    @Lazy fullReauthenticateUrl = "${protocol}://${host}${reauthenticateUrl}"
+    @Lazy fullTaraCallbackUrl = "${protocol}://${host}${taraCallbackUrl}"
+    @Lazy fullConsentUrl = "${protocol}://${host}${consentUrl}"
+    @Lazy fullConsentConfirmUrl = "${protocol}://${host}${consentConfirmUrl}"
+    @Lazy fullHealthUrl = "${nodeProtocol}://${nodeHost}${portCheck()}${healthUrl}"
+    @Lazy fullReadinessUrl = "${nodeProtocol}://${nodeHost}${portCheck()}${readinessUrl}"
+    @Lazy fullInfoUrl = "${nodeProtocol}://${nodeHost}${portCheck()}${infoUrl}"
 
     SsoSessionService(Properties properties) {
         this.host = properties."sessionservice.host"
+        this.nodeHost = properties."sessionservice.node.host"
         this.port = properties."sessionservice.port"
+        this.nodePort = properties."sessionservice.node.port"
         this.protocol = properties."sessionservice.protocol"
+        this.nodeProtocol = properties."sessionservice.node.protocol"
         this.initUrl = properties."sessionservice.initUrl"
         this.continueSessionUrl = properties."sessionservice.continueSessionUrl"
         this.reauthenticateUrl = properties."sessionservice.reauthenticateUrl"
@@ -86,8 +92,8 @@ class SsoSessionService {
     }
 
     private String portCheck() {
-        if (port != null && port.isInteger()) {
-            return ":${port}"
+        if (nodePort != null && nodePort.isInteger()) {
+            return ":${nodePort}"
         } else {
             return ""
         }
@@ -106,12 +112,12 @@ class SsoOidcService {
     String configurationUrl
     HashMap <String, String> cookies
 
-    @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${portCheck()}${authenticationRequestUrl}"
-    @Lazy fullRevocationUrl = "${protocol}://${host}${portCheck()}${revocationUrl}"
-    @Lazy fullLogoutUrl = "${protocol}://${host}${portCheck()}${logoutUrl}"
-    @Lazy fullJwksUrl = "${protocol}://${host}${portCheck()}${jwksUrl}"
-    @Lazy fullConfigurationUrl = "${protocol}://${host}${portCheck()}${configurationUrl}"
-    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
+    @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${authenticationRequestUrl}"
+    @Lazy fullRevocationUrl = "${protocol}://${host}${revocationUrl}"
+    @Lazy fullLogoutUrl = "${protocol}://${host}${logoutUrl}"
+    @Lazy fullJwksUrl = "${protocol}://${host}${jwksUrl}"
+    @Lazy fullConfigurationUrl = "${protocol}://${host}${configurationUrl}"
+    @Lazy baseUrl = "${protocol}://${host}"
 
     SsoOidcService(Properties properties) {
         this.host = properties."ssooidcservice.host"

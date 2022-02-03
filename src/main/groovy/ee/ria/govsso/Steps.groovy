@@ -12,7 +12,7 @@ class Steps {
     @Step("Initialize authentication sequence in SSO OIDC service with params")
     static Response startAuthenticationInSsoOidcWithParams(Flow flow, Map<String, String> paramsMap) {
         Response initSession = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.getCookies(), paramsMap, Collections.emptyMap())
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf_insecure", initSession.getCookie("oauth2_authentication_csrf_insecure"))
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", initSession.getCookie("oauth2_authentication_csrf"))
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
         return initSession
     }
@@ -110,8 +110,8 @@ class Steps {
         Response sessionServiceResponse = followRedirectWithCookies(flow, authenticationFinishedResponse, flow.ssoOidcService.cookies)
         verifyResponseHeaders(sessionServiceResponse)
         Response oidcServiceResponse = followRedirectWithCookies(flow, sessionServiceResponse, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_insecure", oidcServiceResponse.getCookie("oauth2_consent_csrf_insecure"))
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_session_insecure", oidcServiceResponse.getCookie("oauth2_authentication_session_insecure"))
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_session", oidcServiceResponse.getCookie("oauth2_authentication_session"))
         Response sessionServiceConsentResponse = followRedirectWithCookies(flow, oidcServiceResponse, flow.ssoOidcService.cookies)
         verifyResponseHeaders(sessionServiceResponse)
         return followRedirectWithCookies(flow, sessionServiceConsentResponse, flow.ssoOidcService.cookies)
