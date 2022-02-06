@@ -47,6 +47,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
 
         where:
         paramKey            | paramValue | error                       | errorMessage
+        "prompt"            | "none"     | "login_required"            | "The Authorization Server requires End-User authentication. Prompt 'none' was requested, but no existing login session was found."
         "scope"             | "invalid"  | "invalid_scope"             | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'invalid'."
         "state"             | "invalid"  | "invalid_state"             | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
         "response_type"     | "token"    | "unsupported_response_type" | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'token'."
