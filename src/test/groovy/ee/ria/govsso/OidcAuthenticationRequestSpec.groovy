@@ -8,6 +8,8 @@ import io.restassured.response.Response
 import spock.lang.Ignore
 import spock.lang.Unroll
 
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.startsWith
 import static org.junit.jupiter.api.Assertions.*
@@ -124,6 +126,21 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
+    }
+
+    @Unroll
+    @Feature("SECURE_COOKIE_HANDLING")
+    def "Correct set-cookie parameters in responses"() {
+        expect:
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
+        Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.ssoOidcService.cookies)
+        Response loginVerifierResponse = Steps.followRedirectWithCookies(flow, callbackResponse, flow.ssoOidcService.cookies)
+
+        assertThat("Correct cookie attributes", oidcServiceInitResponse.getDetailedCookie("oauth2_authentication_csrf").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure")))
+        assertThat("Correct cookie attributes", loginVerifierResponse.getDetailedCookie("oauth2_authentication_session").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure"), containsString("Max-Age=900")))
+        assertThat("Correct cookie attributes", loginVerifierResponse.getDetailedCookie("oauth2_consent_csrf").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure")))
     }
 
     @Unroll

@@ -2,10 +2,14 @@ package ee.ria.govsso
 
 
 import com.nimbusds.jwt.SignedJWT
+import io.qameta.allure.Feature
 import io.qameta.allure.Step
 import io.restassured.response.Response
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.anyOf
+import static org.hamcrest.Matchers.containsString
+
 
 class Steps {
 
@@ -26,6 +30,12 @@ class Steps {
     @Step("Initialize authentication sequence in OIDC service")
     static Response startAuthenticationInSsoOidc(Flow flow, String clientId, String fullResponseUrl) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, fullResponseUrl)
+        return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+    }
+
+    @Step("Initialize session refresh sequence in OIDC service")
+    static Response startSessionRefreshInSsoOidc(Flow flow, String idTokenHint) {
+        Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParametersWithDefaults(flow, idTokenHint)
         return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
@@ -135,14 +145,19 @@ class Steps {
         return getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
     }
 
-    //TODO: review after TLS update
+    @Feature("CSP_ENABLED")
+    @Feature("HSTS_ENABLED")
+    @Feature("DISALLOW_IFRAMES")
+    @Feature("CACHE_POLICY")
+    @Feature("NOSNIFF")
+    @Feature("XSS_DETECTION_FILTER_ENABLED")
     @Step("verify response headers")
     static void verifyResponseHeaders(Response response) {
         assertThat(response.getHeader("X-Frame-Options"), equalTo("DENY"))
         String policyString = "connect-src 'self'; default-src 'none'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'; block-all-mixed-content"
         assertThat(response.getHeader("Content-Security-Policy"), equalTo(policyString))
-//        assertThat(response.getHeader("Strict-Transport-Security"), anyOf(containsString("max-age=16070400"), containsString("max-age=31536000")))
-//        assertThat(response.getHeader("Strict-Transport-Security"), containsString("includeSubDomains"))
+        assertThat(response.getHeader("Strict-Transport-Security"), anyOf(containsString("max-age=16070400"), containsString("max-age=31536000")))
+        assertThat(response.getHeader("Strict-Transport-Security"), containsString("includeSubDomains"))
         assertThat(response.getHeader("Cache-Control"), equalTo("no-cache, no-store, max-age=0, must-revalidate"))
         assertThat(response.getHeader("X-Content-Type-Options"), equalTo("nosniff"))
         assertThat(response.getHeader("X-XSS-Protection"), equalTo("0"))
