@@ -6,7 +6,6 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
 import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertEquals
 
 class UserInterfaceSpec extends GovSsoSpecification{
 
@@ -22,7 +21,7 @@ class UserInterfaceSpec extends GovSsoSpecification{
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
     def "Continue session and reauthenticate buttons"() {
         expect:
-        Steps.authenticateWithMidInGovsso(flow)
+        Steps.authenticateWithIdCardInGovsso(flow)
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLoginResponse = Steps.followRedirect(flow, oidcServiceInitResponse)
 

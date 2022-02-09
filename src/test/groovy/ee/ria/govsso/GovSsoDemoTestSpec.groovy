@@ -95,9 +95,9 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
 
     @Feature("AUTHENTICATION")
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
-    def "Authentication with Mobile-ID in client-A and continue session in client-B"() {
+    def "Authentication with ID-card in client-A and continue session in client-B"() {
         expect:
-        Response createSession = Steps.authenticateWithMidInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
         JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
@@ -107,15 +107,15 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, followRedirects.getBody().jsonPath().get("id_token"), flow.oidcClientB.clientId).getJWTClaimsSet()
 
         assertEquals(flow.oidcClientB.clientId, claimsClientB.getAudience().get(0), "Correct aud value")
-        assertEquals("EE60001017716", claimsClientB.getSubject(), "Correct subject value")
+        assertEquals("EE38001085718", claimsClientB.getSubject(), "Correct subject value")
         assertEquals(claimsClientA.getClaim("sid"), claimsClientB.getClaim("sid"), "Correct session ID")
     }
 
     @Feature("AUTHENTICATION")
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
-    def "Authentication with Mobile-ID in client-A and reauthenticate in client-B"() {
+    def "Authentication with ID-card in client-A and reauthenticate in client-B"() {
         expect:
-        Response createSession = Steps.authenticateWithMidInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
         JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)

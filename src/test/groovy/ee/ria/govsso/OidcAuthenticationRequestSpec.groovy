@@ -134,7 +134,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
-        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
         Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.ssoOidcService.cookies)
         Response loginVerifierResponse = Steps.followRedirectWithCookies(flow, callbackResponse, flow.ssoOidcService.cookies)
 
@@ -149,7 +149,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
-        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
         Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.ssoOidcService.cookies)
 
         HashMap<String, String> queryParams = (HashMap) Collections.emptyMap()
@@ -181,7 +181,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
-        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
         Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.ssoOidcService.cookies)
         Response loginVerifierResponse = Steps.followRedirectWithCookies(flow, callbackResponse, flow.ssoOidcService.cookies)
         Response consentResponse = Steps.followRedirectWithCookies(flow, loginVerifierResponse, flow.ssoOidcService.cookies)

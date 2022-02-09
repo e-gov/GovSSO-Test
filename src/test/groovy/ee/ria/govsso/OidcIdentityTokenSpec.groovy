@@ -25,31 +25,21 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token response"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
-        Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
-        Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
+        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
 
-        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
-
-        assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
-        assertEquals("openid", tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
-        assertTrue(tokenResponse.body().jsonPath().getString("access_token").size() > 32, "Access token element exists")
-        assertTrue(tokenResponse.body().jsonPath().getInt("expires_in") <= 1, "Expires in element exists")
-        assertTrue(tokenResponse.body().jsonPath().getString("id_token").size() > 1000, "ID token element exists")
+        assertEquals("bearer", createSession.body().jsonPath().getString("token_type"), "Correct token_type value")
+        assertEquals("openid", createSession.body().jsonPath().getString("scope"), "Correct scope value")
+        assertTrue(createSession.body().jsonPath().getString("access_token").size() > 32, "Access token element exists")
+        assertTrue(createSession.body().jsonPath().getInt("expires_in") <= 1, "Expires in element exists")
+        assertTrue(createSession.body().jsonPath().getString("id_token").size() > 1000, "ID token element exists")
     }
 
     @Feature("ID_TOKEN")
     def "Verify ID token mandatory elements"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
-        Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
-        Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
+        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
 
-        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
-
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertTrue(claims.getJWTID().size() > 35, "Correct jti claim exists")
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
         assertThat("Correct issuer", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
@@ -58,11 +48,11 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct authentication time", Math.abs(date.getTime() - claims.getDateClaim("auth_time").getTime()) < 10000L)
         assertThat("Correct issued at time", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
         assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(900000L))
-        assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["mID"]))
-        assertThat("Correct subject claim", claims.getSubject(), equalTo("EE60001017716"))
-        assertThat("Correct date of birth", claims.getClaim("birthdate"),  equalTo("2000-01-01"))
-        assertThat("Correct given name", claims.getClaim("given_name"),  equalTo("ONE"))
-        assertThat("Correct family name", claims.getClaim("family_name"),  equalTo("TESTNUMBER"))
+        assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["idcard"]))
+        assertThat("Correct subject claim", claims.getSubject(), equalTo("EE38001085718"))
+        assertThat("Correct date of birth", claims.getClaim("birthdate"),  equalTo("1980-01-08"))
+        assertThat("Correct given name", claims.getClaim("given_name"),  equalTo("JAAK-KRISTJAN"))
+        assertThat("Correct family name", claims.getClaim("family_name"),  equalTo("JÕEORG"))
         assertThat("Correct LoA level", claims.getClaim("acr"), equalTo("high"))
         assertThat("Correct UUID pattern for session ID", claims.getClaim("sid"), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertTrue(claims.getStringClaim("at_hash").size()  > 20, "Correct at_hash claim exists")

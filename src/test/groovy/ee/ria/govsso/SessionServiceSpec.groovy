@@ -179,7 +179,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
     def "Continue session with invalid session cookie"() {
         expect:
-        Steps.authenticateWithMidInGovsso(flow)
+        Steps.authenticateWithIdCardInGovsso(flow)
 
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcServiceInitResponse)
@@ -195,7 +195,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
     def "Reauthenticate with invalid session cookie"() {
         expect:
-        Steps.authenticateWithMidInGovsso(flow)
+        Steps.authenticateWithIdCardInGovsso(flow)
 
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcServiceInitResponse)

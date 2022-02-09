@@ -45,6 +45,16 @@ class Steps {
         return initSession
     }
 
+    @Step("Initialize session refresh and follow redirects to client application")
+    static Response refreshSession(Flow flow, String idTokenHint) {
+        Response initRefreshSession = startSessionRefreshInSsoOidc(flow, idTokenHint)
+        Response initLoginResponse = followRedirect(flow, initRefreshSession)
+        Response oauthLoginResponse = followRedirect(flow, initLoginResponse)
+        Response initConsentResponse = followRedirect(flow, oauthLoginResponse)
+        Response oauthConsentResponse = followRedirect(flow, initConsentResponse)
+        return oauthConsentResponse
+    }
+
     @Step("Getting OAuth2 cookies")
     static Response getOAuthCookies(flow, Response response) {
         Response oidcServiceResponse = followRedirectWithCookies(flow, response, flow.taraService.cookies)
@@ -135,12 +145,12 @@ class Steps {
         return getIdentityTokenResponse(flow, oidcServiceResponse2, clientId, clientSecret, fullResponseUrl)
     }
 
-    @Step("Create initial session in GOVSSO with Mobile-ID in Client-A")
-    static Response authenticateWithMidInGovsso(flow) {
+    @Step("Create initial session in GOVSSO with ID-Card in Client-A")
+    static Response authenticateWithIdCardInGovsso(flow) {
         Response oidcServiceInitResponse = startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = startSessionInSessionService(flow, oidcServiceInitResponse)
         verifyResponseHeaders(sessionServiceRedirectToTaraResponse)
-        Response authenticationFinishedResponse = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", sessionServiceRedirectToTaraResponse)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
         Response oidcServiceConsentResponse = followRedirectsToClientApplication(flow, authenticationFinishedResponse)
         return getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
     }
