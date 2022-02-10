@@ -6,8 +6,6 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.MatcherAssert.assertThat
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotEquals
 
@@ -34,9 +32,9 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
-        assertThat(claims.getSubject(), equalTo("EE60001017716"))
-        assertThat(claims.getClaim("given_name"), equalTo("ONE"))
+        assertEquals(flow.oidcClientA.clientId, claims.getAudience().get(0), "Correct aud value")
+        assertEquals("EE60001017716", claims.getSubject(), "Correct subject value")
+        assertEquals("ONE", claims.getClaim("given_name"), "Correct given name")
     }
 
     @Feature("AUTHENTICATION")
@@ -52,9 +50,9 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
-        assertThat(claims.getSubject(), equalTo("EE30303039914"))
-        assertThat(claims.getClaim("given_name"), equalTo("QUALIFIED OK1"))
+        assertEquals(flow.oidcClientA.clientId, claims.getAudience().get(0), "Correct aud value")
+        assertEquals("EE30303039914", claims.getSubject(), "Correct subject value")
+        assertEquals("QUALIFIED OK1", claims.getClaim("given_name"), "Correct given name")
     }
 
     @Feature("AUTHENTICATION")
@@ -70,9 +68,9 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
-        assertThat(claims.getSubject(), equalTo("EE38001085718"))
-        assertThat(claims.getClaim("given_name"), equalTo("JAAK-KRISTJAN"))
+        assertEquals(flow.oidcClientA.clientId, claims.getAudience().get(0), "Correct aud value")
+        assertEquals("EE38001085718", claims.getSubject(), "Correct subject value")
+        assertEquals("JAAK-KRISTJAN", claims.getClaim("given_name"), "Correct given name")
     }
 
     @Feature("AUTHENTICATION")
@@ -88,10 +86,25 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
-        assertThat(claims.getSubject(), equalTo("CA12345"))
-        assertThat(claims.getClaim("given_name"), equalTo("javier"))
-       }
+        assertEquals(flow.oidcClientA.clientId, claims.getAudience().get(0), "Correct aud value")
+        assertEquals("CA12345", claims.getSubject(), "Correct subject value")
+        assertEquals("javier", claims.getClaim("given_name"), "Correct given name")
+    }
+
+    @Feature("AUTHENTICATION")
+    def "Authentication with ID-card in client-A and refresh session"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        String idToken = createSession.jsonPath().get("id_token")
+        Response refreshSession = Steps.refreshSessionWithDefaults(flow, idToken)
+
+        Response tokenResponse2 = Steps.getIdentityTokenResponseWithDefaults(flow, refreshSession)
+
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse2.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        assertEquals(flow.oidcClientA.clientId, claims.getAudience().get(0), "Correct aud value")
+        assertEquals("EE38001085718", claims.getSubject(), "Correct subject value")
+        assertEquals("JAAK-KRISTJAN", claims.getClaim("given_name"), "Correct given name")
+    }
 
     @Feature("AUTHENTICATION")
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -100,11 +113,9 @@ class GovSsoDemoTestSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
         JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Steps.followRedirect(flow, oidcServiceInitResponse)
-        Response continueWithExistingSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
-        Response followRedirects = Steps.followRedirectsToClientApplicationWithExistingSession(flow, continueWithExistingSession, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, followRedirects.getBody().jsonPath().get("id_token"), flow.oidcClientB.clientId).getJWTClaimsSet()
+        Response continueWithExistingSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueWithExistingSession.getBody().jsonPath().get("id_token"), flow.oidcClientB.clientId).getJWTClaimsSet()
 
         assertEquals(flow.oidcClientB.clientId, claimsClientB.getAudience().get(0), "Correct aud value")
         assertEquals("EE38001085718", claimsClientB.getSubject(), "Correct subject value")

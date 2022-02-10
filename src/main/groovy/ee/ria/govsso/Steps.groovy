@@ -33,9 +33,15 @@ class Steps {
         return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
-    @Step("Initialize session refresh sequence in OIDC service")
-    static Response startSessionRefreshInSsoOidc(Flow flow, String idTokenHint) {
+    @Step("Initialize session refresh sequence in OIDC service with defaults")
+    static Response startSessionRefreshInSsoOidcWithDefaults(Flow flow, String idTokenHint) {
         Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParametersWithDefaults(flow, idTokenHint)
+        return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+    }
+
+    @Step("Initialize session refresh sequence in OIDC service")
+    static Response startSessionRefreshInSsoOidc(Flow flow, String idTokenHint, String clientId, String fullResponseUrl) {
+        Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParameters(flow, idTokenHint, clientId, fullResponseUrl)
         return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
@@ -45,9 +51,19 @@ class Steps {
         return initSession
     }
 
+    @Step("Initialize session refresh and follow redirects to client application with defaults")
+    static Response refreshSessionWithDefaults(Flow flow, String idTokenHint) {
+        Response initRefreshSession = startSessionRefreshInSsoOidcWithDefaults(flow, idTokenHint)
+        Response initLoginResponse = followRedirect(flow, initRefreshSession)
+        Response oauthLoginResponse = followRedirect(flow, initLoginResponse)
+        Response initConsentResponse = followRedirect(flow, oauthLoginResponse)
+        Response oauthConsentResponse = followRedirect(flow, initConsentResponse)
+        return oauthConsentResponse
+    }
+
     @Step("Initialize session refresh and follow redirects to client application")
-    static Response refreshSession(Flow flow, String idTokenHint) {
-        Response initRefreshSession = startSessionRefreshInSsoOidc(flow, idTokenHint)
+    static Response refreshSession(Flow flow, String idTokenHint, String clientId, String fullResponseUrl) {
+        Response initRefreshSession = startSessionRefreshInSsoOidc(flow, idTokenHint, clientId, fullResponseUrl)
         Response initLoginResponse = followRedirect(flow, initRefreshSession)
         Response oauthLoginResponse = followRedirect(flow, initLoginResponse)
         Response initConsentResponse = followRedirect(flow, oauthLoginResponse)
@@ -145,7 +161,7 @@ class Steps {
         return getIdentityTokenResponse(flow, oidcServiceResponse2, clientId, clientSecret, fullResponseUrl)
     }
 
-    @Step("Create initial session in GOVSSO with ID-Card in Client-A")
+    @Step("Create initial session in GOVSSO with ID-Card in client-A")
     static Response authenticateWithIdCardInGovsso(flow) {
         Response oidcServiceInitResponse = startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = startSessionInSessionService(flow, oidcServiceInitResponse)
@@ -153,6 +169,14 @@ class Steps {
         Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
         Response oidcServiceConsentResponse = followRedirectsToClientApplication(flow, authenticationFinishedResponse)
         return getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
+    }
+
+    @Step("Use existing session to authenticate to another client")
+    static Response continueWithExistingSession(Flow flow, String clientId, String clientSecret, String fullResponseUrl) {
+        Response oidcServiceInitResponse = startAuthenticationInSsoOidc(flow, clientId, fullResponseUrl)
+        followRedirect(flow, oidcServiceInitResponse)
+        Response continueWithExistingSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
+        return followRedirectsToClientApplicationWithExistingSession(flow, continueWithExistingSession, clientId, clientSecret, fullResponseUrl)
     }
 
     @Feature("CSP_ENABLED")

@@ -57,6 +57,36 @@ class OpenIdUtils {
         return queryParams
     }
 
+    static Map<String, String> getSessionRefreshParametersWithDefaults(Flow flow, String idTokenHint) {
+        Map<String, String> queryParams = new HashMap<>()
+        flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        queryParams.put("response_type", "code")
+        queryParams.put("scope", "openid")
+        queryParams.put("client_id", flow.getOidcClientA().getClientId())
+        queryParams.put("redirect_uri", flow.getOidcClientA().fullResponseUrl)
+        queryParams.put("state", flow.state)
+        queryParams.put("nonce", flow.nonce)
+        queryParams.put("prompt", "none")
+        queryParams.put("id_token_hint", idTokenHint)
+        return queryParams
+    }
+
+    static Map<String, String> getSessionRefreshParameters(Flow flow, String idTokenHint, String clientId, String fullResponseUrl) {
+        Map<String, String> queryParams = new HashMap<>()
+        flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        queryParams.put("response_type", "code")
+        queryParams.put("scope", "openid")
+        queryParams.put("client_id", clientId)
+        queryParams.put("redirect_uri", fullResponseUrl)
+        queryParams.put("state", flow.state)
+        queryParams.put("nonce", flow.nonce)
+        queryParams.put("prompt", "none")
+        queryParams.put("id_token_hint", idTokenHint)
+        return queryParams
+    }
+
     static SignedJWT verifyTokenAndReturnSignedJwtObjectWithDefaults(Flow flow, String token) throws ParseException, JOSEException, IOException {
         SignedJWT signedJWT = SignedJWT.parse(token)
         MatcherAssert.assertThat("Token Signature is not valid!", isTokenSignatureValid(flow.jwkSet, signedJWT), CoreMatchers.is(true))
