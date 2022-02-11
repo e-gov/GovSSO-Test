@@ -179,6 +179,14 @@ class Steps {
         return followRedirectsToClientApplicationWithExistingSession(flow, continueWithExistingSession, clientId, clientSecret, fullResponseUrl)
     }
 
+    @Step("Initialize logout sequence in OIDC")
+    static Response startLogout(flow, String idTokenHint, String clientBaseUrl) {
+        HashMap<String, String> queryParamas = new HashMap<>()
+        queryParamas.put("id_token_hint", idTokenHint)
+        queryParamas.put("post_logout_redirect_uri", clientBaseUrl)
+        return Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParamas, Collections.emptyMap())
+    }
+
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
     @Feature("DISALLOW_IFRAMES")

@@ -144,7 +144,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("OIDC")
+    @Feature("OIDC_REQUEST")
     def "Incorrect OIDC login verifier request: #reason"() {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
@@ -176,7 +176,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("OIDC")
+    @Feature("OIDC_REQUEST")
     def "Incorrect OIDC consent verifier request: #reason"() {
         expect:
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
@@ -207,5 +207,29 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         "Incorrect responseType"     | "client_id" | "consent_verifier" | "redirect_uri" | "scope"         | "scope"     | "state" | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'openid'."
         "Incorrect scope"            | "client_id" | "consent_verifier" | "redirect_uri" | "response_type" | "client_id" | "state" | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'client-a'."
         "Incorrect state"            | "client_id" | "consent_verifier" | "redirect_uri" | "response_type" | "scope"     | "scope" | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
+    }
+
+    @Feature("OIDC_REQUEST")
+    def "Start logout request with correct parameters"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response initLogout = Steps.startLogout(flow, createSession.jsonPath().get("id_token"), flow.oidcClientA.fullBaseUrl)
+
+        assertEquals(302, initLogout.getStatusCode(), "Correct status code")
+        assertThat(initLogout.getHeader("location"), containsString("logout?logout_challenge="))
+    }
+
+    @Feature("OIDC_REQUEST")
+    def "Start logout request with not registered logout_redirect_uri"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response initLogout = Steps.startLogout(flow, createSession.jsonPath().get("id_token"), "https://not.whitelisted.eu")
+
+        String errorDescription = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. " +
+                                  "Logout failed because query parameter post_logout_redirect_uri is not a whitelisted as a post_logout_redirect_uri for the client."
+
+        assertEquals(302, initLogout.getStatusCode(), "Correct status code")
+        assertEquals("invalid_request", Utils.getParamValueFromResponseHeader(initLogout, "error"), "Error parameter exists")
+        assertEquals(errorDescription, Utils.getParamValueFromResponseHeader(initLogout, "error_description"), "Correct error message is returned")
     }
 }

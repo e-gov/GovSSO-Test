@@ -259,6 +259,7 @@ class SsoOidcClientA {
     String clientSecret
     HashMap <String, String> cookies
 
+    @Lazy fullBaseUrl = "${protocol}://${host}${portCheck()}"
     @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
     SsoOidcClientA(Properties properties) {
@@ -290,6 +291,7 @@ class SsoOidcClientB {
     String clientSecret
     HashMap <String, String> cookies
 
+    @Lazy fullBaseUrl = "${protocol}://${host}${portCheck()}"
     @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
     SsoOidcClientB(Properties properties) {
