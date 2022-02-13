@@ -135,7 +135,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
-        Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.ssoOidcService.cookies)
+        Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
         Response loginVerifierResponse = Steps.followRedirectWithCookies(flow, callbackResponse, flow.ssoOidcService.cookies)
 
         assertThat("Correct cookie attributes", oidcServiceInitResponse.getDetailedCookie("oauth2_authentication_csrf").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure")))
@@ -150,7 +150,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
-        Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.ssoOidcService.cookies)
+        Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
 
         HashMap<String, String> queryParams = (HashMap) Collections.emptyMap()
         Utils.setParameter(queryParams, "client_id", Utils.getParamValueFromResponseHeader(callbackResponse, clientId))
@@ -182,7 +182,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
-        Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.ssoOidcService.cookies)
+        Response callbackResponse = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
         Response loginVerifierResponse = Steps.followRedirectWithCookies(flow, callbackResponse, flow.ssoOidcService.cookies)
         Response consentResponse = Steps.followRedirectWithCookies(flow, loginVerifierResponse, flow.ssoOidcService.cookies)
 

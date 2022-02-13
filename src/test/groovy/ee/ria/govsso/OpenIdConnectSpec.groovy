@@ -25,19 +25,10 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     @Feature("OPENID_CONNECT")
     def "Metadata and token key ID matches"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
-        Response midAuthResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
-        Response sessionServiceResponse = Steps.followRedirectWithCookies(flow, midAuthResponse, flow.ssoOidcService.cookies)
-        Response oidcServiceResponse = Steps.followRedirectWithCookies(flow, sessionServiceResponse, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
-        Response sessionServiceConsentResponse = Steps.followRedirectWithCookies(flow, oidcServiceResponse, flow.ssoOidcService.cookies)
-        Response oidcServiceConsentResponse = Steps.followRedirectWithCookies(flow, sessionServiceConsentResponse, flow.ssoOidcService.cookies)
+        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
 
-        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
-
-        assertEquals(200, tokenResponse.statusCode(), "Correct HTTP status code is returned")
-        String keyID = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
+        assertEquals(200, createSession.statusCode(), "Correct HTTP status code is returned")
+        String keyID = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
         assertThat(keyID, equalTo(flow.jwkSet.getKeys().get(0).getKeyID()))
     }
 

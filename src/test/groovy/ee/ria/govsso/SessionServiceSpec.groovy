@@ -4,6 +4,7 @@ import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import spock.lang.Ignore
 import spock.lang.Unroll
 
 import static org.junit.jupiter.api.Assertions.assertEquals
@@ -85,7 +86,10 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(paramsMap, "state", "")
         Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code"))
 
-        Response sessionServiceResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullTaraCallbackUrl, paramsMap, Collections.emptyMap())
+        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(cookieMap, "__Host-GOVSSO", sessionServiceRedirectToTaraResponse.getCookie("__Host-GOVSSO"))
+
+        Response sessionServiceResponse = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
 
         assertEquals(400, sessionServiceResponse.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", sessionServiceResponse.getBody().jsonPath().get("error"), "Correct error message is returned")
@@ -103,11 +107,32 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(paramsMap, "code", "")
         Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "state"))
 
-        Response sessionServiceResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullTaraCallbackUrl, paramsMap, Collections.emptyMap())
+        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(cookieMap, "__Host-GOVSSO", sessionServiceRedirectToTaraResponse.getCookie("__Host-GOVSSO"))
+
+        Response sessionServiceResponse = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
 
         assertEquals(400, sessionServiceResponse.getStatusCode())
         assertEquals("USER_INPUT", sessionServiceResponse.getBody().jsonPath().get("error"), "Correct error message is returned")
         assertEquals("Invalid request.", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
+    }
+
+    @Feature("LOGIN_TARACALLBACK_ENDPOINT")
+    def "Taracallback request with missing __Host-GOVSSO cookie"() {
+        expect:
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
+
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code"))
+        Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "state"))
+
+        Response sessionServiceResponse = Requests.getRequestWithParams(flow, flow.sessionService.fullTaraCallbackUrl, paramsMap, Collections.emptyMap())
+
+        assertEquals(400, sessionServiceResponse.getStatusCode())
+        assertEquals("USER_COOKIE_MISSING", sessionServiceResponse.getBody().jsonPath().get("error"), "Correct error message is returned")
+        assertEquals("Missing or expired cookie", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Unroll
@@ -119,6 +144,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
 
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(cookieMap, "__Host-GOVSSO", sessionServiceRedirectToTaraResponse.getCookie("__Host-GOVSSO"))
         Utils.setParameter(cookieMap, cookieKey, cookieValue)
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
@@ -168,12 +194,26 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Continue session request without existing session"() {
         expect:
         Response oidcAuthenticate = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response initLogin = Steps.followRedirect(flow, oidcAuthenticate)
+        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initLogin.getCookie("__Host-GOVSSO"))
+        Response continueSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
+
+        assertEquals(403, continueSession.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("Invalid request.", continueSession.jsonPath().getString("message"), "Correct message is returned")
+    }
+
+    @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
+    def "Continue session request without __Host-GOVSSO cookie"() {
+        expect:
+        Response oidcAuthenticate = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuthenticate)
         Response continueSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
 
-        assertEquals(400, continueSession.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals(403, continueSession.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error is returned")
         assertEquals("Invalid request.", continueSession.jsonPath().getString("message"), "Correct message is returned")
+
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -187,9 +227,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(flow.sessionService.cookies, "SESSION", "a"*48)
         Response continueWithExistingSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
 
-        assertEquals(500, continueWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
-        assertEquals("TECHNICAL_GENERAL", continueWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("An unexpected error occurred. Please try again later.", continueWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals(403, continueWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", continueWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("Invalid request.", continueWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
     }
 
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
@@ -203,9 +243,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(flow.sessionService.cookies, "SESSION", "a"*48)
         Response reauthenticateWithExistingSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies)
 
-        assertEquals(500, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
-        assertEquals("TECHNICAL_GENERAL", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("An unexpected error occurred. Please try again later.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals(403, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("Invalid request.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -215,7 +255,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.followRedirect(flow, oidcServiceInitResponse)
         Response continueSessionResponse = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
 
-        assertEquals(400, continueSessionResponse.jsonPath().get("status"), "Correct HTTP status code is returned")
+        assertEquals(403, continueSessionResponse.jsonPath().get("status"), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", continueSessionResponse.jsonPath().getString("error"), "Correct error is returned")
         assertEquals("Invalid request.", continueSessionResponse.jsonPath().getString("message"), "Correct message is returned")
     }
@@ -227,7 +267,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.followRedirect(flow, oidcServiceInitResponse)
         Response reauthenticateResponse = Requests.postRequestWithCookies(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies)
 
-        assertEquals(400, reauthenticateResponse.jsonPath().get("status"), "Correct HTTP status code is returned")
+        assertEquals(403, reauthenticateResponse.jsonPath().get("status"), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", reauthenticateResponse.jsonPath().getString("error"), "Correct error is returned")
         assertEquals("Invalid request.", reauthenticateResponse.jsonPath().getString("message"), "Correct message is returned")
     }

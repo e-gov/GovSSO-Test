@@ -48,6 +48,8 @@ class Steps {
     @Step("Initialize session in session service with params")
     static Response startSessionInSessionService(Flow flow, Response response) {
         Response initSession = followRedirectWithCookies(flow, response, flow.ssoOidcService.cookies)
+        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initSession.getCookie("__Host-GOVSSO"))
+        Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", initSession.getCookie("__Host-XSRF-TOKEN"))
         return initSession
     }
 
@@ -142,8 +144,8 @@ class Steps {
     }
 
     @Step("Follow redirects to client application")
-    static Response followRedirectsToClientApplication (Flow flow, Response authenticationFinishedResponse) {
-        Response sessionServiceResponse = followRedirectWithCookies(flow, authenticationFinishedResponse, flow.ssoOidcService.cookies)
+    static Response followRedirectsToClientApplication(Flow flow, Response authenticationFinishedResponse) {
+        Response sessionServiceResponse = followRedirectWithCookies(flow, authenticationFinishedResponse, flow.sessionService.cookies)
         verifyResponseHeaders(sessionServiceResponse)
         Response oidcServiceResponse = followRedirectWithCookies(flow, sessionServiceResponse, flow.ssoOidcService.cookies)
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
@@ -154,7 +156,7 @@ class Steps {
     }
 
     @Step("Follow redirects to client application with existing session")
-    static Response followRedirectsToClientApplicationWithExistingSession (Flow flow, Response response, String clientId, String clientSecret, String fullResponseUrl) {
+    static Response followRedirectsToClientApplicationWithExistingSession(Flow flow, Response response, String clientId, String clientSecret, String fullResponseUrl) {
         Response oidcServiceResponse1 = followRedirect(flow, response)
         Response consentResponse = followRedirect(flow, oidcServiceResponse1)
         Response oidcServiceResponse2 = followRedirect(flow, consentResponse)
@@ -174,10 +176,31 @@ class Steps {
     @Step("Use existing session to authenticate to another client")
     static Response continueWithExistingSession(Flow flow, String clientId, String clientSecret, String fullResponseUrl) {
         Response oidcServiceInitResponse = startAuthenticationInSsoOidc(flow, clientId, fullResponseUrl)
-        followRedirect(flow, oidcServiceInitResponse)
-        Response continueWithExistingSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
+        Response initLogin = followRedirect(flow, oidcServiceInitResponse)
+        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initLogin.getCookie("__HOST-GOVSSO"))
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        Response continueWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
         return followRedirectsToClientApplicationWithExistingSession(flow, continueWithExistingSession, clientId, clientSecret, fullResponseUrl)
     }
+
+    @Step("Initialize reauthentication sequence and follow redirects to client application")
+    static Response reauthenticate(Flow flow, String clientId, String clientSecret, String fullResponseUrl) {
+        Response oidcServiceInitResponse = startAuthenticationInSsoOidc(flow, clientId, fullResponseUrl)
+        Response initLoginResponse = followRedirect(flow, oidcServiceInitResponse)
+        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initLoginResponse.getCookie("__Host-GOVSSO"))
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        Response reauthenticateResponse = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies, formParams)
+        Response sessionServiceRedirectToTaraResponse = followRedirectWithCookies(flow, reauthenticateResponse, flow.ssoOidcService.cookies)
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", sessionServiceRedirectToTaraResponse.getCookie("oauth2_authentication_csrf"))
+        Response followRedirect = followRedirect(flow, sessionServiceRedirectToTaraResponse)
+        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", followRedirect.getCookie("__Host-GOVSSO"))
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, followRedirect)
+        Response oidcServiceConsentResponse = followRedirectsToClientApplication(flow, authenticationFinishedResponse)
+        return getIdentityTokenResponse(flow, oidcServiceConsentResponse, clientId, clientSecret, fullResponseUrl)
+    }
+
 
     @Step("Initialize logout sequence in OIDC")
     static Response startLogout(flow, String idTokenHint, String clientBaseUrl) {
