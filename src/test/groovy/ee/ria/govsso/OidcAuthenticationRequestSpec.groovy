@@ -111,7 +111,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         def value = paramsMap.put("my_parameter", "654321")
         Response initOIDCServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
-        assertThat(initOIDCServiceSession.getHeader("location"), Matchers.containsString("?login_challenge="))
+        assertThat(initOIDCServiceSession.getHeader("location"), containsString("?login_challenge="))
     }
 
     @Unroll
