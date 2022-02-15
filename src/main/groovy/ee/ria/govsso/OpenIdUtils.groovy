@@ -39,6 +39,7 @@ class OpenIdUtils {
         queryParams.put("nonce", flow.nonce)
         queryParams.put("prompt", "consent")
         queryParams.put("ui_locales", "et")
+        queryParams.put("acr_values", "high")
         return queryParams
     }
 
@@ -54,6 +55,7 @@ class OpenIdUtils {
         queryParams.put("nonce", flow.nonce)
         queryParams.put("prompt", "consent")
         queryParams.put("ui_locales", "et")
+        queryParams.put("acr_values", "high")
         return queryParams
     }
 

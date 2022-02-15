@@ -1,10 +1,10 @@
 package ee.ria.govsso
 
 import com.nimbusds.jose.jwk.JWKSet
+import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Ignore
 import spock.lang.Unroll
 
 import static org.junit.jupiter.api.Assertions.assertEquals
@@ -33,6 +33,37 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertTrue(sessionServiceRedirectToTaraResponse.getHeader("location").contains("state"), "Query parameters contain state")
         assertTrue(sessionServiceRedirectToTaraResponse.getHeader("location").contains("nonce"), "Query parameters contain nonce")
         assertTrue(sessionServiceRedirectToTaraResponse.getHeader("location").contains("client_id"), "Query parameters contain client_id")
+    }
+
+    @Unroll
+    @Feature("LOGIN_INIT_ENDPOINT")
+    def "Authentication request with valid acr_values parameter: #acrValue:"() {
+        expect:
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        def value = paramsMap.put("acr_values", acrValue)
+        Response initOIDCServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response response = Steps.followRedirect(flow, initOIDCServiceSession)
+
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
+
+        where:
+        acrValue     | _
+        "high"       | _
+        "substantial"| _
+        "low"        | _
+    }
+
+    @Feature("LOGIN_INIT_ENDPOINT")
+    def "Authentication request with invalid acr_values parameter"() {
+        expect:
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        def value = paramsMap.put("acr_values", "invalid")
+        Response initOIDCServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response response = Steps.followRedirect(flow, initOIDCServiceSession)
+
+        assertEquals(400, response.jsonPath().get("status"), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", response.jsonPath().get("error"), "Correct error is returned")
+        assertEquals("Invalid request.", response.jsonPath().get("message"), "Correct message is returned")
     }
 
     @Unroll
@@ -271,4 +302,21 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals("USER_INPUT", reauthenticateResponse.jsonPath().getString("error"), "Correct error is returned")
         assertEquals("Invalid request.", reauthenticateResponse.jsonPath().getString("message"), "Correct message is returned")
     }
+
+    @Feature("LOGIN_INIT_ENDPOINT")
+    @Feature("AUTHENTICATION")
+    def "Create session in client-A with eIDAS substantial acr and initialize authentication sequence in client-B with high acr"() {
+        expect:
+        Response createSessionWithEidas = Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSessionWithEidas.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response initLogin = Steps.followRedirect(flow, oidcServiceInitResponse)
+
+        assertEquals("substantial", claims.getClaim("acr"), "Correct acr value in token")
+        assertEquals(500, initLogin.jsonPath().get("status"), "Correct status code")
+        assertEquals("TECHNICAL_GENERAL", initLogin.jsonPath().get("error"), "Correct error code")
+        assertEquals("An unexpected error occurred. Please try again later.", initLogin.jsonPath().get("message"), "Correct message")
+    }
+
 }

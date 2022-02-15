@@ -173,6 +173,17 @@ class Steps {
         return getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
     }
 
+    @Step("Create initial session in GOVSSO with eIDAS in client-A")
+    static Response authenticateWithEidasInGovsso(flow, String acrValue, String eidasLoa) {
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap.put("acr_values", acrValue)
+        Response oidcServiceInitResponse = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response sessionServiceRedirectToTaraResponse = startSessionInSessionService(flow, oidcServiceInitResponse)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithEidasInTARA(flow, "CA", "xavi", "creus", eidasLoa, sessionServiceRedirectToTaraResponse)
+        Response oidcServiceConsentResponse = followRedirectsToClientApplication(flow, authenticationFinishedResponse)
+        return getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
+    }
+
     @Step("Use existing session to authenticate to another client")
     static Response continueWithExistingSession(Flow flow, String clientId, String clientSecret, String fullResponseUrl) {
         Response oidcServiceInitResponse = startAuthenticationInSsoOidc(flow, clientId, fullResponseUrl)

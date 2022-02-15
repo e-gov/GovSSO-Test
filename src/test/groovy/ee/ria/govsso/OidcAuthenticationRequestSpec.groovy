@@ -11,7 +11,6 @@ import spock.lang.Unroll
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.startsWith
 import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
 
@@ -113,19 +112,6 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         Response initOIDCServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
         assertThat(initOIDCServiceSession.getHeader("location"), Matchers.containsString("?login_challenge="))
-    }
-
-    @Ignore
-    @Feature("OIDC_REQUEST")
-    def "Authentication request with invalid acr_values parameter value"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        def value = paramsMap.put("acr_values", "medium")
-        Response initOIDCServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response response = Steps.followRedirect(flow, initOIDCServiceSession)
-        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
     }
 
     @Unroll

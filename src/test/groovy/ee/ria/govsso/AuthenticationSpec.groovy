@@ -74,18 +74,11 @@ class AuthenticationSpec extends GovSsoSpecification {
     }
 
     @Feature("AUTHENTICATION")
-    def "Authenticate with Eidas"() {
+    def "Authenticate with eIDAS"() {
         expect:
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, oidcServiceInitResponse)
+        Response createSessionWithEidas = Steps.authenticateWithEidasInGovsso(flow, "high", "E")
 
-        Response authenticationFinishedResponse = TaraSteps.authenticateWithEidasInTARA(flow, "CA", IDP_USERNAME, IDP_PASSWORD, EIDASLOA, sessionServiceRedirectToTaraResponse)
-
-        Response oidcServiceConsentResponse = Steps.followRedirectsToClientApplication(flow, authenticationFinishedResponse)
-
-        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
-
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSessionWithEidas.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertEquals(flow.oidcClientA.clientId, claims.getAudience().get(0), "Correct aud value")
         assertEquals("CA12345", claims.getSubject(), "Correct subject value")
         assertEquals("javier", claims.getClaim("given_name"), "Correct given name")
