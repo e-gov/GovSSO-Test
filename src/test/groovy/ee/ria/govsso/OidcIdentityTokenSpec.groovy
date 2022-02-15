@@ -5,7 +5,6 @@ import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Ignore
 
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.matchesPattern
@@ -87,41 +86,5 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertTrue(claims1.getExpirationTime() < claims2.getExpirationTime(), "Updated exp")
         assertTrue(claims1.getIssueTime() < claims2.getIssueTime(), "Updated iat")
         assertTrue(claims2.getExpirationTime().getTime() - claims2.getIssueTime().getTime() == 900000L, "Correct token validity period")
-    }
-
-    @Ignore
-    @Feature("ID_TOKEN")
-    def "Verify ID token with optional elements by phone scope"() {
-        expect:
-        String scopeList = "openid phone"
-        TaraSteps.startAuthenticationInTara(flow, scopeList)
-        String idCode = "60001017716"
-        String phoneNo = "69100366"
-        Response midAuthResponse = TaraSteps.authenticateWithMid(flow, idCode, phoneNo)
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, midAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, authenticationFinishedResponse)
-        assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
-        assertEquals(scopeList, tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat("Correct subject claim", claims.getSubject(), equalTo("EE" + idCode))
-        assertThat("Phone_number claim exists", claims.getStringClaim("phone_number"), equalTo("+372" + phoneNo))
-        assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("phone_number_verified"), equalTo(true))
-    }
-
-    @Ignore
-    @Feature("ID_TOKEN")
-    def "Verify ID token with optional elements by email scope"() {
-        expect:
-        String scopeList = "openid email"
-        TaraSteps.startAuthenticationInTara(flow, scopeList)
-        Response idCardAuthResponse = TaraSteps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirectsSso(flow, true, idCardAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponseWithDefaults(flow, authenticationFinishedResponse)
-        assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
-        assertEquals(scopeList, tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat("Correct subject claim", claims.getSubject(), equalTo("EE38001085718"))
-        assertThat("Phone_number claim exists", claims.getStringClaim("email"), equalTo("38001085718@eesti.ee"))
-        assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("email_verified"), equalTo(false))
     }
 }
