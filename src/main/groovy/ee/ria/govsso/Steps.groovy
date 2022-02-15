@@ -88,7 +88,6 @@ class Steps {
 
     @Step("Follow redirect with cookies")
     static Response followRedirectWithSsoSessionCookies(Flow flow, Response response, Map cookies) {
-        Utils.setParameter(flow.sessionService.cookies, "SESSION", response.getCookie("SESSION"))
         String location = response.then().extract().response().getHeader("location")
         return Requests.followRedirectWithCookie(flow, location, cookies)
     }
@@ -107,12 +106,9 @@ class Steps {
 
     @Step("Confirm or reject consent in GOVSSO")
     static Response submitConsentSso(Flow flow, boolean consentGiven) {
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "SESSION", flow.taraService.sessionId)
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
- //       Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
-        return Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullConsentConfirmUrl, cookiesMap, formParamsMap)
+        return Requests.postRequestWithParams(flow, flow.sessionService.fullConsentConfirmUrl, formParamsMap)
     }
 
     @Step("Confirm or reject consent and finish authentication process in GOVSSO")
