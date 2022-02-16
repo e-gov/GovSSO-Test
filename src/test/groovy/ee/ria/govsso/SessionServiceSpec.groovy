@@ -413,4 +413,18 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals("TECHNICAL_GENERAL", initLogin.jsonPath().get("error"), "Correct error code")
         assertEquals("Protsess ebaõnnestus tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti.", initLogin.jsonPath().get("message"), "Correct message")
     }
+
+    @Feature("AUTHENTICATION")
+    def "Create session in client-A with eIDAS substantial acr and initialize session refresh with high acr"() {
+        expect:
+        Response createSession = Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
+        String idToken = createSession.jsonPath().get("id_token")
+
+        Response initRefresh = Steps.startSessionRefreshInSsoOidcWithDefaults(flow, idToken)
+        Response initLogin = Steps.followRedirect(flow, initRefresh)
+
+        assertEquals(500, initLogin.jsonPath().get("status"), "Correct status code")
+        assertEquals("TECHNICAL_GENERAL", initLogin.jsonPath().get("error"), "Correct error code")
+        assertEquals("Protsess ebaõnnestus tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti.", initLogin.jsonPath().get("message"), "Correct message")
+    }
 }
