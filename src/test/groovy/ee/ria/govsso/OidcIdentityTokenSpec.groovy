@@ -83,7 +83,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertEquals(claims1.getClaim("iss"), claims2.getClaim("iss"), "Correct issuer")
         assertEquals(claims1.getClaim("sid"), claims2.getClaim("sid"), "Correct sid")
         assertEquals(claims1.getSubject(), claims2.getSubject(), "Correct subject")
-        assertTrue(claims1.getExpirationTime() < claims2.getExpirationTime(), "Updated exp")
+        assertTrue(claims1.getExpirationTime() <= claims2.getExpirationTime(), "Updated exp")
         assertTrue(claims1.getIssueTime() < claims2.getIssueTime(), "Updated iat")
         assertTrue(claims2.getExpirationTime().getTime() - claims2.getIssueTime().getTime() == 900000L, "Correct token validity period")
     }
