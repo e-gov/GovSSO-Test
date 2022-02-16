@@ -1,7 +1,6 @@
 package ee.ria.govsso
 
 import com.nimbusds.jose.jwk.JWKSet
-import org.hamcrest.Matchers
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -202,7 +201,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         Response initLogout = Steps.startLogout(flow, createSession.jsonPath().get("id_token"), flow.oidcClientA.fullBaseUrl)
 
         assertEquals(302, initLogout.getStatusCode(), "Correct status code")
-        assertThat(initLogout.getHeader("location"), containsString("logout?logout_challenge="))
+        assertThat(initLogout.getHeader("location"), containsString("/logout/init?logout_challenge="))
     }
 
     @Feature("OIDC_REQUEST")

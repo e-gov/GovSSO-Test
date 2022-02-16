@@ -68,7 +68,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(400, response.jsonPath().get("status"), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", response.jsonPath().get("error"), "Correct error is returned")
-        assertEquals("Invalid request.", response.jsonPath().get("message"), "Correct message is returned")
+        assertEquals("Ebakorrektne päring.", response.jsonPath().get("message"), "Correct message is returned")
     }
 
     @Unroll
@@ -82,7 +82,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(400, initLoginResponse.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", initLoginResponse.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Invalid request.", initLoginResponse.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals("Ebakorrektne päring.", initLoginResponse.jsonPath().getString("message"), "Correct message is returned")
 
         where:
         reason                | paramKey          | paramValue
@@ -153,7 +153,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(400, sessionServiceResponse.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", sessionServiceResponse.getBody().jsonPath().get("error"), "Correct error message is returned")
-        assertEquals("Invalid request.", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
+        assertEquals("Ebakorrektne päring.", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
@@ -174,7 +174,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(400, sessionServiceResponse.getStatusCode())
         assertEquals("USER_INPUT", sessionServiceResponse.getBody().jsonPath().get("error"), "Correct error message is returned")
-        assertEquals("Invalid request.", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
+        assertEquals("Ebakorrektne päring.", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
@@ -192,7 +192,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(400, sessionServiceResponse.getStatusCode())
         assertEquals("USER_COOKIE_MISSING", sessionServiceResponse.getBody().jsonPath().get("error"), "Correct error message is returned")
-        assertEquals("Missing or expired cookie", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
+        assertEquals("Küpsis on puudu või kehtivuse kaotanud", sessionServiceResponse.getBody().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Unroll
@@ -214,7 +214,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(400, sessionServiceResponse.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", sessionServiceResponse.jsonPath().get("error"), "Correct error is returned")
-        assertEquals("Invalid request.", sessionServiceResponse.jsonPath().get("message"), "Correct message is returned")
+        assertEquals("Ebakorrektne päring.", sessionServiceResponse.jsonPath().get("message"), "Correct message is returned")
     }
 
     @Unroll
@@ -232,13 +232,13 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         where:
         reason                | paramKey            | paramValue | status | error               | errorMessage
-        "Empty value"         | "consent_challenge" | ""         | 400    | "USER_INPUT"        | "Invalid request."
-        "Illegal characters"  | "consent_challenge" | "123_!?#"  | 400    | "USER_INPUT"        | "Invalid request."
-        "Missing parameter"   | ""                  | ""         | 400    | "USER_INPUT"        | "Invalid request."
-        "Incorrect parameter" | "consent_"          | "a" * 32   | 400    | "USER_INPUT"        | "Invalid request."
-        "Not matching value"  | "consent_challenge" | "a" * 32   | 400    | "USER_INPUT"        | "Invalid request."
-        "Over maxLength"      | "consent_challenge" | "a" * 33   | 400    | "USER_INPUT"        | "Invalid request."
-        "Under minLength"     | "consent_challenge" | "a" * 31   | 400    | "USER_INPUT"        | "Invalid request."
+        "Empty value"         | "consent_challenge" | ""         | 400    | "USER_INPUT"        | "Ebakorrektne päring."
+        "Illegal characters"  | "consent_challenge" | "123_!?#"  | 400    | "USER_INPUT"        | "Ebakorrektne päring."
+        "Missing parameter"   | ""                  | ""         | 400    | "USER_INPUT"        | "Ebakorrektne päring."
+        "Incorrect parameter" | "consent_"          | "a" * 32   | 400    | "USER_INPUT"        | "Ebakorrektne päring."
+        "Not matching value"  | "consent_challenge" | "a" * 32   | 400    | "USER_INPUT"        | "Ebakorrektne päring."
+        "Over maxLength"      | "consent_challenge" | "a" * 33   | 400    | "USER_INPUT"        | "Ebakorrektne päring."
+        "Under minLength"     | "consent_challenge" | "a" * 31   | 400    | "USER_INPUT"        | "Ebakorrektne päring."
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -251,7 +251,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(403, continueSession.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Invalid request.", continueSession.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals("Ebakorrektne päring.", continueSession.jsonPath().getString("message"), "Correct message is returned")
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -263,7 +263,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(403, continueSession.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Invalid request.", continueSession.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals("Ebakorrektne päring.", continueSession.jsonPath().getString("message"), "Correct message is returned")
 
     }
 
@@ -280,7 +280,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(403, continueWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", continueWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Invalid request.", continueWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals("Ebakorrektne päring.", continueWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
     }
 
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
@@ -296,7 +296,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(403, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Invalid request.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals("Ebakorrektne päring.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -316,7 +316,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(403, continueWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", continueWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Invalid request.", continueWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals("Ebakorrektne päring.", continueWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
     }
 
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
@@ -333,7 +333,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(403, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Invalid request.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals("Ebakorrektne päring.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -345,7 +345,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(403, continueSessionResponse.jsonPath().get("status"), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", continueSessionResponse.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Invalid request.", continueSessionResponse.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals("Ebakorrektne päring.", continueSessionResponse.jsonPath().getString("message"), "Correct message is returned")
     }
 
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
@@ -357,7 +357,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertEquals(403, reauthenticateResponse.jsonPath().get("status"), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", reauthenticateResponse.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Invalid request.", reauthenticateResponse.jsonPath().getString("message"), "Correct message is returned")
+        assertEquals("Ebakorrektne päring.", reauthenticateResponse.jsonPath().getString("message"), "Correct message is returned")
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
@@ -373,7 +373,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals("substantial", claims.getClaim("acr"), "Correct acr value in token")
         assertEquals(500, initLogin.jsonPath().get("status"), "Correct status code")
         assertEquals("TECHNICAL_GENERAL", initLogin.jsonPath().get("error"), "Correct error code")
-        assertEquals("An unexpected error occurred. Please try again later.", initLogin.jsonPath().get("message"), "Correct message")
+        assertEquals("Protsess ebaõnnestus tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti.", initLogin.jsonPath().get("message"), "Correct message")
     }
 
 }
