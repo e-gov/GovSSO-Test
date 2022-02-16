@@ -246,57 +246,16 @@ class SessionServiceSpec extends GovSsoSpecification {
         expect:
         Response oidcAuthenticate = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuthenticate)
-        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initLogin.getCookie("__Host-GOVSSO"))
-        Response continueSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
 
-        assertEquals(403, continueSession.getStatusCode(), "Correct HTTP status code is returned")
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
+        Utils.setParameter(formParams, "_csrf", initLogin.getCookies().get("__Host-XSRF-TOKEN"))
+
+        Response continueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
+
+        assertEquals(400, continueSession.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error is returned")
         assertEquals("Ebakorrektne päring.", continueSession.jsonPath().getString("message"), "Correct message is returned")
-    }
-
-    @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
-    def "Continue session request without __Host-GOVSSO cookie"() {
-        expect:
-        Response oidcAuthenticate = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Steps.followRedirect(flow, oidcAuthenticate)
-        Response continueSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
-
-        assertEquals(403, continueSession.getStatusCode(), "Correct HTTP status code is returned")
-        assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Ebakorrektne päring.", continueSession.jsonPath().getString("message"), "Correct message is returned")
-
-    }
-
-    @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
-    def "Continue session with invalid __Host-GOVSSO cookie"() {
-        expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
-
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Steps.followRedirect(flow, oidcServiceInitResponse)
-
-        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", "a"*48)
-        Response continueWithExistingSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
-
-        assertEquals(403, continueWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
-        assertEquals("USER_INPUT", continueWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Ebakorrektne päring.", continueWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
-    }
-
-    @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
-    def "Reauthenticate with invalid __Host-GOVSSO cookie"() {
-        expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
-
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Steps.followRedirect(flow, oidcServiceInitResponse)
-
-        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", "a"*48)
-        Response reauthenticateWithExistingSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies)
-
-        assertEquals(403, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
-        assertEquals("USER_INPUT", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
-        assertEquals("Ebakorrektne päring.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -305,16 +264,54 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovsso(flow)
 
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Response initLogin = Steps.followRedirect(flow, oidcServiceInitResponse)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
 
-        HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(formParamsMap, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
 
-        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initLogin.getCookie("__Host-GOVSSO"))
         Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-        Response continueWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParamsMap)
+        Response continueWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
 
         assertEquals(403, continueWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", continueWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("Ebakorrektne päring.", continueWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+    }
+
+    @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
+    def "Continue session with invalid _csrf form parameter"() {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
+        Utils.setParameter(formParams, "_csrf", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+
+        Response continueWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
+
+        assertEquals(403, continueWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", continueWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("Ebakorrektne päring.", continueWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+    }
+
+    @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
+    def "Continue session with invalid loginChallenge form parameter"() {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", "0a0aaaa00aa00a00000aa0a0000000aa")
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+
+        Response continueWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
+
+        assertEquals(400, continueWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", continueWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
         assertEquals("Ebakorrektne päring.", continueWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
     }
@@ -325,13 +322,54 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovsso(flow)
 
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Response initLogin = Steps.followRedirect(flow, oidcServiceInitResponse)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
 
-        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initLogin.getCookie("__Host-GOVSSO"))
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+
         Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-        Response reauthenticateWithExistingSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies)
+        Response reauthenticateWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies, formParams)
 
         assertEquals(403, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("Ebakorrektne päring.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+    }
+
+    @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
+    def "Reauthenticate with invalid _csrf form parameter"() {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
+        Utils.setParameter(formParams, "_csrf", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+
+        Response reauthenticateWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies, formParams)
+
+        assertEquals(403, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
+        assertEquals("USER_INPUT", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
+        assertEquals("Ebakorrektne päring.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
+    }
+
+    @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
+    def "Reauthenticate with invalid loginChallenge form parameter"() {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", "0a0aaaa00aa00a00000aa0a0000000aa")
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+
+        Response reauthenticateWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies, formParams)
+
+        assertEquals(400, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code is returned")
         assertEquals("USER_INPUT", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error is returned")
         assertEquals("Ebakorrektne päring.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message is returned")
     }
@@ -375,5 +413,4 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals("TECHNICAL_GENERAL", initLogin.jsonPath().get("error"), "Correct error code")
         assertEquals("Protsess ebaõnnestus tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti.", initLogin.jsonPath().get("message"), "Correct message")
     }
-
 }
