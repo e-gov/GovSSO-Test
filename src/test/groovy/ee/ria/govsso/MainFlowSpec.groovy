@@ -8,8 +8,9 @@ import io.restassured.response.Response
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
 
-class AuthenticationSpec extends GovSsoSpecification {
+class MainFlowSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
 
@@ -91,9 +92,7 @@ class AuthenticationSpec extends GovSsoSpecification {
         String idToken = createSession.jsonPath().get("id_token")
         Response refreshSession = Steps.refreshSessionWithDefaults(flow, idToken)
 
-        Response tokenResponse2 = Steps.getIdentityTokenResponseWithDefaults(flow, refreshSession)
-
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse2.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, refreshSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertEquals(flow.oidcClientA.clientId, claims.getAudience().get(0), "Correct aud value")
         assertEquals("EE38001085718", claims.getSubject(), "Correct subject value")
         assertEquals("JAAK-KRISTJAN", claims.getClaim("given_name"), "Correct given name")
@@ -128,5 +127,46 @@ class AuthenticationSpec extends GovSsoSpecification {
         assertEquals("EE38001085718", claimsClientB.getSubject(), "Correct subject value")
         assertEquals("JAAK-KRISTJAN", claimsClientB.getClaim("given_name"), "Correct given name")
         assertNotEquals(claimsClientA.getClaim("sid"), claimsClientB.getClaim("sid"), "New session ID")
+    }
+
+    @Feature("LOGOUT")
+    def "Logout from single client session"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        String idToken = createSession.jsonPath().get("id_token")
+        Response logout = Steps.logoutSingleClientSession(flow, idToken, flow.oidcClientA.fullBaseUrl)
+
+        assertEquals(302, logout.getStatusCode(), "Correct status code")
+        assertTrue(logout.getHeader("Location")==(flow.oidcClientA.fullBaseUrl), "Correct redirect URL")
+    }
+
+    @Feature("LOGOUT")
+    def "Logout with end session"() {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+
+        Response continueWithExistingSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        String idToken = continueWithExistingSession.jsonPath().get("id_token")
+
+        Response logoutResponse = Steps.logout(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.sessionService.fullLogoutEndSessionUrl)
+        Response oidcLogout = Steps.followRedirect(flow, logoutResponse)
+
+        assertEquals(302, oidcLogout.getStatusCode(), "Correct status code")
+        assertTrue(oidcLogout.getHeader("Location")==(flow.oidcClientB.fullBaseUrl), "Correct redirect URL")
+    }
+
+    //TODO: review location encoding in logoutResponse
+    @Feature("LOGOUT")
+    def "Logout with continue session"() {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+
+        Response continueWithExistingSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        String idToken = continueWithExistingSession.jsonPath().get("id_token")
+
+        Response logoutResponse = Steps.logout(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.sessionService.fullLogoutContinueSessionUrl)
+
+        assertEquals(302, logoutResponse.getStatusCode(), "Correct status code")
+        assertTrue(logoutResponse.getHeader("Location").contains(flow.oidcClientB.host), "Correct redirect URL")
     }
 }

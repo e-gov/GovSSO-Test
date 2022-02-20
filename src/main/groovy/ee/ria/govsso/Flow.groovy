@@ -19,6 +19,7 @@ class Flow {
     CookieFilter cookieFilter
 
     String loginChallenge
+    String logoutChallenge
 
     String state
     String nonce
@@ -52,6 +53,8 @@ class SsoSessionService {
     String initUrl
     String continueSessionUrl
     String reauthenticateUrl
+    String logoutContinueSessionUrl
+    String logoutEndSessionUrl
     String taraCallbackUrl
     String consentUrl
     String consentConfirmUrl
@@ -64,6 +67,8 @@ class SsoSessionService {
     @Lazy fullInitUrl = "${protocol}://${host}${initUrl}"
     @Lazy fullContinueSessionUrl = "${protocol}://${host}${continueSessionUrl}"
     @Lazy fullReauthenticateUrl = "${protocol}://${host}${reauthenticateUrl}"
+    @Lazy fullLogoutContinueSessionUrl = "${protocol}://${host}${logoutContinueSessionUrl}"
+    @Lazy fullLogoutEndSessionUrl = "${protocol}://${host}${logoutEndSessionUrl}"
     @Lazy fullTaraCallbackUrl = "${protocol}://${host}${taraCallbackUrl}"
     @Lazy fullConsentUrl = "${protocol}://${host}${consentUrl}"
     @Lazy fullConsentConfirmUrl = "${protocol}://${host}${consentConfirmUrl}"
@@ -81,6 +86,8 @@ class SsoSessionService {
         this.initUrl = properties."sessionservice.initUrl"
         this.continueSessionUrl = properties."sessionservice.continueSessionUrl"
         this.reauthenticateUrl = properties."sessionservice.reauthenticateUrl"
+        this.logoutContinueSessionUrl = properties."sessionservice.logoutContinueSessionUrl"
+        this.logoutEndSessionUrl = properties."sessionservice.logoutEndSessionUrl"
         this.taraCallbackUrl = properties."sessionservice.taraCallbackUrl"
         this.consentUrl = properties."sessionservice.consentUrl"
         this.consentConfirmUrl = properties."sessionservice.consentConfirmUrl"

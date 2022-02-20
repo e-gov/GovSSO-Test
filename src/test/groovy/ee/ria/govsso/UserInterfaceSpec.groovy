@@ -19,7 +19,7 @@ class UserInterfaceSpec extends GovSsoSpecification{
 
     @Feature("AUTHENTICATION")
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
-    def "Continue session and reauthenticate buttons"() {
+    def "Continue session and reauthenticate buttons in new login sequence"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
@@ -29,5 +29,21 @@ class UserInterfaceSpec extends GovSsoSpecification{
         String buttonReauthenticate = initLoginResponse.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reauthenticate'}")
         assertEquals("Jätka sessiooni", buttonContinueSession, "Continue button exists with correct form action")
         assertEquals("Autendi uuesti", buttonReauthenticate, "Reauthenticate button exists with correct form action")
+    }
+
+    @Feature("LOGOUT")
+    def "Continue session and end session buttons in logout sequence"() {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+        Response continueWithExistingSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        String idToken = continueWithExistingSession.jsonPath().get("id_token")
+
+        Response initLogoutOidc = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
+        Response initLogoutSession = Steps.followRedirect(flow, initLogoutOidc)
+
+        String buttonEndSession = initLogoutSession.body().htmlPath().getString("**.find { button -> button.@formaction == '/logout/endsession'}")
+        String buttonContinueSession = initLogoutSession.body().htmlPath().getString("**.find { button -> button.@formaction == '/logout/continuesession'}")
+        assertEquals("Logi välja", buttonEndSession, "Reauthenticate button exists with correct form action")
+        assertEquals("Jätka sessioone", buttonContinueSession, "Continue button exists with correct form action")
     }
 }

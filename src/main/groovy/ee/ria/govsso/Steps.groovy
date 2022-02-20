@@ -60,7 +60,8 @@ class Steps {
         Response oauthLoginResponse = followRedirect(flow, initLoginResponse)
         Response initConsentResponse = followRedirect(flow, oauthLoginResponse)
         Response oauthConsentResponse = followRedirect(flow, initConsentResponse)
-        return oauthConsentResponse
+        return getIdentityTokenResponseWithDefaults(flow, oauthConsentResponse)
+
     }
 
     @Step("Initialize session refresh and follow redirects to client application")
@@ -70,7 +71,18 @@ class Steps {
         Response oauthLoginResponse = followRedirect(flow, initLoginResponse)
         Response initConsentResponse = followRedirect(flow, oauthLoginResponse)
         Response oauthConsentResponse = followRedirect(flow, initConsentResponse)
-        return oauthConsentResponse
+        return getIdentityTokenResponseWithDefaults(flow, oauthConsentResponse)
+
+    }
+
+    @Step("Initialize logout sequence in OIDC")
+    static Response startLogout(flow, String idTokenHint, String logoutRedirectUri) {
+        HashMap<String, String> queryParamas = new HashMap<>()
+        queryParamas.put("id_token_hint", idTokenHint)
+        queryParamas.put("post_logout_redirect_uri", logoutRedirectUri)
+        Response initLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParamas, Collections.emptyMap())
+        flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(initLogout, "logout_challenge"))
+        return initLogout
     }
 
     @Step("Getting OAuth2 cookies")
@@ -191,6 +203,23 @@ class Steps {
         return followRedirectsToClientApplicationWithExistingSession(flow, continueWithExistingSession, clientId, clientSecret, fullResponseUrl)
     }
 
+    @Step("Initialize logout with session in several GSSO clients and follow redirects")
+    static Response logout(Flow flow, String idTokenHint, String logoutRedirectUri, String logoutTypeUrl) {
+        Response initLogoutOidc = startLogout(flow, idTokenHint, logoutRedirectUri)
+        followRedirect(flow, initLogoutOidc)
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "logoutChallenge", flow.getLogoutChallenge().toString())
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        return Requests.postRequestWithParams(flow, logoutTypeUrl, formParams)
+    }
+
+    @Step("Initialize logout with session for a single client")
+    static Response logoutSingleClientSession(Flow flow, String idTokenHint, String logoutRedirectUri) {
+        Response initLogoutOidc = startLogout(flow, idTokenHint, logoutRedirectUri)
+        Response initLogoutSession = followRedirect(flow, initLogoutOidc)
+        return followRedirect(flow, initLogoutSession)
+    }
+
     @Step("Initialize reauthentication sequence and follow redirects to client application")
     static Response reauthenticate(Flow flow, String clientId, String clientSecret, String fullResponseUrl) {
         Response oidcServiceInitResponse = startAuthenticationInSsoOidc(flow, clientId, fullResponseUrl)
@@ -206,15 +235,6 @@ class Steps {
         Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, followRedirect)
         Response oidcServiceConsentResponse = followRedirectsToClientApplication(flow, authenticationFinishedResponse)
         return getIdentityTokenResponse(flow, oidcServiceConsentResponse, clientId, clientSecret, fullResponseUrl)
-    }
-
-
-    @Step("Initialize logout sequence in OIDC")
-    static Response startLogout(flow, String idTokenHint, String clientBaseUrl) {
-        HashMap<String, String> queryParamas = new HashMap<>()
-        queryParamas.put("id_token_hint", idTokenHint)
-        queryParamas.put("post_logout_redirect_uri", clientBaseUrl)
-        return Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParamas, Collections.emptyMap())
     }
 
     @Feature("CSP_ENABLED")

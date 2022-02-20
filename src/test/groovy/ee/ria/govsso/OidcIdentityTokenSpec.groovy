@@ -65,11 +65,10 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response refreshSession = Steps.refreshSessionWithDefaults(flow, idToken)
-        Response tokenResponse2 = Steps.getIdentityTokenResponseWithDefaults(flow, refreshSession)
 
-        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, tokenResponse2.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, refreshSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
-        assertNotEquals(idToken, tokenResponse2.jsonPath().get("id_token"), "New token")
+        assertNotEquals(idToken, refreshSession.jsonPath().get("id_token"), "New token")
         assertNotEquals(claims1.getClaim("at_hash"), claims2.getClaim("at_hash"), "New at_hash")
         assertNotEquals(claims1.getClaim("jti"), claims2.getClaim("jti"), "New jti")
         assertNotEquals(claims1.getClaim("nonce"), claims2.getClaim("nonce"), "New nonce")
