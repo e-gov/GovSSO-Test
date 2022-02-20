@@ -2,24 +2,25 @@
 
 # GOVSSO integration tests
 
-Tests for GOVSSO (both Hydra OIDC and Estonian specific session service component)
+Tests for GOVSSO (both Ory Hydra OIDC and Estonian specific session service component)
 
 ## Prerequisites
+
+* Java 11 JDK
 
 1. SUT (GOVSSO) must be deployed as accessible service
 
 2. Some tests require deployment of TARA2
-   
+
 3. Fetch the tests:
 
 `git clone https://github.com/e-gov/GOVSSO-Test`
 
 ## Configuring the test
 
-1. Configure the properties file. 
-   application.properties file needs to be either in `src/test/resources` directory or its location configured with .env file `src/test/resources`.
-   Example of .env file:
-   
+1. Configure the properties file. application.properties file needs to be either in `src/test/resources` directory or
+   its location configured with .env file `src/test/resources`. Example of .env file:
+
 ```
 configuration_base_path=/home/me/IdeaProjects/govsso-configuration
 configuration_path=dev-local
@@ -108,22 +109,23 @@ Description of values:
 | ssooidcclientb.clientId | client-b | GOVSSO mock client B ID. |
 | ssooidcclientb.secret | secretb | GOVSSO mock client B secret. |
 
-
 ## Execute tests and generate report
 
 1. To run the tests:
-   
-`./mvn clean test`
+
+`./mvnw clean test`
 
 2. To check the results:
 
 a) Surefire plugin generates reports in ../target/surefire-reports folder.
 
-b) For a comprehensive report, Allure is required ([instructions for download.](https://docs.qameta.io/allure/#_installing_a_commandline)). To generate the report execute:
+b) For a comprehensive report, Allure is
+required ([instructions for download.](https://docs.qameta.io/allure/#_installing_a_commandline)). To generate the
+report execute:
 
 `allure serve .../GOVSSO-test/allure-results/`
 
-## To see Allure report after running tests in IntelliJ 
+## To see Allure report after running tests in IntelliJ
 
 Configure correct Allure results directory in IntelliJ in order to view Allure report when running tests from IntelliJ
 
