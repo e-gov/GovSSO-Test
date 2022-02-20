@@ -51,6 +51,7 @@ class SsoSessionService {
     String protocol
     String nodeProtocol
     String initUrl
+    String logoutInitUrl
     String continueSessionUrl
     String reauthenticateUrl
     String logoutContinueSessionUrl
@@ -65,6 +66,7 @@ class SsoSessionService {
 
     @Lazy baseUrl = "${protocol}://${host}"
     @Lazy fullInitUrl = "${protocol}://${host}${initUrl}"
+    @Lazy fullLogoutInitUrl = "${protocol}://${host}${logoutInitUrl}"
     @Lazy fullContinueSessionUrl = "${protocol}://${host}${continueSessionUrl}"
     @Lazy fullReauthenticateUrl = "${protocol}://${host}${reauthenticateUrl}"
     @Lazy fullLogoutContinueSessionUrl = "${protocol}://${host}${logoutContinueSessionUrl}"
@@ -84,6 +86,7 @@ class SsoSessionService {
         this.protocol = properties."sessionservice.protocol"
         this.nodeProtocol = properties."sessionservice.node.protocol"
         this.initUrl = properties."sessionservice.initUrl"
+        this.logoutInitUrl = properties."sessionservice.logoutInitUrl"
         this.continueSessionUrl = properties."sessionservice.continueSessionUrl"
         this.reauthenticateUrl = properties."sessionservice.reauthenticateUrl"
         this.logoutContinueSessionUrl = properties."sessionservice.logoutContinueSessionUrl"
@@ -261,7 +264,6 @@ class SsoOidcClientA {
     String port
     String protocol
     String responseUrl
-    String requestUrl
     String clientId
     String clientSecret
     HashMap <String, String> cookies
@@ -293,7 +295,6 @@ class SsoOidcClientB {
     String port
     String protocol
     String responseUrl
-    String requestUrl
     String clientId
     String clientSecret
     HashMap <String, String> cookies

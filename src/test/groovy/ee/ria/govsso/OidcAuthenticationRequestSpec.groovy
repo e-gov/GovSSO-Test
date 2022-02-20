@@ -195,6 +195,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     }
 
     @Feature("OIDC_REQUEST")
+    @Feature("LOGOUT")
     def "Start logout request with correct parameters"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
@@ -205,6 +206,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     }
 
     @Feature("OIDC_REQUEST")
+    @Feature("LOGOUT")
     def "Start logout request with not registered logout_redirect_uri"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
@@ -214,7 +216,49 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
                                   "Logout failed because query parameter post_logout_redirect_uri is not a whitelisted as a post_logout_redirect_uri for the client."
 
         assertEquals(302, initLogout.getStatusCode(), "Correct status code")
-        assertEquals("invalid_request", Utils.getParamValueFromResponseHeader(initLogout, "error"), "Error parameter exists")
-        assertEquals(errorDescription, Utils.getParamValueFromResponseHeader(initLogout, "error_description"), "Correct error message is returned")
+        assertEquals("invalid_request", Utils.getParamValueFromResponseHeader(initLogout, "error"), "Correct error")
+        assertEquals(errorDescription, Utils.getParamValueFromResponseHeader(initLogout, "error_description"), "Correct error description")
+    }
+
+    @Feature("OIDC_REQUEST")
+    @Feature("LOGOUT")
+    def "Logout request for client-B with id_token_hint from client-A"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        String idToken = createSession.jsonPath().get("id_token")
+
+        Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+
+        HashMap<String, String> queryParams = new HashMap<>()
+        Utils.setParameter(queryParams, "id_token_hint", idToken)
+        Utils.setParameter(queryParams, "post_logout_redirect_uri", flow.oidcClientB.fullBaseUrl)
+        Response initLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParams, Collections.emptyMap())
+
+        String errorDescription = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. " +
+                "Logout failed because query parameter post_logout_redirect_uri is not a whitelisted as a post_logout_redirect_uri for the client."
+
+        assertEquals(302, initLogout.getStatusCode(), "Correct status code")
+        assertEquals("invalid_request", Utils.getParamValueFromResponseHeader(initLogout,"error"), "Correct error")
+        assertEquals(errorDescription, Utils.getParamValueFromResponseHeader(initLogout,"error_description"), "Correct error description")
+    }
+
+    @Feature("LOGOUT")
+    def "Logout request with incorrect logout_verifier parameter"() {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+
+        Response continueWithExistingSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        String idToken = continueWithExistingSession.jsonPath().get("id_token")
+
+        Steps.logout(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.sessionService.fullLogoutEndSessionUrl)
+
+        HashMap<String, String> queryParams = new HashMap<>()
+        Utils.setParameter(queryParams, "logout_verifier", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+
+        Response logoutVerifier = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl,  queryParams, Collections.emptyMap())
+
+        assertEquals(302, logoutVerifier.getStatusCode(), "Correct status code")
+        assertEquals("Not Found", Utils.getParamValueFromResponseHeader(logoutVerifier,"error"), "Correct error")
+        assertEquals("Unable to locate the requested resource", Utils.getParamValueFromResponseHeader(logoutVerifier,"error_description"), "Correct error description")
     }
 }
