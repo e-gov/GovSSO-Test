@@ -181,6 +181,18 @@ class Steps {
         return getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
     }
 
+    @Step("Create initial session in GOVSSO with ID-Card in client-A with custom ui_locales")
+    static Response authenticateWithIdCardInGovssoWithUiLocales(flow, String uiLocales) {
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap.put("ui_locales", uiLocales)
+        Response oidcServiceInitResponse = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response sessionServiceRedirectToTaraResponse = startSessionInSessionService(flow, oidcServiceInitResponse)
+        verifyResponseHeaders(sessionServiceRedirectToTaraResponse)
+        Response authenticationFinishedResponse = TaraSteps.authenticateWithIdCardInTARA(flow, sessionServiceRedirectToTaraResponse)
+        Response oidcServiceConsentResponse = followRedirectsToClientApplication(flow, authenticationFinishedResponse)
+        return getIdentityTokenResponseWithDefaults(flow, oidcServiceConsentResponse)
+    }
+
     @Step("Create initial session in GOVSSO with eIDAS in client-A")
     static Response authenticateWithEidasInGovsso(flow, String acrValue, String eidasLoa) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)

@@ -4,7 +4,6 @@ import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Ignore
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.allOf
@@ -77,12 +76,11 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
 //        "redirect_uri"  | "invalid_request"           | "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
     }
 
-    @Ignore("Waiting for ui_locales support")
-    @Feature("OIDC_REQUEST")
+    @Feature("OIDC_LANGUAGE_SELECTION")
     def "Authentication request with different ui_locales: #label"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        def value = Utils.setParameter(paramsMap, paramName, paramValue)
+        paramsMap.put("ui_locales", uiLocales)
         Response initSsoOidcServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response sessionServiceRedirectToTaraResponse = Steps.startSessionInSessionService(flow, initSsoOidcServiceSession)
         Response taraOidcResponse = Steps.followRedirect(flow, sessionServiceRedirectToTaraResponse)
@@ -91,16 +89,16 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         taraLoginResponse.then().body("html.head.title", equalTo(expectedValue))
 
         where:
-        paramName    | paramValue | label                                     || expectedValue
-        "ui_locales" | "zu"       | "Fallback into default language et"       || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "ui_locales" | "et"       | "Estonian"                                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "ui_locales" | "ru"       | "Russian"                                 || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
-        "ui_locales" | "en"       | "English"                                 || "National authentication service - Secure authentication for e-services"
-        "ui_locales" | "fi ru en" | "Select first supported locale from list" || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
-        "ui_locales" | "ET"       | "Estonian with big letters"               || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "ui_locales" | "RU"       | "Russian with big letters"                || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
-        "ui_locales" | "EN"       | "English with big letters"                || "National authentication service - Secure authentication for e-services"
-        "ui_locales" | _          | "Without locale parameter"                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        uiLocales | label                                     | expectedValue
+        "zu"       | "Fallback into default language et"       | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        "et"       | "Estonian"                                | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        "ru"       | "Russian"                                 | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "en"       | "English"                                 | "National authentication service - Secure authentication for e-services"
+        "fi ru en" | "Select first supported locale from list" | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "ET"       | "Estonian with big letters"               | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        "RU"       | "Russian with big letters"                | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "EN"       | "English with big letters"                | "National authentication service - Secure authentication for e-services"
+         null      | "Without locale parameter"                | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
     }
 
     @Feature("OIDC_REQUEST")

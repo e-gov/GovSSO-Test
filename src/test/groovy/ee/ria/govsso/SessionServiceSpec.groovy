@@ -104,6 +104,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         assertThat("Correct cookie attributes", loginInitResponse.getDetailedCookie("__Host-GOVSSO").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("Secure"), containsString("Max-Age=3600"), containsString("SameSite=Lax")))
         assertThat("Correct cookie attributes", loginInitResponse.getDetailedCookie("__Host-XSRF-TOKEN").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("Secure"), containsString("Max-Age=3600")))
+        assertThat("Correct cookie attributes", loginInitResponse.getDetailedCookie("__Host-LOCALE").toString(), allOf(containsString("Path=/"), containsString("Secure")))
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
@@ -117,6 +118,24 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Cookie contains nonce", signedJWT.getJWTClaimsSet().getClaims(), hasKey("tara_nonce"))
         assertThat("Cookie contains state", signedJWT.getJWTClaimsSet().getClaims(), hasKey("tara_state"))
         assertThat("Cookie contains login challenge", signedJWT.getJWTClaimsSet().getClaims(), hasKey("login_challenge"))
+    }
+
+    @Unroll
+    @Feature("LOGIN_INIT_ENDPOINT")
+    def "Correct ui_locales passed on to __Host-LOCALE cookie"() {
+        expect:
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap.put("ui_locales", uiLocales)
+        Response initSsoOidcServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response sessionServiceResponse = Steps.startSessionInSessionService(flow, initSsoOidcServiceSession)
+
+        assertEquals(uiLocales, sessionServiceResponse.getCookie("__Host-LOCALE"), "Correct ui_locale passed to cookie")
+
+        where:
+        _ | uiLocales
+        _ | "et"
+        _ | "en"
+        _ | "ru"
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
