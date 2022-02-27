@@ -122,7 +122,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
     @Unroll
     @Feature("LOGIN_INIT_ENDPOINT")
-    def "Correct ui_locales passed on to __Host-LOCALE cookie"() {
+    def "Correct ui_locales passed on to __Host-LOCALE cookie: #uiLocales"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("ui_locales", uiLocales)
@@ -448,7 +448,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     }
 
     @Feature("LOGOUT")
-    def "Logout with continue session without _csrf formParam"() {
+    def "Logout with continue session without _csrf form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
 
@@ -469,7 +469,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     }
 
     @Feature("LOGOUT")
-    def "Logout with continue session without logoutChallenge formParam"() {
+    def "Logout with continue session without logoutChallenge form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
 
@@ -490,7 +490,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     }
 
     @Feature("LOGOUT")
-    def "Logout with continue session with invalid _csrf formParam"() {
+    def "Logout with continue session with invalid _csrf form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
 
@@ -512,7 +512,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     }
 
     @Feature("LOGOUT")
-    def "Logout with continue session with invalid logoutChallenge formParam"() {
+    def "Logout with continue session with invalid logoutChallenge form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
 
@@ -559,7 +559,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     }
 
     @Feature("LOGOUT")
-    def "Logout with end session without _csrf formParam"() {
+    def "Logout with end session without _csrf form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
 
@@ -580,7 +580,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     }
 
     @Feature("LOGOUT")
-    def "Logout with end session without logoutChallenge formParam"() {
+    def "Logout with end session without logoutChallenge form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
 
@@ -601,7 +601,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     }
 
     @Feature("LOGOUT")
-    def "Logout with end session with invalid _csrf formParam"() {
+    def "Logout with end session with invalid _csrf form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
 
@@ -621,7 +621,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     }
 
     @Feature("LOGOUT")
-    def "Logout with end session with invalid logoutChallenge formParam"() {
+    def "Logout with end session with invalid logoutChallenge form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
 
@@ -666,7 +666,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     }
 
     @Feature("LOGOUT")
-    def "Logout request for client-B with incorrect logout_challenge parameter"() {
+    def "Logout request for client-B with incorrect logout_challenge query parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
 
@@ -687,5 +687,37 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals(400, initLogoutSession.getStatusCode(), "Correct HTTP status code")
         assertEquals("USER_INPUT", initLogoutSession.jsonPath().getString("error"), "Correct error")
         assertEquals("Ebakorrektne päring.", initLogoutSession.jsonPath().getString("message"), "Correct error description")
+    }
+
+    @Feature("LOGIN_INIT_ENDPOINT")
+    def "Login reject request with missing loginChallenge form parameter"() {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        Response loginReject = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullLoginRejectUrl, flow.sessionService.cookies, formParams)
+
+        assertEquals(400, loginReject.getStatusCode(), "Correct HTTP status code")
+        assertEquals("USER_INPUT", loginReject.jsonPath().getString("error"), "Correct error")
+        assertEquals("Ebakorrektne päring.", loginReject.jsonPath().getString("message"), "Correct error description")
+    }
+
+    @Feature("LOGIN_INIT_ENDPOINT")
+    def "Login reject request with missing _csrf form parameter"() {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
+        Response loginReject = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullLoginRejectUrl, flow.sessionService.cookies, formParams)
+
+        assertEquals(403, loginReject.getStatusCode(), "Correct HTTP status code")
+        assertEquals("USER_INPUT", loginReject.jsonPath().getString("error"), "Correct error")
+        assertEquals("Ebakorrektne päring.", loginReject.jsonPath().getString("message"), "Correct error description")
     }
 }

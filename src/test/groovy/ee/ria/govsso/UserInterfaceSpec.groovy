@@ -27,8 +27,10 @@ class UserInterfaceSpec extends GovSsoSpecification{
 
         String buttonContinueSession = initLoginResponse.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/continuesession'}")
         String buttonReauthenticate = initLoginResponse.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reauthenticate'}")
+        String buttonBackToClient = initLoginResponse.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reject'}")
         assertEquals("Jätka sessiooni", buttonContinueSession, "Continue button exists with correct form action")
         assertEquals("Autendi uuesti", buttonReauthenticate, "Reauthenticate button exists with correct form action")
+        assertEquals("Tagasi teenusepakkuja juurde", buttonBackToClient, "Back to service provider link exists with correct form action")
     }
 
     @Feature("LOGOUT")

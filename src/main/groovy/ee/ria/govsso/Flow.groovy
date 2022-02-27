@@ -56,6 +56,7 @@ class SsoSessionService {
     String reauthenticateUrl
     String logoutContinueSessionUrl
     String logoutEndSessionUrl
+    String loginRejectUrl
     String taraCallbackUrl
     String consentUrl
     String consentConfirmUrl
@@ -71,6 +72,7 @@ class SsoSessionService {
     @Lazy fullReauthenticateUrl = "${protocol}://${host}${reauthenticateUrl}"
     @Lazy fullLogoutContinueSessionUrl = "${protocol}://${host}${logoutContinueSessionUrl}"
     @Lazy fullLogoutEndSessionUrl = "${protocol}://${host}${logoutEndSessionUrl}"
+    @Lazy fullLoginRejectUrl = "${protocol}://${host}${loginRejectUrl}"
     @Lazy fullTaraCallbackUrl = "${protocol}://${host}${taraCallbackUrl}"
     @Lazy fullConsentUrl = "${protocol}://${host}${consentUrl}"
     @Lazy fullConsentConfirmUrl = "${protocol}://${host}${consentConfirmUrl}"
@@ -91,6 +93,7 @@ class SsoSessionService {
         this.reauthenticateUrl = properties."sessionservice.reauthenticateUrl"
         this.logoutContinueSessionUrl = properties."sessionservice.logoutContinueSessionUrl"
         this.logoutEndSessionUrl = properties."sessionservice.logoutEndSessionUrl"
+        this.loginRejectUrl = properties."sessionservice.loginRejectUrl"
         this.taraCallbackUrl = properties."sessionservice.taraCallbackUrl"
         this.consentUrl = properties."sessionservice.consentUrl"
         this.consentConfirmUrl = properties."sessionservice.consentConfirmUrl"

@@ -259,4 +259,23 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertEquals("Not Found", Utils.getParamValueFromResponseHeader(logoutVerifier,"error"), "Correct error")
         assertEquals("Unable to locate the requested resource", Utils.getParamValueFromResponseHeader(logoutVerifier,"error_description"), "Correct error description")
     }
+
+    @Feature("OIDC_REQUEST")
+    def "Correct URL returned from OIDC after return to service provider request"() {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcServiceInitResponse)
+
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        Response loginReject = Requests.postRequestWithParams(flow, flow.sessionService.fullLoginRejectUrl, formParams)
+        Response oidcResponse = Steps.followRedirect(flow, loginReject)
+
+        assertTrue(oidcResponse.getHeader("location").startsWith(flow.oidcClientB.fullBaseUrl), "Correct redirect URL")
+        assertTrue(oidcResponse.getHeader("location").contains("error=user_cancel"), "Correct error in URL")
+        assertTrue(oidcResponse.getHeader("location").contains("error_description=User+canceled+the+authentication+process."), "Correct error description in URL")
+        assertTrue(oidcResponse.getHeader("location").contains("state"), "URL contains state parameter")
+    }
 }
