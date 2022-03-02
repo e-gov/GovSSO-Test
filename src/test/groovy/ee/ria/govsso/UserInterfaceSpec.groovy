@@ -5,7 +5,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
-import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.*
 
 class UserInterfaceSpec extends GovSsoSpecification{
 
@@ -19,7 +19,7 @@ class UserInterfaceSpec extends GovSsoSpecification{
 
     @Feature("AUTHENTICATION")
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
-    def "Continue session and reauthenticate buttons in new login sequence"() {
+    def "Correct buttons and user information in new login sequence"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
         Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
@@ -31,6 +31,7 @@ class UserInterfaceSpec extends GovSsoSpecification{
         assertEquals("Jätka sessiooni", buttonContinueSession, "Continue button exists with correct form action")
         assertEquals("Autendi uuesti", buttonReauthenticate, "Reauthenticate button exists with correct form action")
         assertEquals("Tagasi teenusepakkuja juurde", buttonBackToClient, "Back to service provider link exists with correct form action")
+        assertTrue(initLoginResponse.body().htmlPath().getString("**.find { it.@class == 'c-tab-login__content-text'}.p.text()").contains("JAAK-KRISTJAN JÕEORG EE380********"), "Correct user information displayed")
     }
 
     @Feature("LOGOUT")
