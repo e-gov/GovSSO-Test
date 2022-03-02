@@ -32,6 +32,20 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertTrue(response.getHeader("location").endsWith(flow.getLoginChallenge()))
     }
 
+    @Feature("OIDC_REQUEST")
+    def "Authentication request with incorrect client ID"() {
+        expect:
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "invalid-client-id", flow.oidcClientA.fullResponseUrl)
+        Response oidcResponse = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response oidcError = Steps.followRedirect(flow, oidcResponse)
+
+        assertEquals(400, oidcError.getStatusCode(), "Correct HTTP status code")
+        assertEquals("/error/oidc", oidcError.jsonPath().getString("path"), "Correct error")
+        assertEquals("USER_INVALID_OIDC_CLIENT", oidcError.jsonPath().getString("error"), "Correct error")
+        assertEquals("Vale OIDC klient.", oidcError.jsonPath().getString("message"), "Correct message")
+        assertTrue(oidcError.jsonPath().getString("incident_nr").size()==32, "Contains incident number")
+    }
+
     @Unroll
     @Feature("OIDC_REQUEST")
     def "Start SSO authentication with invalid parameter: #paramKey"() {
@@ -105,7 +119,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     def "Authentication request with unknown parameter"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        def value = paramsMap.put("my_parameter", "654321")
+        paramsMap.put("my_parameter", "654321")
         Response initOIDCServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
         assertThat(initOIDCServiceSession.getHeader("location"), containsString("?login_challenge="))

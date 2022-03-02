@@ -181,6 +181,7 @@ class TaraService {
     String taraloginBaseUrl
 
     @Lazy fullIdCardInitUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${idCardInitUrl}"
+    @Lazy fullAuthRejectUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${authRejectUrl}"
 
     TaraService(Properties properties) {
         this.nodeHost = properties."taraservice.node.host"

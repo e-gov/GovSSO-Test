@@ -45,7 +45,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Authentication request with valid acr_values parameter: #acrValue:"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        def value = paramsMap.put("acr_values", acrValue)
+        paramsMap.put("acr_values", acrValue)
         Response initOIDCServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
 
@@ -62,7 +62,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Authentication request with invalid acr_values parameter"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        def value = paramsMap.put("acr_values", "invalid")
+        paramsMap.put("acr_values", "invalid")
         Response initOIDCServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
 
@@ -234,6 +234,28 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals(400, sessionServiceResponse.getStatusCode(), "Correct HTTP status code")
         assertEquals("USER_INPUT", sessionServiceResponse.jsonPath().get("error"), "Correct error")
         assertEquals("Ebakorrektne päring.", sessionServiceResponse.jsonPath().get("message"), "Correct message")
+    }
+
+    @Feature("LOGIN_TARACALLBACK_ENDPOINT")
+    def "Correct redirect URL is returned from TARA after 'back to service provider' request"() {
+        expect:
+        Response initSsoOidcServiceSession = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response sessionServiceResponse = Steps.startSessionInSessionService(flow, initSsoOidcServiceSession)
+        Response taraOidcResponse1 = Steps.followRedirect(flow, sessionServiceResponse)
+        Response taraLoginResponse = Steps.followRedirect(flow, taraOidcResponse1)
+
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
+        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(cookieMap, "SESSION", taraLoginResponse.getCookie("SESSION"))
+        Response taraRejectResponse = Requests.getRequestWithCookiesAndParams(flow, flow.taraService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
+
+        Response taraOidcResponse2 = Steps.followRedirect(flow, taraRejectResponse)
+
+        assertTrue(taraOidcResponse2.getHeader("location").startsWith(flow.sessionService.fullTaraCallbackUrl), "Correct redirect URL")
+        assertTrue(taraOidcResponse2.getHeader("location").contains("error=user_cancel"), "Correct error in URL")
+        assertTrue(taraOidcResponse2.getHeader("location").contains("error_description=User+canceled+the+authentication+process."), "Correct error description in URL")
+        assertTrue(taraOidcResponse2.getHeader("location").contains("state"), "URL contains state parameter")
     }
 
     @Unroll
