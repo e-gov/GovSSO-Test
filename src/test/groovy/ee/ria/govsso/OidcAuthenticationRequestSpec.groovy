@@ -119,7 +119,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     def "Authentication request with unknown parameter"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        paramsMap.put("my_parameter", "654321")
+        def value = paramsMap.put("my_parameter", "654321")
         Response initOIDCServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
         assertThat(initOIDCServiceSession.getHeader("location"), containsString("?login_challenge="))
