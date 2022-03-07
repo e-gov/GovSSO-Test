@@ -17,7 +17,6 @@ class OidcMetadataSpec extends GovSsoSpecification {
         assertEquals((flow.ssoOidcService.baseUrl.toString() + "/"), response.getBody().jsonPath().get("issuer"), "Correct issuer")
     }
 
-    //TODO: review userinfo endpoint
     @Feature("OIDC_DISCOVERY_CONTENT")
     def "Verify discovery content"() {
         expect:
@@ -31,7 +30,6 @@ class OidcMetadataSpec extends GovSsoSpecification {
         assertEquals(["code"], jsonResponse.getList("response_types_supported"), "Supported response type")
         assertEquals(["authorization_code"], jsonResponse.getList("grant_types_supported"), "Supported grant type")
         assertEquals(["query"], jsonResponse.getList("response_modes_supported"), "Supported response mode")
-        assertEquals((flow.ssoOidcService.baseUrl.toString() + "/userinfo"), jsonResponse.get("userinfo_endpoint"), "Correct userinfo endpoint")
         assertEquals(["openid"], jsonResponse.getList("scopes_supported"), "Supported scope")
         assertEquals(["client_secret_basic"], jsonResponse.getList("token_endpoint_auth_methods_supported"), "Correct token endpoint auth method")
         assertEquals(["RS256"], jsonResponse.getList("id_token_signing_alg_values_supported"), "Supported alg values")

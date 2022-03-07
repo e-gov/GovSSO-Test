@@ -64,6 +64,8 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         String idToken = createSession.jsonPath().get("id_token")
         JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
+        Thread.sleep(1000)
+
         Response refreshSession = Steps.refreshSessionWithDefaults(flow, idToken)
 
         JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, refreshSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
@@ -82,7 +84,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertEquals(claims1.getClaim("iss"), claims2.getClaim("iss"), "Correct issuer")
         assertEquals(claims1.getClaim("sid"), claims2.getClaim("sid"), "Correct sid")
         assertEquals(claims1.getSubject(), claims2.getSubject(), "Correct subject")
-        assertTrue(claims1.getExpirationTime() <= claims2.getExpirationTime(), "Updated exp")
+        assertTrue(claims1.getExpirationTime() < claims2.getExpirationTime(), "Updated exp")
         assertTrue(claims1.getIssueTime() < claims2.getIssueTime(), "Updated iat")
         assertTrue(claims2.getExpirationTime().getTime() - claims2.getIssueTime().getTime() == 900000L, "Correct token validity period")
     }
