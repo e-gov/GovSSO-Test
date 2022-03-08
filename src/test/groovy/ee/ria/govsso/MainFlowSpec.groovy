@@ -141,6 +141,21 @@ class MainFlowSpec extends GovSsoSpecification {
     }
 
     @Feature("LOGOUT")
+    def "Logout after session refresh"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        String idToken = createSession.jsonPath().get("id_token")
+
+        Response refreshSession = Steps.refreshSessionWithDefaults(flow, idToken)
+        String idToken2 = refreshSession.getBody().jsonPath().get("id_token")
+
+        Response logoutResponse = Steps.logoutSingleClientSession(flow, idToken2, flow.oidcClientA.fullBaseUrl)
+
+        assertEquals(302, logoutResponse.getStatusCode(), "Correct status code")
+        assertTrue(logoutResponse.getHeader("Location")==(flow.oidcClientA.fullBaseUrl), "Correct redirect URL")
+    }
+
+    @Feature("LOGOUT")
     def "Logout with end session"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
