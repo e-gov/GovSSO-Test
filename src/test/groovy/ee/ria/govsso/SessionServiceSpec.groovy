@@ -711,6 +711,43 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertEquals("Ebakorrektne päring.", initLogoutSession.jsonPath().getString("message"), "Correct error description")
     }
 
+    @Feature("LOGOUT")
+    def "Logout request with empty post_logout_redirect_uri parameter value" () {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+
+        Response continueWithExistingSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        String idToken = continueWithExistingSession.jsonPath().get("id_token")
+
+        Response oidcLogout = Steps.startLogout(flow, idToken, "")
+        Response sessionLogout = Steps.followRedirect(flow, oidcLogout)
+
+        assertEquals(400, sessionLogout.getStatusCode(), "Correct HTTP status code")
+        assertEquals("USER_INPUT", sessionLogout.jsonPath().getString("error"), "Correct error")
+        assertEquals("Ebakorrektne päring.", sessionLogout.jsonPath().getString("message"), "Correct message")
+    }
+
+    @Feature("LOGOUT")
+    def "Logout request with missing post_logout_redirect_uri parameter" () {
+        expect:
+        Steps.authenticateWithIdCardInGovsso(flow)
+
+        Response continueWithExistingSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        String idToken = continueWithExistingSession.jsonPath().get("id_token")
+
+        HashMap<String, String> queryParamas = new HashMap<>()
+        Utils.setParameter(queryParamas, "id_token_hint", idToken)
+        Response oidcLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParamas, Collections.emptyMap())
+
+        flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(oidcLogout, "logout_challenge"))
+
+        Response sessionLogout = Steps.followRedirect(flow, oidcLogout)
+
+        assertEquals(400, sessionLogout.getStatusCode(), "Correct HTTP status code")
+        assertEquals("USER_INPUT", sessionLogout.jsonPath().getString("error"), "Correct error")
+        assertEquals("Ebakorrektne päring.", sessionLogout.jsonPath().getString("message"), "Correct message")
+    }
+
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Login reject request with missing loginChallenge form parameter"() {
         expect:
