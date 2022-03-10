@@ -28,10 +28,9 @@ class UserInterfaceSpec extends GovSsoSpecification{
         String buttonContinueSession = initLoginResponse.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/continuesession'}")
         String buttonReauthenticate = initLoginResponse.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reauthenticate'}")
         String buttonBackToClient = initLoginResponse.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reject'}")
-        assertEquals("Jätka sessiooni", buttonContinueSession, "Continue button exists with correct form action")
+        assertEquals("Jätka seanssi", buttonContinueSession, "Continue button exists with correct form action")
         assertEquals("Autendi uuesti", buttonReauthenticate, "Reauthenticate button exists with correct form action")
         assertEquals("Tagasi teenusepakkuja juurde", buttonBackToClient, "Back to service provider link exists with correct form action")
-        assertTrue(initLoginResponse.body().htmlPath().getString("**.find { it.@class == 'c-tab-login__content-text'}.p.text()").contains("JAAK-KRISTJAN JÕEORG EE380********"), "Correct user information displayed")
     }
 
     @Feature("LOGOUT")
@@ -46,7 +45,7 @@ class UserInterfaceSpec extends GovSsoSpecification{
 
         String buttonEndSession = initLogoutSession.body().htmlPath().getString("**.find { button -> button.@formaction == '/logout/endsession'}")
         String buttonContinueSession = initLogoutSession.body().htmlPath().getString("**.find { button -> button.@formaction == '/logout/continuesession'}")
-        assertEquals("Logi välja", buttonEndSession, "Reauthenticate button exists with correct form action")
-        assertEquals("Jätka sessioone", buttonContinueSession, "Continue button exists with correct form action")
+        assertEquals("Logi kõikidest välja", buttonEndSession, "Reauthenticate button exists with correct form action")
+        assertEquals("Jätka seanssi", buttonContinueSession, "Continue button exists with correct form action")
     }
 }
