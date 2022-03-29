@@ -461,7 +461,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
         String idToken = createSession.jsonPath().get("id_token")
 
-        Response initRefresh = Steps.startSessionRefreshInSsoOidcWithDefaults(flow, idToken)
+        Response initRefresh = Steps.startSessionRefreshInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
         Response initLogin = Steps.followRedirect(flow, initRefresh)
 
         assertEquals(500, initLogin.jsonPath().get("status"), "Correct status code")

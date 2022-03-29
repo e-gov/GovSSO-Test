@@ -27,6 +27,39 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Follow redirect request with origin")
+    static Response followRedirectWithOrigin(Flow flow, String location, String origin) {
+        return given()
+                .filter(flow.cookieFilter)
+                .header("Origin", origin)
+                .filter(new AllureRestAssured())
+                .relaxedHTTPSValidation()
+                .log().cookies()
+                .when()
+                .redirects().follow(false)
+                .urlEncodingEnabled(false)
+                .get(location)
+                .then()
+                .extract().response()
+    }
+
+    @Step("Follow redirect request with cookies and origin")
+    static Response followRedirectWithCookiesAndOrigin(Flow flow, String location, Map myCookies, String origin) {
+        return given()
+                .filter(flow.cookieFilter)
+                .cookies(myCookies)
+                .header("Origin", origin)
+                .filter(new AllureRestAssured())
+                .log().cookies()
+                .relaxedHTTPSValidation()
+                .when()
+                .redirects().follow(false)
+                .urlEncodingEnabled(false)
+                .get(location)
+                .then()
+                .extract().response()
+    }
+
     @Step("Simple get request")
     static Response getRequest(String location) {
         return given()
@@ -93,6 +126,28 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Get request with cookies and params")
+    static Response getRequestWithCookiesParamsAndOrigin(Flow flow, String url
+                                                   , Map<String, String> cookies
+                                                   , Map<String, String> queryParams
+                                                   , String origin) {
+        return given()
+                .filter(flow.cookieFilter)
+                .cookies(cookies)
+                .queryParams(queryParams)
+                .header("Origin", origin)
+                .filter(new AllureRestAssured())
+                .log().cookies()
+                .relaxedHTTPSValidation()
+                .when()
+                .redirects().follow(false)
+                .urlEncodingEnabled(true)
+                .get(url)
+                .then()
+                .extract().response()
+    }
+
+
     @Step("Get request with params")
     static Response getRequestWithParams(Flow flow, String url
                                          , Map<String, String> queryParams
@@ -129,6 +184,22 @@ class Requests {
                 .redirects().follow(false)
                 .urlEncodingEnabled(true)
                 .get(url)
+                .then()
+                .extract().response()
+    }
+
+    @Step("Post request with cookies, params and origin header")
+    static Response postRequestWithCookiesParamsAndOrigin(Flow flow, String url, Map<String, String> cookies, Map<String, String> formParams, String origin) {
+        return given()
+                .filter(flow.cookieFilter)
+                .filter(new AllureRestAssured())
+                .cookies(cookies)
+                .formParams(formParams)
+                .header("Origin", origin)
+                .log().cookies()
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .when()
+                .post(url)
                 .then()
                 .extract().response()
     }

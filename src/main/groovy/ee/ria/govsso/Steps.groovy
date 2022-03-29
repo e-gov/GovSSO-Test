@@ -21,6 +21,14 @@ class Steps {
         return initSession
     }
 
+    @Step("Initialize authentication sequence in SSO OIDC service with params and origin headers")
+    static Response startAuthenticationInSsoOidcWithParamsAndOrigin(Flow flow, Map<String, String> paramsMap, String origin) {
+        Response initSession = Requests.getRequestWithCookiesParamsAndOrigin(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.getCookies(), paramsMap, origin)
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", initSession.getCookie("oauth2_authentication_csrf"))
+        flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
+        return initSession
+    }
+
     @Step("Initialize authentication sequence in OIDC service with defaults")
     static Response startAuthenticationInSsoOidcWithDefaults(Flow flow) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
@@ -33,10 +41,22 @@ class Steps {
         return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
+    @Step("Initialize authentication sequence in OIDC service with origin")
+    static Response startAuthenticationInSsoOidcWithOrigin(Flow flow, String clientId, String fullResponseUrl, String origin) {
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, fullResponseUrl)
+        return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
+    }
+
     @Step("Initialize session refresh sequence in OIDC service with defaults")
-    static Response startSessionRefreshInSsoOidcWithDefaults(Flow flow, String idTokenHint) {
+    static Response startSessionRefreshInSsoOidcWithDefaults(Flow flow, String idTokenHint, String origin) {
         Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParametersWithDefaults(flow, idTokenHint)
-        return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
+    }
+
+    @Step("Initialize session refresh sequence in OIDC service with defaults")
+    static Response startSessionRefreshInSsoOidcWithOrigin(Flow flow, String idTokenHint, String origin) {
+        Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParametersWithDefaults(flow, idTokenHint)
+        return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
     }
 
     @Step("Initialize session refresh sequence in OIDC service")
@@ -45,7 +65,7 @@ class Steps {
         return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
-    @Step("Initialize session in session service with params")
+    @Step("Initialize session in session service")
     static Response startSessionInSessionService(Flow flow, Response response) {
         Response initSession = followRedirectWithCookies(flow, response, flow.ssoOidcService.cookies)
         Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initSession.getCookie("__Host-GOVSSO"))
@@ -53,26 +73,22 @@ class Steps {
         return initSession
     }
 
-    @Step("Initialize session refresh and follow redirects to client application with defaults")
-    static Response refreshSessionWithDefaults(Flow flow, String idTokenHint) {
-        Response initRefreshSession = startSessionRefreshInSsoOidcWithDefaults(flow, idTokenHint)
-        Response initLoginResponse = followRedirect(flow, initRefreshSession)
-        Response oauthLoginResponse = followRedirect(flow, initLoginResponse)
-        Response initConsentResponse = followRedirect(flow, oauthLoginResponse)
-        Response oauthConsentResponse = followRedirect(flow, initConsentResponse)
-        return getIdentityTokenResponseWithDefaults(flow, oauthConsentResponse)
-
+    @Step("Initialize session in session service with origin")
+    static Response startSessionInSessionServiceWithOrigin(Flow flow, Response response, String origin) {
+        Response initSession = followRedirectWithCookiesAndOrigin(flow, response, flow.ssoOidcService.cookies, origin)
+        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initSession.getCookie("__Host-GOVSSO"))
+        Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", initSession.getCookie("__Host-XSRF-TOKEN"))
+        return initSession
     }
 
-    @Step("Initialize session refresh and follow redirects to client application")
-    static Response refreshSession(Flow flow, String idTokenHint, String clientId, String fullResponseUrl) {
-        Response initRefreshSession = startSessionRefreshInSsoOidc(flow, idTokenHint, clientId, fullResponseUrl)
-        Response initLoginResponse = followRedirect(flow, initRefreshSession)
-        Response oauthLoginResponse = followRedirect(flow, initLoginResponse)
-        Response initConsentResponse = followRedirect(flow, oauthLoginResponse)
-        Response oauthConsentResponse = followRedirect(flow, initConsentResponse)
+    @Step("Initialize session refresh and follow redirects to client application with defaults")
+    static Response refreshSessionWithDefaults(Flow flow, String idTokenHint) {
+        Response initRefreshSession = startSessionRefreshInSsoOidcWithDefaults(flow, idTokenHint, flow.oidcClientA.fullBaseUrl)
+        Response initLoginResponse = followRedirectWithOrigin(flow, initRefreshSession, flow.oidcClientA.fullBaseUrl)
+        Response oauthLoginResponse = followRedirectWithOrigin(flow, initLoginResponse, flow.oidcClientA.fullBaseUrl)
+        Response initConsentResponse = followRedirectWithOrigin(flow, oauthLoginResponse, flow.oidcClientA.fullBaseUrl)
+        Response oauthConsentResponse = followRedirectWithOrigin(flow, initConsentResponse, flow.oidcClientA.fullBaseUrl)
         return getIdentityTokenResponseWithDefaults(flow, oauthConsentResponse)
-
     }
 
     @Step("Initialize logout sequence in OIDC")
@@ -81,6 +97,18 @@ class Steps {
         queryParamas.put("id_token_hint", idTokenHint)
         queryParamas.put("post_logout_redirect_uri", logoutRedirectUri)
         Response initLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParamas, Collections.emptyMap())
+        flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(initLogout, "logout_challenge"))
+        return initLogout
+    }
+
+    @Step("Initialize logout sequence in OIDC with origin")
+    static Response startLogoutWithOrigin(flow, String idTokenHint, String logoutRedirectUri, String origin) {
+        HashMap<String, String> headersMap = new HashMap<>()
+        headersMap.put("Origin", origin)
+        HashMap<String, String> queryParamas = new HashMap<>()
+        queryParamas.put("id_token_hint", idTokenHint)
+        queryParamas.put("post_logout_redirect_uri", logoutRedirectUri)
+        Response initLogout = Requests.getRequestWithHeadersAndParams(flow, flow.ssoOidcService.fullLogoutUrl, headersMap, queryParamas, Collections.emptyMap())
         flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(initLogout, "logout_challenge"))
         return initLogout
     }
@@ -98,6 +126,12 @@ class Steps {
         return Requests.followRedirect(flow, location)
     }
 
+    @Step("Follow session refresh redirect with origin")
+    static Response followRedirectWithOrigin(Flow flow, Response response, String origin) {
+        String location = response.then().extract().response().getHeader("location")
+        return Requests.followRedirectWithOrigin(flow, location, origin)
+    }
+
     @Step("Follow redirect with cookies")
     static Response followRedirectWithSsoSessionCookies(Flow flow, Response response, Map cookies) {
         String location = response.then().extract().response().getHeader("location")
@@ -108,6 +142,12 @@ class Steps {
     static Response followRedirectWithCookies(Flow flow, Response response, Map cookies) {
         String location = response.then().extract().response().getHeader("location")
         return Requests.followRedirectWithCookie(flow, location, cookies)
+    }
+
+    @Step("Follow redirect with cookies and origin")
+    static Response followRedirectWithCookiesAndOrigin(Flow flow, Response response, Map cookies, String origin) {
+        String location = response.then().extract().response().getHeader("location")
+        return Requests.followRedirectWithCookiesAndOrigin(flow, location, cookies, origin)
     }
 
     @Step("Follow redirect with session id")
