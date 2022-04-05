@@ -13,6 +13,7 @@ import static org.hamcrest.MatcherAssert.assertThat
 
 
 class OidcIdentityTokenSpec extends GovSsoSpecification {
+
     Flow flow = new Flow(props)
 
     def setup() {

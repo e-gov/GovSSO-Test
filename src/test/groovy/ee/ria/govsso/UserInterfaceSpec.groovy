@@ -9,7 +9,6 @@ import spock.lang.Unroll
 import static org.hamcrest.Matchers.equalTo
 import static org.junit.jupiter.api.Assertions.*
 
-
 //TODO: add russian translations
 class UserInterfaceSpec extends GovSsoSpecification {
 
@@ -27,12 +26,12 @@ class UserInterfaceSpec extends GovSsoSpecification {
     def "Correct buttons with correct form actions exist in session continuation display with specified ui_locales: #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Response initLoginResponse = Steps.followRedirect(flow, oidcServiceInitResponse)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        String buttonContinueSession = initLoginResponse.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/continuesession'}")
-        String buttonReauthenticate = initLoginResponse.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reauthenticate'}")
-        String buttonReturnToClient = initLoginResponse.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reject'}")
+        String buttonContinueSession = initLogin.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/continuesession'}")
+        String buttonReauthenticate = initLogin.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reauthenticate'}")
+        String buttonReturnToClient = initLogin.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reject'}")
         assertEquals(continueButton, buttonContinueSession, "Continue button exists with correct form action")
         assertEquals(reauthenticateButton, buttonReauthenticate, "Reauthenticate button exists with correct form action")
         assertEquals(returnButton, buttonReturnToClient, "Return to service provider link exists with correct form action")
@@ -48,11 +47,11 @@ class UserInterfaceSpec extends GovSsoSpecification {
     def "Correct buttons with correct form actions exist in session logout display with specified ui_locales: #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
-        Response continueWithExistingSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
-        String idToken = continueWithExistingSession.jsonPath().get("id_token")
+        Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        String idToken = continueSession.jsonPath().get("id_token")
 
-        Response initLogoutOidc = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
-        Response initLogoutSession = Steps.followRedirect(flow, initLogoutOidc)
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
+        Response initLogoutSession = Steps.followRedirect(flow, oidcLogout)
 
         String buttonEndSession = initLogoutSession.body().htmlPath().getString("**.find { button -> button.@formaction == '/logout/endsession'}")
         String buttonContinueSession = initLogoutSession.body().htmlPath().getString("**.find { button -> button.@formaction == '/logout/continuesession'}")
@@ -72,8 +71,8 @@ class UserInterfaceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
 
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Response loginInit = Steps.followRedirect(flow, oidcServiceInitResponse)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response loginInit = Steps.followRedirect(flow, oidcAuth)
 
         loginInit.then().body("html.head.title", equalTo(title))
 
@@ -89,11 +88,11 @@ class UserInterfaceSpec extends GovSsoSpecification {
     def "Correct translations used in session logout display: translation #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
-        Response continueWithExistingSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
-        String idToken = continueWithExistingSession.jsonPath().get("id_token")
+        Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        String idToken = continueSession.jsonPath().get("id_token")
 
-        Response initLogoutOidc = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
-        Response initLogoutSession = Steps.followRedirect(flow, initLogoutOidc)
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
+        Response initLogoutSession = Steps.followRedirect(flow, oidcLogout)
 
         initLogoutSession.then().body("html.head.title", equalTo(title))
 
@@ -109,11 +108,11 @@ class UserInterfaceSpec extends GovSsoSpecification {
     def "Correct logout client and active client displayed in logout display with specified ui_locales: #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
-        Response continueWithExistingSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
-        String idToken = continueWithExistingSession.jsonPath().get("id_token")
+        Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        String idToken = continueSession.jsonPath().get("id_token")
 
-        Response initLogoutOidc = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
-        Response initLogoutSession = Steps.followRedirect(flow, initLogoutOidc)
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
+        Response initLogoutSession = Steps.followRedirect(flow, oidcLogout)
 
         assertTrue(initLogoutSession.body().htmlPath().getString("/c-tab-login/*}").contains(logoutText), "Correct logged out client")
         assertTrue(initLogoutSession.body().htmlPath().getString("/c-tab-login/*}").contains(sessionText), "Correct active client")
@@ -129,12 +128,12 @@ class UserInterfaceSpec extends GovSsoSpecification {
     def "Correct user data displayed in session continuation display"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
-        Response oidcServiceInitResponse = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Response initLoginResponse = Steps.followRedirect(flow, oidcServiceInitResponse)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        assertTrue(initLoginResponse.body().htmlPath().getString("/personal-info/*}").contains("JAAK-KRISTJAN"), "Correct first name")
-        assertTrue(initLoginResponse.body().htmlPath().getString("/personal-info/*}").contains("JÕEORG"), "Correct surname")
-        assertTrue(initLoginResponse.body().htmlPath().getString("/personal-info/*}").contains("EE38001085718"), "Correct personal code")
-        assertTrue(initLoginResponse.body().htmlPath().getString("/personal-info/*}").contains("08.01.1980"), "Correct date of birth")
+        assertTrue(initLogin.body().htmlPath().getString("/personal-info/*}").contains("JAAK-KRISTJAN"), "Correct first name")
+        assertTrue(initLogin.body().htmlPath().getString("/personal-info/*}").contains("JÕEORG"), "Correct surname")
+        assertTrue(initLogin.body().htmlPath().getString("/personal-info/*}").contains("EE38001085718"), "Correct personal code")
+        assertTrue(initLogin.body().htmlPath().getString("/personal-info/*}").contains("08.01.1980"), "Correct date of birth")
     }
 }

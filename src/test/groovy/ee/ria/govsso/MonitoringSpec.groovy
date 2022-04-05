@@ -7,6 +7,7 @@ import org.hamcrest.Matchers
 import static org.junit.jupiter.api.Assertions.*
 
 class MonitoringSpec extends GovSsoSpecification {
+
     Flow flow = new Flow(props)
 
     @Feature("")

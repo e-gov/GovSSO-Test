@@ -19,8 +19,8 @@ class ServiceErrorsSpec extends GovSsoSpecification {
     def "OIDC service error response JSON"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "invalid-client-id", flow.oidcClientA.fullResponseUrl)
-        Response oidcResponse = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response oidcError = Steps.followRedirect(flow, oidcResponse)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response oidcError = Steps.followRedirect(flow, oidcAuth)
 
         assertEquals(400, oidcError.jsonPath().getInt("status"), "Contains error status code")
         assertEquals("/error/oidc", oidcError.jsonPath().getString("path"), "Contains path")
@@ -35,8 +35,8 @@ class ServiceErrorsSpec extends GovSsoSpecification {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("acr_values", "invalid")
-        Response initOIDCServiceSession = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response sessionError = Steps.followRedirect(flow, initOIDCServiceSession)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response sessionError = Steps.followRedirect(flow, oidcAuth)
 
         assertEquals(400, sessionError.jsonPath().getInt("status"), "Contains error status code")
         assertEquals("/login/init", sessionError.jsonPath().getString("path"), "Contains path")
