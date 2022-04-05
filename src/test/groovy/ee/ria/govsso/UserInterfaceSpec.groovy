@@ -121,7 +121,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         where:
         uiLocale | logoutText                                    | sessionText
         "et"     | "Olete välja logitud Teenusenimi B teenusest" | "Olete jätkuvalt sisse logitud järgnevatesse teenustesse:Teenusenimi A"
-        "en"     | "You have been logged out from Teenusenimi B" | "You are still logged in to the following services:Teenusenimi A"
+        "en"     | "You have been logged out from Service name B"| "You are still logged in to the following services:Teenusenimi A"
     }
 
     @Unroll
@@ -135,6 +135,6 @@ class UserInterfaceSpec extends GovSsoSpecification {
         assertTrue(initLoginResponse.body().htmlPath().getString("/personal-info/*}").contains("JAAK-KRISTJAN"), "Correct first name")
         assertTrue(initLoginResponse.body().htmlPath().getString("/personal-info/*}").contains("JÕEORG"), "Correct surname")
         assertTrue(initLoginResponse.body().htmlPath().getString("/personal-info/*}").contains("EE38001085718"), "Correct personal code")
-        assertTrue(initLoginResponse.body().htmlPath().getString("/personal-info/*}").contains("1980-01-08"), "Correct date of birth")
+        assertTrue(initLoginResponse.body().htmlPath().getString("/personal-info/*}").contains("08.01.1980"), "Correct date of birth")
     }
 }
