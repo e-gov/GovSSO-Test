@@ -4,7 +4,7 @@ runner {
     filterStackTrace false
     optimizeRunOrder true
     parallel {
-        enabled true
+        enabled false
         defaultSpecificationExecutionMode = ExecutionMode.CONCURRENT
         defaultExecutionMode = ExecutionMode.SAME_THREAD
         fixed(4)
