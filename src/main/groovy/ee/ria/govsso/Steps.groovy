@@ -15,18 +15,18 @@ class Steps {
 
     @Step("Initialize authentication sequence in SSO OIDC service with params")
     static Response startAuthenticationInSsoOidcWithParams(Flow flow, Map<String, String> paramsMap) {
-        Response initSession = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.getCookies(), paramsMap, Collections.emptyMap())
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", initSession.getCookie("oauth2_authentication_csrf"))
-        flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
-        return initSession
+        Response oidcAuth = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.getCookies(), paramsMap, Collections.emptyMap())
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", oidcAuth.getCookie("oauth2_authentication_csrf"))
+        flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(oidcAuth, "login_challenge"))
+        return oidcAuth
     }
 
     @Step("Initialize authentication sequence in SSO OIDC service with params and origin headers")
     static Response startAuthenticationInSsoOidcWithParamsAndOrigin(Flow flow, Map<String, String> paramsMap, String origin) {
-        Response initSession = Requests.getRequestWithCookiesParamsAndOrigin(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.getCookies(), paramsMap, origin)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", initSession.getCookie("oauth2_authentication_csrf"))
-        flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
-        return initSession
+        Response oidcAuth = Requests.getRequestWithCookiesParamsAndOrigin(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.getCookies(), paramsMap, origin)
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", oidcAuth.getCookie("oauth2_authentication_csrf"))
+        flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(oidcAuth, "login_challenge"))
+        return oidcAuth
     }
 
     @Step("Initialize authentication sequence in OIDC service with defaults")
@@ -49,12 +49,6 @@ class Steps {
 
     @Step("Initialize session refresh sequence in OIDC service with defaults")
     static Response startSessionRefreshInSsoOidcWithDefaults(Flow flow, String idTokenHint, String origin) {
-        Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParametersWithDefaults(flow, idTokenHint)
-        return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
-    }
-
-    @Step("Initialize session refresh sequence in OIDC service with defaults")
-    static Response startSessionRefreshInSsoOidcWithOrigin(Flow flow, String idTokenHint, String origin) {
         Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParametersWithDefaults(flow, idTokenHint)
         return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
     }
@@ -83,8 +77,8 @@ class Steps {
 
     @Step("Initialize session refresh and follow redirects to client application with defaults")
     static Response refreshSessionWithDefaults(Flow flow, String idTokenHint) {
-        Response initRefreshSession = startSessionRefreshInSsoOidcWithDefaults(flow, idTokenHint, flow.oidcClientA.fullBaseUrl)
-        Response initLogin = followRedirectWithOrigin(flow, initRefreshSession, flow.oidcClientA.fullBaseUrl)
+        Response oidcRefreshSession = startSessionRefreshInSsoOidcWithDefaults(flow, idTokenHint, flow.oidcClientA.fullBaseUrl)
+        Response initLogin = followRedirectWithOrigin(flow, oidcRefreshSession, flow.oidcClientA.fullBaseUrl)
         Response loginVerifier = followRedirectWithOrigin(flow, initLogin, flow.oidcClientA.fullBaseUrl)
         Response initConsent = followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
         Response consentVerifier = followRedirectWithOrigin(flow, initConsent, flow.oidcClientA.fullBaseUrl)
@@ -194,12 +188,10 @@ class Steps {
     @Step("Follow redirects to client application")
     static Response followRedirectsToClientApplication(Flow flow, Response authenticationFinishedResponse) {
         Response initLogin = followRedirectWithCookies(flow, authenticationFinishedResponse, flow.sessionService.cookies)
-        verifyResponseHeaders(initLogin)
         Response loginVerifier = followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf", loginVerifier.getCookie("oauth2_consent_csrf"))
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_session", loginVerifier.getCookie("oauth2_authentication_session"))
         Response initConsent = followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
-        verifyResponseHeaders(initConsent)
         return followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
     }
 
@@ -214,9 +206,8 @@ class Steps {
     @Step("Create initial session in GOVSSO with ID-Card in client-A")
     static Response authenticateWithIdCardInGovsso(flow) {
         Response oidcAuth = startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = startSessionInSessionService(flow, oidcAuth)
-        verifyResponseHeaders(loginInit)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response initLogin = startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
         return getIdentityTokenResponseWithDefaults(flow, consentVerifier)
     }
@@ -226,9 +217,8 @@ class Steps {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("ui_locales", uiLocales)
         Response oidcAuth = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response loginInit = startSessionInSessionService(flow, oidcAuth)
-        verifyResponseHeaders(loginInit)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response initLogin = startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
         return getIdentityTokenResponseWithDefaults(flow, consentVerifier)
     }
@@ -238,8 +228,8 @@ class Steps {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("acr_values", acrValue)
         Response oidcAuth = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response loginInit = startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithEidasInTARA(flow, "CA", "xavi", "creus", eidasLoa, loginInit)
+        Response initLogin = startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithEidasInTARA(flow, "CA", "xavi", "creus", eidasLoa, initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
         return getIdentityTokenResponseWithDefaults(flow, consentVerifier)
     }
@@ -280,22 +270,16 @@ class Steps {
         Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
         Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
         Response reauthenticate = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies, formParams)
-        Response loginInit = followRedirectWithCookies(flow, reauthenticate, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", loginInit.getCookie("oauth2_authentication_csrf"))
-        Response followRedirect = followRedirect(flow, loginInit)
+        Response initLogin = followRedirectWithCookies(flow, reauthenticate, flow.ssoOidcService.cookies)
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", initLogin.getCookie("oauth2_authentication_csrf"))
+        Response followRedirect = followRedirect(flow, initLogin)
         Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", followRedirect.getCookie("__Host-GOVSSO"))
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, followRedirect)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
         return getIdentityTokenResponse(flow, consentVerifier, clientId, clientSecret, fullResponseUrl)
     }
 
-    @Feature("CSP_ENABLED")
-    @Feature("HSTS_ENABLED")
-    @Feature("DISALLOW_IFRAMES")
-    @Feature("CACHE_POLICY")
-    @Feature("NOSNIFF")
-    @Feature("XSS_DETECTION_FILTER_ENABLED")
-    @Step("verify response headers")
+    @Step("verify session service response headers")
     static void verifyResponseHeaders(Response response) {
         assertThat(response.getHeader("X-Frame-Options"), equalTo("DENY"))
         String policyString = "connect-src 'self'; default-src 'none'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'; block-all-mixed-content"
