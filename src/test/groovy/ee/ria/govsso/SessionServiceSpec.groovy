@@ -29,15 +29,15 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Correct request with query parameters from session service to TARA"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        assertEquals(302, loginInit.getStatusCode(), "Correct HTTP status code")
-        assertTrue(loginInit.getHeader("location").contains("scope"), "Query parameters contain scope")
-        assertTrue(loginInit.getHeader("location").contains("response_type"), "Query parameters contain response_type")
-        assertTrue(loginInit.getHeader("location").contains("redirect_uri"), "Query parameters contain redirect_uri")
-        assertTrue(loginInit.getHeader("location").contains("state"), "Query parameters contain state")
-        assertTrue(loginInit.getHeader("location").contains("nonce"), "Query parameters contain nonce")
-        assertTrue(loginInit.getHeader("location").contains("client_id"), "Query parameters contain client_id")
+        assertEquals(302, initLogin.getStatusCode(), "Correct HTTP status code")
+        assertTrue(initLogin.getHeader("location").contains("scope"), "Query parameters contain scope")
+        assertTrue(initLogin.getHeader("location").contains("response_type"), "Query parameters contain response_type")
+        assertTrue(initLogin.getHeader("location").contains("redirect_uri"), "Query parameters contain redirect_uri")
+        assertTrue(initLogin.getHeader("location").contains("state"), "Query parameters contain state")
+        assertTrue(initLogin.getHeader("location").contains("nonce"), "Query parameters contain nonce")
+        assertTrue(initLogin.getHeader("location").contains("client_id"), "Query parameters contain client_id")
     }
 
     @Unroll
@@ -100,20 +100,20 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Verify session cookie attributes"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        assertThat("Correct cookie attributes", loginInit.getDetailedCookie("__Host-GOVSSO").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("Secure"), containsString("Max-Age=3600"), containsString("SameSite=Lax")))
-        assertThat("Correct cookie attributes", loginInit.getDetailedCookie("__Host-XSRF-TOKEN").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("Secure"), containsString("Max-Age=3600")))
-        assertThat("Correct cookie attributes", loginInit.getDetailedCookie("__Host-LOCALE").toString(), allOf(containsString("Path=/"), containsString("Secure")))
+        assertThat("Correct cookie attributes", initLogin.getDetailedCookie("__Host-GOVSSO").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("Secure"), containsString("Max-Age=3600"), containsString("SameSite=Lax")))
+        assertThat("Correct cookie attributes", initLogin.getDetailedCookie("__Host-XSRF-TOKEN").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("Secure"), containsString("Max-Age=3600")))
+        assertThat("Correct cookie attributes", initLogin.getDetailedCookie("__Host-LOCALE").toString(), allOf(containsString("Path=/"), containsString("Secure")))
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Verify __Host-GOVSSO JWT cookie elements"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        SignedJWT signedJWT = SignedJWT.parse(loginInit.getCookie("__Host-GOVSSO"))
+        SignedJWT signedJWT = SignedJWT.parse(initLogin.getCookie("__Host-GOVSSO"))
 
         assertThat("Cookie contains nonce", signedJWT.getJWTClaimsSet().getClaims(), hasKey("tara_nonce"))
         assertThat("Cookie contains state", signedJWT.getJWTClaimsSet().getClaims(), hasKey("tara_state"))
@@ -127,9 +127,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("ui_locales", uiLocales)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        assertEquals(uiLocales, loginInit.getCookie("__Host-LOCALE"), "Correct ui_locale passed to cookie")
+        assertEquals(uiLocales, initLogin.getCookie("__Host-LOCALE"), "Correct ui_locale passed to cookie")
 
         where:
         _ | uiLocales
@@ -142,31 +142,31 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Correct request with query parameters from TARA is returned to session service"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
         assertEquals(302, taraAuthentication.getStatusCode(), "Correct HTTP status code")
         assertTrue(taraAuthentication.getHeader("location").startsWith(flow.sessionService.getFullTaraCallbackUrl()), "Correct URL is returned")
         assertTrue(taraAuthentication.getHeader("location").contains("code"), "Query parameters contain code")
         assertTrue(taraAuthentication.getHeader("location").contains("scope"), "Query parameters contain scope")
         assertTrue(taraAuthentication.getHeader("location").contains("state"), "Query parameters contain state")
-        assertEquals(Utils.getParamValueFromResponseHeader(loginInit, "state"), Utils.getParamValueFromResponseHeader(taraAuthentication, "state"), "Query contains correct state parameter value")
+        assertEquals(Utils.getParamValueFromResponseHeader(initLogin, "state"), Utils.getParamValueFromResponseHeader(taraAuthentication, "state"), "Query contains correct state parameter value")
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct redirect URL with incorrect state parameter is returned from TARA"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "state", "")
         Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(taraAuthentication, "code"))
 
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-GOVSSO", loginInit.getCookie("__Host-GOVSSO"))
-        Utils.setParameter(cookieMap, "__Host-XSRF-TOKEN", loginInit.getCookie("__Host-XSRF-TOKEN"))
+        Utils.setParameter(cookieMap, "__Host-GOVSSO", initLogin.getCookie("__Host-GOVSSO"))
+        Utils.setParameter(cookieMap, "__Host-XSRF-TOKEN", initLogin.getCookie("__Host-XSRF-TOKEN"))
 
         Response taracallback = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
 
@@ -179,15 +179,15 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Correct redirect URL with incorrect code parameter is returned from TARA"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "code", "")
         Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(taraAuthentication, "state"))
 
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-GOVSSO", loginInit.getCookie("__Host-GOVSSO"))
+        Utils.setParameter(cookieMap, "__Host-GOVSSO", initLogin.getCookie("__Host-GOVSSO"))
 
         Response taracallback = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
 
@@ -200,8 +200,8 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Taracallback request with missing __Host-GOVSSO cookie"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(taraAuthentication, "code"))
@@ -219,8 +219,8 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Taracallback request with incorrect __Host-GOVSSO cookie"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "__Host-GOVSSO", "incorrect")
@@ -240,14 +240,14 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Correct redirect URL is returned from TARA after 'back to service provider' request"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraOidcAuth1 = Steps.followRedirect(flow, loginInit)
-        Response taraLoginInit = Steps.followRedirect(flow, taraOidcAuth1)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraOidcAuth1 = Steps.followRedirect(flow, initLogin)
+        Response tarainitLogin = Steps.followRedirect(flow, taraOidcAuth1)
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "SESSION", taraLoginInit.getCookie("SESSION"))
+        Utils.setParameter(cookieMap, "SESSION", tarainitLogin.getCookie("SESSION"))
         Response taraReject = Requests.getRequestWithCookiesAndParams(flow, flow.taraService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
 
         Response taraOidcAuth2 = Steps.followRedirect(flow, taraReject)

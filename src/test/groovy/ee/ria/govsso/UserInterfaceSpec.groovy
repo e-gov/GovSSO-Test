@@ -72,9 +72,9 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Response loginInit = Steps.followRedirect(flow, oidcAuth)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        loginInit.then().body("html.head.title", equalTo(title))
+        initLogin.then().body("html.head.title", equalTo(title))
 
         where:
         uiLocale | title

@@ -24,9 +24,9 @@ class MainFlowSpec extends GovSsoSpecification {
     def "Authentication with Mobile-ID"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", loginInit)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
 
         Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
@@ -42,9 +42,9 @@ class MainFlowSpec extends GovSsoSpecification {
     def "Authenticate with Smart-ID"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        Response taraAuthentication = TaraSteps.authenticateWithSidInTARA(flow, "30303039914", loginInit)
+        Response taraAuthentication = TaraSteps.authenticateWithSidInTARA(flow, "30303039914", initLogin)
 
         Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
@@ -60,9 +60,9 @@ class MainFlowSpec extends GovSsoSpecification {
     def "Authenticate with ID-Card"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
         Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 

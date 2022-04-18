@@ -95,11 +95,11 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("ui_locales", uiLocales)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraOidcAuth = Steps.followRedirect(flow, loginInit)
-        Response taraLoginInit = Steps.followRedirect(flow, taraOidcAuth)
-        assertEquals(200, taraLoginInit.statusCode(), "Correct HTTP status code is returned")
-        taraLoginInit.then().body("html.head.title", equalTo(expectedValue))
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraOidcAuth = Steps.followRedirect(flow, initLogin)
+        Response tarainitLogin = Steps.followRedirect(flow, taraOidcAuth)
+        assertEquals(200, tarainitLogin.statusCode(), "Correct HTTP status code is returned")
+        tarainitLogin.then().body("html.head.title", equalTo(expectedValue))
 
         where:
         uiLocales | label                                     | expectedValue
@@ -129,8 +129,8 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     def "Correct set-cookie parameters in responses"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
         Response loginVerifier = Steps.followRedirectWithCookies(flow, taracallback, flow.ssoOidcService.cookies)
 
@@ -144,8 +144,8 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     def "Incorrect OIDC login verifier request: #reason"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
 
         HashMap<String, String> queryParams = (HashMap) Collections.emptyMap()

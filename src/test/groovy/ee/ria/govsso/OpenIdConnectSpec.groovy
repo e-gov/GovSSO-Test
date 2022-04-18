@@ -36,8 +36,8 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     def "Request a token twice"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
         String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
         // 1
@@ -54,8 +54,8 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     def "Request with invalid authorization code"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, loginInit)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
         String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
 
@@ -69,9 +69,9 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     def "Request with missing parameter #paramName"() {
         expect:
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(formParamsMap, "grant_type", "code")
-        def map2 = Utils.setParameter(formParamsMap, "code", "1234567")
-        def map3 = Utils.setParameter(formParamsMap, "redirect_uri", flow.oidcClientA.fullResponseUrl)
+        Utils.setParameter(formParamsMap, "grant_type", "code")
+        Utils.setParameter(formParamsMap, "code", "1234567")
+        Utils.setParameter(formParamsMap, "redirect_uri", flow.oidcClientA.fullResponseUrl)
         formParamsMap.remove(paramName)
         Response token = Requests.getWebTokenResponseBody(flow, formParamsMap)
         assertEquals(statusCode, token.statusCode(), "Correct HTTP status code is returned")
@@ -92,10 +92,10 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     def "Request with invalid parameter value #paramName"() {
         expect:
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(formParamsMap, "grant_type", "code")
-        def map2 = Utils.setParameter(formParamsMap, "code", "1234567")
-        def map3 = Utils.setParameter(formParamsMap, "redirect_uri", flow.oidcClientA.fullResponseUrl)
-        def map4 = Utils.setParameter(formParamsMap, paramName, paramValue)
+        Utils.setParameter(formParamsMap, "grant_type", "code")
+        Utils.setParameter(formParamsMap, "code", "1234567")
+        Utils.setParameter(formParamsMap, "redirect_uri", flow.oidcClientA.fullResponseUrl)
+        Utils.setParameter(formParamsMap, paramName, paramValue)
         Response token = Requests.getWebTokenResponseBody(flow, formParamsMap)
         assertEquals(statusCode, token.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct Content-Type is returned", token.getContentType(), startsWith("application/json"))
@@ -121,8 +121,8 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         paramsMap.put("state", "testȺ田\uD83D\uDE0D&additional=1 %20")
         paramsMap.put("nonce", "testȺ田\uD83D\uDE0D&additional=1 %20")
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response loginInit = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", loginInit)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
         Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
         Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
