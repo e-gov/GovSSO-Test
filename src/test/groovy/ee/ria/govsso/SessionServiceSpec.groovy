@@ -135,7 +135,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         _ | uiLocales
         _ | "et"
         _ | "en"
-        _ | "ru"
+//        _ | "ru"
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")

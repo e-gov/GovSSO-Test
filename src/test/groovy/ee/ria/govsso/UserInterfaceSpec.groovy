@@ -9,7 +9,7 @@ import spock.lang.Unroll
 import static org.hamcrest.Matchers.equalTo
 import static org.junit.jupiter.api.Assertions.*
 
-//TODO: add russian translations
+//TODO: add/enable russian translations
 class UserInterfaceSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
@@ -80,7 +80,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         uiLocale | title
         "et" | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
         "en" | "National authentication service - Secure authentication for e-services"
-        "ru" | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+//        "ru" | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
     }
 
     @Unroll
@@ -100,7 +100,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         uiLocale | title
         "et"     | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
         "en"     | "National authentication service - Secure authentication for e-services"
-        "ru"     | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+//        "ru"     | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
     }
 
     @Unroll
