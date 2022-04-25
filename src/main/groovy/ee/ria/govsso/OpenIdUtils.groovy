@@ -40,6 +40,7 @@ class OpenIdUtils {
         queryParams.put("prompt", "consent")
         queryParams.put("ui_locales", "et")
         queryParams.put("acr_values", "high")
+        flow.setClientId(flow.getOidcClientA().getClientId())
         return queryParams
     }
 
@@ -56,6 +57,7 @@ class OpenIdUtils {
         queryParams.put("prompt", "consent")
         queryParams.put("ui_locales", "et")
         queryParams.put("acr_values", "high")
+        flow.setClientId(clientId)
         return queryParams
     }
 
@@ -71,6 +73,7 @@ class OpenIdUtils {
         queryParams.put("nonce", flow.nonce)
         queryParams.put("prompt", "none")
         queryParams.put("id_token_hint", idTokenHint)
+        flow.setClientId(flow.getOidcClientA().getClientId())
         return queryParams
     }
 
@@ -86,6 +89,7 @@ class OpenIdUtils {
         queryParams.put("nonce", flow.nonce)
         queryParams.put("prompt", "none")
         queryParams.put("id_token_hint", idTokenHint)
+        flow.setClientId(clientId)
         return queryParams
     }
 

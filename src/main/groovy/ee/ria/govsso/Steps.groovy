@@ -1,10 +1,12 @@
 package ee.ria.govsso
 
-
+import com.google.common.hash.Hashing
 import com.nimbusds.jwt.SignedJWT
-import io.qameta.allure.Feature
 import io.qameta.allure.Step
 import io.restassured.response.Response
+
+import java.nio.charset.StandardCharsets
+
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.anyOf
@@ -16,7 +18,7 @@ class Steps {
     @Step("Initialize authentication sequence in SSO OIDC service with params")
     static Response startAuthenticationInSsoOidcWithParams(Flow flow, Map<String, String> paramsMap) {
         Response oidcAuth = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.getCookies(), paramsMap, Collections.emptyMap())
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", oidcAuth.getCookie("oauth2_authentication_csrf"))
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), oidcAuth.getCookie("oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(oidcAuth, "login_challenge"))
         return oidcAuth
     }
@@ -24,7 +26,7 @@ class Steps {
     @Step("Initialize authentication sequence in SSO OIDC service with params and origin headers")
     static Response startAuthenticationInSsoOidcWithParamsAndOrigin(Flow flow, Map<String, String> paramsMap, String origin) {
         Response oidcAuth = Requests.getRequestWithCookiesParamsAndOrigin(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.getCookies(), paramsMap, origin)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", oidcAuth.getCookie("oauth2_authentication_csrf"))
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), oidcAuth.getCookie("oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(oidcAuth, "login_challenge"))
         return oidcAuth
     }
@@ -79,9 +81,10 @@ class Steps {
     static Response refreshSessionWithDefaults(Flow flow, String idTokenHint) {
         Response oidcRefreshSession = startSessionRefreshInSsoOidcWithDefaults(flow, idTokenHint, flow.oidcClientA.fullBaseUrl)
         Response initLogin = followRedirectWithOrigin(flow, oidcRefreshSession, flow.oidcClientA.fullBaseUrl)
-        Response loginVerifier = followRedirectWithOrigin(flow, initLogin, flow.oidcClientA.fullBaseUrl)
+        Response loginVerifier = followRedirectWithCookiesAndOrigin(flow, initLogin, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Response initConsent = followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
-        Response consentVerifier = followRedirectWithOrigin(flow, initConsent, flow.oidcClientA.fullBaseUrl)
+        Response consentVerifier = followRedirectWithCookiesAndOrigin(flow, initConsent, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
         return getIdentityTokenResponseWithDefaults(flow, consentVerifier)
     }
 
@@ -189,7 +192,7 @@ class Steps {
     static Response followRedirectsToClientApplication(Flow flow, Response authenticationFinishedResponse) {
         Response initLogin = followRedirectWithCookies(flow, authenticationFinishedResponse, flow.sessionService.cookies)
         Response loginVerifier = followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf", loginVerifier.getCookie("oauth2_consent_csrf"))
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_session", loginVerifier.getCookie("oauth2_authentication_session"))
         Response initConsent = followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
         return followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
@@ -197,9 +200,10 @@ class Steps {
 
     @Step("Follow redirects to client application with existing session")
     static Response followRedirectsToClientApplicationWithExistingSession(Flow flow, Response response, String clientId, String clientSecret, String fullResponseUrl) {
-        Response loginVerifier = followRedirect(flow, response)
+        Response loginVerifier = followRedirectWithCookies(flow, response, flow.ssoOidcService.cookies)
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Response initConsent = followRedirect(flow, loginVerifier)
-        Response consentVerifier = followRedirect(flow, initConsent)
+        Response consentVerifier = followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
         return getIdentityTokenResponse(flow, consentVerifier, clientId, clientSecret, fullResponseUrl)
     }
 
@@ -271,7 +275,7 @@ class Steps {
         Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
         Response reauthenticate = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies, formParams)
         Response initLogin = followRedirectWithCookies(flow, reauthenticate, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf", initLogin.getCookie("oauth2_authentication_csrf"))
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), initLogin.getCookie("oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Response followRedirect = followRedirect(flow, initLogin)
         Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", followRedirect.getCookie("__Host-GOVSSO"))
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, followRedirect)

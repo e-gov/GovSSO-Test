@@ -1,10 +1,12 @@
 package ee.ria.govsso
 
+import com.google.common.hash.Hashing
 import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Unroll
+import java.nio.charset.StandardCharsets
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
@@ -134,9 +136,9 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
         Response loginVerifier = Steps.followRedirectWithCookies(flow, taracallback, flow.ssoOidcService.cookies)
 
-        assertThat("Correct cookie attributes", oidcAuth.getDetailedCookie("oauth2_authentication_csrf").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure")))
+        assertThat("Correct cookie attributes", oidcAuth.getDetailedCookie("oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure"), containsString("Max-Age=3600")))
         assertThat("Correct cookie attributes", loginVerifier.getDetailedCookie("oauth2_authentication_session").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure"), containsString("Max-Age=900")))
-        assertThat("Correct cookie attributes", loginVerifier.getDetailedCookie("oauth2_consent_csrf").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure")))
+        assertThat("Correct cookie attributes", loginVerifier.getDetailedCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure"), containsString("Max-Age=3600")))
     }
 
     @Unroll
