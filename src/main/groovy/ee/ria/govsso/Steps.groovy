@@ -286,7 +286,7 @@ class Steps {
     @Step("verify session service response headers")
     static void verifyResponseHeaders(Response response) {
         assertThat(response.getHeader("X-Frame-Options"), equalTo("DENY"))
-        String policyString = "connect-src 'self'; default-src 'none'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; block-all-mixed-content"
+        String policyString = "connect-src 'self'; default-src 'none'; font-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'; block-all-mixed-content"
         assertThat(response.getHeader("Content-Security-Policy"), equalTo(policyString))
         assertThat(response.getHeader("Strict-Transport-Security"), anyOf(containsString("max-age=16070400"), containsString("max-age=31536000")))
         assertThat(response.getHeader("Strict-Transport-Security"), containsString("includeSubDomains"))
