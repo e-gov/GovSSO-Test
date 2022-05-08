@@ -60,6 +60,22 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Follow redirect request with additional query params")
+    static Response followRedirectWithParams(Flow flow, String location, Map<String, String> additionalQueryParams) {
+        return given()
+                .filter(flow.cookieFilter)
+                .filter(new AllureRestAssured())
+                .queryParams(additionalQueryParams)
+                .relaxedHTTPSValidation()
+                .log().cookies()
+                .when()
+                .redirects().follow(false)
+                .urlEncodingEnabled(false)
+                .get(location)
+                .then()
+                .extract().response()
+    }
+
     @Step("Simple get request")
     static Response getRequest(String location) {
         return given()

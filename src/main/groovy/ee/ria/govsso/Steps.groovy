@@ -130,12 +130,6 @@ class Steps {
     }
 
     @Step("Follow redirect with cookies")
-    static Response followRedirectWithSsoSessionCookies(Flow flow, Response response, Map cookies) {
-        String location = response.then().extract().response().getHeader("location")
-        return Requests.followRedirectWithCookie(flow, location, cookies)
-    }
-
-    @Step("Follow redirect with cookies")
     static Response followRedirectWithCookies(Flow flow, Response response, Map cookies) {
         String location = response.then().extract().response().getHeader("location")
         return Requests.followRedirectWithCookie(flow, location, cookies)
@@ -148,9 +142,9 @@ class Steps {
     }
 
     @Step("Follow redirect with session id")
-    static Response followRedirectWithSessionId(Flow flow, Response response) {
+    static Response followRedirectWithAlteredQueryParameters(Flow flow, Response response, Map paramsMap) {
         String location = response.then().extract().response().getHeader("location")
-        return Requests.getRequestWithSessionId(flow, location)
+        return Requests.followRedirectWithParams(flow, location, paramsMap)
     }
 
     @Step("Confirm or reject consent in GOVSSO")
@@ -165,7 +159,7 @@ class Steps {
         if (consent.getStatusCode().toInteger() == 200) {
             consent = submitConsentSso(flow, consentGiven)
         }
-        return followRedirectWithSsoSessionCookies(flow, consent, flow.ssoOidcService.cookies)
+        return followRedirectWithCookies(flow, consent, flow.ssoOidcService.cookies)
     }
 
     @Step("Get identity token response with defaults")
@@ -262,8 +256,8 @@ class Steps {
     @Step("Initialize logout with session for a single client")
     static Response logoutSingleClientSession(Flow flow, String idTokenHint, String logoutRedirectUri) {
         Response oidcLogout = startLogout(flow, idTokenHint, logoutRedirectUri)
-        Response initLogoutSession = followRedirect(flow, oidcLogout)
-        return followRedirect(flow, initLogoutSession)
+        Response initLogout = followRedirect(flow, oidcLogout)
+        return followRedirect(flow, initLogout)
     }
 
     @Step("Initialize reauthentication sequence and follow redirects to client application")

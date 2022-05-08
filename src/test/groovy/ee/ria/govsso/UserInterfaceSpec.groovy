@@ -35,6 +35,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         assertEquals(continueButton, buttonContinueSession, "Continue button exists with correct form action")
         assertEquals(reauthenticateButton, buttonReauthenticate, "Reauthenticate button exists with correct form action")
         assertEquals(returnButton, buttonReturnToClient, "Return to service provider link exists with correct form action")
+        assertTrue(initLogin.body().asString().contains(Utils.getFileAsString("src/test/resources/base64_client_B_logo")), "Correct logo")
 
         where:
         uiLocale | continueButton     | reauthenticateButton | returnButton
@@ -51,12 +52,13 @@ class UserInterfaceSpec extends GovSsoSpecification {
         String idToken = continueSession.jsonPath().get("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
-        Response initLogoutSession = Steps.followRedirect(flow, oidcLogout)
+        Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        String buttonEndSession = initLogoutSession.body().htmlPath().getString("**.find { button -> button.@formaction == '/logout/endsession'}")
-        String buttonContinueSession = initLogoutSession.body().htmlPath().getString("**.find { button -> button.@formaction == '/logout/continuesession'}")
+        String buttonEndSession = initLogout.body().htmlPath().getString("**.find { button -> button.@formaction == '/logout/endsession'}")
+        String buttonContinueSession = initLogout.body().htmlPath().getString("**.find { button -> button.@formaction == '/logout/continuesession'}")
         assertEquals(endButton, buttonEndSession, "Reauthenticate button exists with correct form action")
         assertEquals(continueButton, buttonContinueSession, "Continue button exists with correct form action")
+        assertTrue(initLogout.body().asString().contains(Utils.getFileAsString("src/test/resources/base64_client_B_logo")), "Correct logo")
 
         where:
         uiLocale | endButton              | continueButton
@@ -92,9 +94,9 @@ class UserInterfaceSpec extends GovSsoSpecification {
         String idToken = continueSession.jsonPath().get("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
-        Response initLogoutSession = Steps.followRedirect(flow, oidcLogout)
+        Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        initLogoutSession.then().body("html.head.title", equalTo(title))
+        initLogout.then().body("html.head.title", equalTo(title))
 
         where:
         uiLocale | title
@@ -112,10 +114,11 @@ class UserInterfaceSpec extends GovSsoSpecification {
         String idToken = continueSession.jsonPath().get("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
-        Response initLogoutSession = Steps.followRedirect(flow, oidcLogout)
+        Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        assertTrue(initLogoutSession.body().htmlPath().getString("/c-tab-login/*}").contains(logoutText), "Correct logged out client")
-        assertTrue(initLogoutSession.body().htmlPath().getString("/c-tab-login/*}").contains(sessionText), "Correct active client")
+        assertTrue(initLogout.body().htmlPath().getString("/c-tab-login/*}").contains(logoutText), "Correct logged out client")
+        assertTrue(initLogout.body().htmlPath().getString("/c-tab-login/*}").contains(sessionText), "Correct active client")
+        assertTrue(initLogout.body().asString().contains(Utils.getFileAsString("src/test/resources/base64_client_B_logo")), "Correct logo")
 
         where:
         uiLocale | logoutText                                    | sessionText
@@ -135,5 +138,18 @@ class UserInterfaceSpec extends GovSsoSpecification {
         assertTrue(initLogin.body().htmlPath().getString("/personal-info/*}").contains("JÕEORG"), "Correct surname")
         assertTrue(initLogin.body().htmlPath().getString("/personal-info/*}").contains("EE38001085718"), "Correct personal code")
         assertTrue(initLogin.body().htmlPath().getString("/personal-info/*}").contains("08.01.1980"), "Correct date of birth")
+        assertTrue(initLogin.body().asString().contains(Utils.getFileAsString("src/test/resources/base64_client_B_logo")), "Correct logo")
+    }
+
+    @Unroll
+    @Feature("AUTHENTICATION")
+    def "Correct GOVSSO client logo and service name displayed in TARA"() {
+        expect:
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraOidcAuth = Steps.followRedirect(flow, initLogin)
+        Response taraInitLogin = Steps.followRedirect(flow, taraOidcAuth)
+        assertTrue(taraInitLogin.body().asString().contains("Teenusenimi A"), "Correct service name")
+        assertTrue(taraInitLogin.body().asString().contains(Utils.getFileAsString("src/test/resources/base64_client_A_logo")), "Correct logo")
     }
 }

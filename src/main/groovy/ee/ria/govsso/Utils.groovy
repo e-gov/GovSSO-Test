@@ -33,7 +33,7 @@ class Utils {
         }
     }
 
-    static String getCertificateAsString(String filename) {
+    static String getFileAsString(String filename) {
         return new File(filename).readLines().join()
     }
 

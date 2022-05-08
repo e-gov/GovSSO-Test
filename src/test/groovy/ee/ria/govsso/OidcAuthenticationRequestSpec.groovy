@@ -100,9 +100,9 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraOidcAuth = Steps.followRedirect(flow, initLogin)
-        Response tarainitLogin = Steps.followRedirect(flow, taraOidcAuth)
-        assertEquals(200, tarainitLogin.statusCode(), "Correct HTTP status code is returned")
-        tarainitLogin.then().body("html.head.title", equalTo(expectedValue))
+        Response taraInitLogin = Steps.followRedirect(flow, taraOidcAuth)
+        assertEquals(200, taraInitLogin.statusCode(), "Correct HTTP status code is returned")
+        taraInitLogin.then().body("html.head.title", equalTo(expectedValue))
 
         where:
         uiLocales | label                                     | expectedValue
@@ -293,5 +293,27 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertTrue(loginVerifier.getHeader("location").contains("error=user_cancel"), "Correct error in URL")
         assertTrue(loginVerifier.getHeader("location").contains("error_description=User+canceled+the+authentication+process."), "Correct error description in URL")
         assertTrue(loginVerifier.getHeader("location").contains("state"), "URL contains state parameter")
+    }
+
+    @Feature("OIDC_REQUEST")
+    def "Incorrect govsso_login_challenge passed to TARA: #govssoLoginChallenge"() {
+        expect:
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+
+        Map<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(paramsMap, "govsso_login_challenge", govssoLoginChallenge)
+
+        Response taraOidcAuth = Steps.followRedirectWithAlteredQueryParameters(flow, initLogin, paramsMap)
+        Response taraInitLogin = Steps.followRedirect(flow, taraOidcAuth)
+
+        assertEquals("400", taraInitLogin.jsonPath().getString("status"), "Correct HTTP status code is returned in error")
+        assertEquals("Bad Request", taraInitLogin.jsonPath().getString("error"), "Correct error")
+        assertEquals("Vigane päring. GOVSSO päringu volituskood ei ole korrektne.", taraInitLogin.jsonPath().getString("message"), "Correct error message")
+
+        where:
+        _ | govssoLoginChallenge
+        _ | "00000000000000000000000000000000"
+        _ | ""
     }
 }

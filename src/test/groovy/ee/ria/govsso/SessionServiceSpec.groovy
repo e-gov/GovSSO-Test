@@ -38,6 +38,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertTrue(initLogin.getHeader("location").contains("state"), "Query parameters contain state")
         assertTrue(initLogin.getHeader("location").contains("nonce"), "Query parameters contain nonce")
         assertTrue(initLogin.getHeader("location").contains("client_id"), "Query parameters contain client_id")
+        assertTrue(initLogin.getHeader("location").contains("govsso_login_challenge"), "Query parameters contain govsso_login_challenge")
+        assertTrue(initLogin.getHeader("location").contains("ui_locales"), "Query parameters contain ui_locales")
+        assertTrue(initLogin.getHeader("location").contains("acr_values"), "Query parameters contain acr_values")
     }
 
     @Unroll
@@ -704,11 +707,11 @@ class SessionServiceSpec extends GovSsoSpecification {
         HashMap<String, String> queryParamsSession = new HashMap<>()
         Utils.setParameter(queryParamsSession, "logout_challenge", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 
-        Response initLogoutSession = Requests.getRequestWithParams(flow, flow.sessionService.fullLogoutInitUrl, queryParamsSession, Collections.emptyMap())
+        Response initLogout = Requests.getRequestWithParams(flow, flow.sessionService.fullLogoutInitUrl, queryParamsSession, Collections.emptyMap())
 
-        assertEquals(400, initLogoutSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", initLogoutSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", initLogoutSession.jsonPath().getString("message"), "Correct error description")
+        assertEquals(400, initLogout.getStatusCode(), "Correct HTTP status code")
+        assertEquals("USER_INPUT", initLogout.jsonPath().getString("error"), "Correct error")
+        assertEquals("Ebakorrektne päring.", initLogout.jsonPath().getString("message"), "Correct error description")
     }
 
     @Feature("LOGOUT")
