@@ -111,14 +111,11 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         "code"         | "45678"                   || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
     }
 
-    @Ignore
     @Feature("OPENID_CONNECT")
-    def "Request with url encoded state and nonce"() {
+    def "Request with url encoded nonce"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        flow.setState("testȺ田\uD83D\uDE0D&additional=1 %20")
         flow.setNonce("testȺ田\uD83D\uDE0D&additional=1 %20")
-        paramsMap.put("state", "testȺ田\uD83D\uDE0D&additional=1 %20")
         paramsMap.put("nonce", "testȺ田\uD83D\uDE0D&additional=1 %20")
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
@@ -129,6 +126,5 @@ class OpenIdConnectSpec extends GovSsoSpecification {
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, token.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getClaim("nonce"), equalTo(paramsMap.get("nonce")))
-        assertThat(claims.getClaim("state"), equalTo(paramsMap.get("state")))
     }
 }
