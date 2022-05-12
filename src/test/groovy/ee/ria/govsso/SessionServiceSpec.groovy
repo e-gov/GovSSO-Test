@@ -452,10 +452,13 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
+        String buttonBack = initLogin.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reject'}")
+        String buttonReauthenticate = initLogin.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reauthenticate'}")
+
         assertEquals("substantial", claims.getClaim("acr"), "Correct acr value in token")
-        assertEquals(500, initLogin.jsonPath().get("status"), "Correct status code")
-        assertEquals("TECHNICAL_GENERAL", initLogin.jsonPath().get("error"), "Correct error code")
-        assertEquals("Protsess ebaõnnestus tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti.", initLogin.jsonPath().get("message"), "Correct message")
+        assertEquals(200, initLogin.getStatusCode(), "Correct status code")
+        assertEquals("Tagasi", buttonBack, "Back button exists with correct form action")
+        assertEquals("Autendi uuesti", buttonReauthenticate, "Reauthenticate button exists with correct form action")
     }
 
     @Feature("AUTHENTICATION")
