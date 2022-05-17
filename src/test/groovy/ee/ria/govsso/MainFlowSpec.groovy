@@ -170,7 +170,6 @@ class MainFlowSpec extends GovSsoSpecification {
         assertTrue(logoutVerifier.getHeader("Location")==(flow.oidcClientB.fullBaseUrl), "Correct redirect URL")
     }
 
-    //TODO: review location encoding in logoutResponse
     @Feature("LOGOUT")
     def "Log out with continue session"() {
         expect:
