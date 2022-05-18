@@ -316,4 +316,26 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         _ | "00000000000000000000000000000000"
         _ | ""
     }
+
+    @Feature("OIDC_REQUEST")
+    def "Start session refresh in client-A after initiating reauthentication with client-B due to acr discrepancy"() {
+        expect:
+        Response createSession = Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
+        String idToken = createSession.getBody().jsonPath().get("id_token")
+
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcAuth)
+
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.ssoOidcService.cookies, formParams)
+
+        Response oidcRefreshSession = Steps.startSessionRefreshInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
+
+        assertTrue(oidcRefreshSession.getHeader("location").startsWith(flow.oidcClientA.fullBaseUrl), "Correct redirect URL")
+        assertTrue(oidcRefreshSession.getHeader("location").contains("error=login_required"), "Correct error in URL")
+        assertTrue(oidcRefreshSession.getHeader("location").contains("error_description=The+Authorization+Server+requires+End-User+authentication.+Prompt+%27none%27+was+requested%2C+but+no+existing+login+session+was+found"), "Correct error description in URL")
+        assertTrue(oidcRefreshSession.getHeader("location").contains("state"), "URL contains state parameter")
+    }
 }

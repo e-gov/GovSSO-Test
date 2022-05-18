@@ -1,5 +1,6 @@
 package ee.ria.govsso
 
+import com.google.common.hash.Hashing
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
@@ -7,6 +8,8 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Unroll
+
+import java.nio.charset.StandardCharsets
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.allOf
@@ -452,13 +455,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        String buttonBack = initLogin.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reject'}")
-        String buttonReauthenticate = initLogin.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reauthenticate'}")
-
         assertEquals("substantial", claims.getClaim("acr"), "Correct acr value in token")
         assertEquals(200, initLogin.getStatusCode(), "Correct status code")
-        assertEquals("Tagasi", buttonBack, "Back button exists with correct form action")
-        assertEquals("Autendi uuesti", buttonReauthenticate, "Reauthenticate button exists with correct form action")
     }
 
     @Feature("AUTHENTICATION")

@@ -129,6 +129,22 @@ class MainFlowSpec extends GovSsoSpecification {
         assertNotEquals(claimsClientA.getClaim("sid"), claimsClientB.getClaim("sid"), "New session ID")
     }
 
+    @Feature("LOGIN_INIT_ENDPOINT")
+    @Feature("AUTHENTICATION")
+    def "Reauthenticate in client-B with high acr after acr discrepancy with client-A session"() {
+        expect:
+        Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
+
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Steps.followRedirect(flow, oidcAuth)
+
+        Response reauthenticate = Steps.reauthenticateAfterAcrDiscrepancy(flow)
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, reauthenticate.getBody().jsonPath().get("id_token"), flow.oidcClientB.clientId).getJWTClaimsSet()
+
+        assertEquals("high", claims.getClaim("acr"), "Correct acr value in token")
+        assertEquals(flow.oidcClientB.clientId, claims.getAudience().get(0), "Correct aud value")
+    }
+
     @Feature("LOGOUT")
     def "Log out from single client session"() {
         expect:

@@ -152,4 +152,26 @@ class UserInterfaceSpec extends GovSsoSpecification {
         assertTrue(taraInitLogin.body().asString().contains("Teenusenimi A"), "Correct service name")
         assertTrue(taraInitLogin.body().asString().contains(Utils.getFileAsString("src/test/resources/base64_client_A_logo")), "Correct logo")
     }
+
+    @Feature("LOGIN_INIT_ENDPOINT")
+    @Feature("AUTHENTICATION")
+    def "Correct buttons with correct form actions exist in session continuation if original acr is lower than expected with specified ui_locales: #uiLocale"() {
+        expect:
+        Steps.authenticateWithEidasInGovssoWithUiLocales(flow, "substantial", "C", uiLocale)
+
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
+
+        String buttonBack = initLogin.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reject'}")
+        String buttonReauthenticate = initLogin.body().htmlPath().getString("**.find { button -> button.@formaction == '/login/reauthenticate'}")
+
+        assertEquals(backButton, buttonBack, "Back button exists with correct form action")
+        assertEquals(reauthenticateButton, buttonReauthenticate, "Reauthenticate button exists with correct form action")
+        assertTrue(initLogin.body().asString().contains(Utils.getFileAsString("src/test/resources/base64_client_B_logo")), "Correct logo")
+
+        where:
+        uiLocale | backButton | reauthenticateButton
+        "et"     | "Tagasi"   | "Autendi uuesti"
+        "en"     | "Back"     | "Re-authenticate"
+    }
 }
