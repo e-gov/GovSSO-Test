@@ -16,6 +16,10 @@ class MonitoringSpec extends GovSsoSpecification {
         Response health = Requests.getHealth(flow)
         health.then()
                 .body("status", Matchers.is("UP"))
+                .body("components.hydra.status", Matchers.is("UP"))
+                .body("components.ping.status.", Matchers.is("UP"))
+                .body("components.livenessState.status.", Matchers.is("UP"))
+                .body("components.readinessState.status.", Matchers.is("UP"))
                 .body("groups", Matchers.hasItems("readiness", "liveness"))
 
         assertEquals(200, health.statusCode(), "Correct health HTTP status code is returned")
