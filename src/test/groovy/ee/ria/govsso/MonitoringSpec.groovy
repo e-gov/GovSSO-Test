@@ -4,8 +4,6 @@ import io.qameta.allure.Feature
 import io.restassured.response.Response
 import org.hamcrest.Matchers
 
-import static org.junit.jupiter.api.Assertions.*
-
 class MonitoringSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
@@ -15,14 +13,21 @@ class MonitoringSpec extends GovSsoSpecification {
         expect:
         Response health = Requests.getHealth(flow)
         health.then()
+                .statusCode(200)
                 .body("status", Matchers.is("UP"))
                 .body("components.hydra.status", Matchers.is("UP"))
+                .body("components.tara.status", Matchers.is("UP"))
                 .body("components.ping.status.", Matchers.is("UP"))
                 .body("components.livenessState.status.", Matchers.is("UP"))
                 .body("components.readinessState.status.", Matchers.is("UP"))
+                .body("components.truststore.status.", Matchers.is("UP"))
+                .body("components.truststore.components.Hydra.status.", Matchers.is("UP"))
+                .body("components.truststore.components.Hydra.details.certificates.state[0]", Matchers.is("ACTIVE"))
+                .body("components.truststore.components.Hydra.details.certificates.state[1]", Matchers.is("ACTIVE"))
+                .body("components.truststore.components.TARA.status.", Matchers.is("UP"))
+                .body("components.truststore.components.TARA.details.certificates.state[0]", Matchers.is("ACTIVE"))
+                .body("components.truststore.components.TARA.details.certificates.state[1]", Matchers.is("ACTIVE"))
                 .body("groups", Matchers.hasItems("readiness", "liveness"))
-
-        assertEquals(200, health.statusCode(), "Correct health HTTP status code is returned")
     }
 
     @Feature("")
@@ -30,9 +35,8 @@ class MonitoringSpec extends GovSsoSpecification {
         expect:
         Response readiness = Requests.getReadiness(flow)
         readiness.then()
+                .statusCode(200)
                 .body("status", Matchers.oneOf("UP", "DOWN"))
-
-        assertEquals(200, readiness.statusCode(), "Correct health HTTP status code is returned")
     }
 
     @Feature("")
@@ -40,6 +44,7 @@ class MonitoringSpec extends GovSsoSpecification {
         expect:
         Response info = Requests.getInfo(flow)
         info.then()
+                .statusCode(200)
                 .body("git.branch", Matchers.notNullValue())
                 .body("git.commit.id", Matchers.notNullValue())
                 .body("git.commit.time", Matchers.notNullValue())
