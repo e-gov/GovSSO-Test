@@ -123,7 +123,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         where:
         uiLocale | logoutText                                    | sessionText
         "et"     | "Olete välja logitud Teenusenimi B teenusest" | "Olete jätkuvalt sisse logitud järgnevatesse teenustesse:Teenusenimi A"
-        "en"     | "You have been logged out from Service name B"| "You are still logged in to the following services:Teenusenimi A"
+        "en"     | "You have been logged out from Service name B"| "You are still logged in to the following services:Service name A"
     }
 
     @Unroll
