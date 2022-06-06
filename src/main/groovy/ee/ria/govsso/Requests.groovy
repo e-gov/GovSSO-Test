@@ -289,6 +289,18 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Get liveness")
+    static Response getLiveness(Flow flow) {
+        return given()
+                .filter(new AllureRestAssured())
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .when()
+                .get(flow.sessionService.fullLivenessUrl)
+                .then()
+                .statusCode(200)
+                .extract().response()
+    }
+
     @Step("Get info")
     static Response getInfo(Flow flow) {
         return given()

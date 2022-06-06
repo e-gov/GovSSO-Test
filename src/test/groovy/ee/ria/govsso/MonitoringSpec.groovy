@@ -8,7 +8,7 @@ class MonitoringSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
 
-    @Feature("")
+    @Feature("MONITORING")
     def "Verify health response elements"() {
         expect:
         Response health = Requests.getHealth(flow)
@@ -30,16 +30,36 @@ class MonitoringSpec extends GovSsoSpecification {
                 .body("groups", Matchers.hasItems("readiness", "liveness"))
     }
 
-    @Feature("")
+    @Feature("MONITORING")
     def "Verify readiness response elements"() {
         expect:
         Response readiness = Requests.getReadiness(flow)
         readiness.then()
                 .statusCode(200)
-                .body("status", Matchers.oneOf("UP", "DOWN"))
+                .body("status", Matchers.is("UP"))
+                .body("components.hydra.status", Matchers.is("UP"))
+                .body("components.tara.status", Matchers.is("UP"))
+                .body("components.readinessState.status.", Matchers.is("UP"))
+                .body("components.truststore.status.", Matchers.is("UP"))
+                .body("components.truststore.components.Hydra.status.", Matchers.is("UP"))
+                .body("components.truststore.components.Hydra.details.certificates.state[0]", Matchers.is("ACTIVE"))
+                .body("components.truststore.components.Hydra.details.certificates.state[1]", Matchers.is("ACTIVE"))
+                .body("components.truststore.components.TARA.status.", Matchers.is("UP"))
+                .body("components.truststore.components.TARA.details.certificates.state[0]", Matchers.is("ACTIVE"))
+                .body("components.truststore.components.TARA.details.certificates.state[1]", Matchers.is("ACTIVE"))
+
     }
 
-    @Feature("")
+    @Feature("MONITORING")
+    def "Verify liveness response elements"() {
+        expect:
+        Response health = Requests.getLiveness(flow)
+        health.then()
+                .statusCode(200)
+                .body("status", Matchers.is("UP"))
+    }
+
+    @Feature("MONITORING")
     def "Verify info response elements"() {
         expect:
         Response info = Requests.getInfo(flow)
