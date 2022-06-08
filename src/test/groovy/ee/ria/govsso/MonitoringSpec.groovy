@@ -68,10 +68,14 @@ class MonitoringSpec extends GovSsoSpecification {
                 .body("git.branch", Matchers.notNullValue())
                 .body("git.commit.id", Matchers.notNullValue())
                 .body("git.commit.time", Matchers.notNullValue())
+                .body("git.build.time", Matchers.notNullValue())
+                .body("git.build.version", Matchers.notNullValue())
+                .body("git.build.number", Matchers.notNullValue())
                 .body("build.artifact", Matchers.is("govsso-session"))
                 .body("build.name", Matchers.is("GOVSSO Session Service"))
                 .body("build.time", Matchers.notNullValue())
                 .body("build.version", Matchers.notNullValue())
                 .body("build.group", Matchers.is("ee.ria.govsso"))
+                .body("startTime", Matchers.notNullValue())
     }
 }
