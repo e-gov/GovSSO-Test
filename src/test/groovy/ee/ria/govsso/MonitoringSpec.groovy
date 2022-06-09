@@ -77,5 +77,6 @@ class MonitoringSpec extends GovSsoSpecification {
                 .body("build.version", Matchers.notNullValue())
                 .body("build.group", Matchers.is("ee.ria.govsso"))
                 .body("startTime", Matchers.notNullValue())
+                .body("currentTime", Matchers.notNullValue())
     }
 }
