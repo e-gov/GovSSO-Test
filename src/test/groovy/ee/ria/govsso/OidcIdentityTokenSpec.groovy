@@ -7,6 +7,8 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
 import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.hasKey
+import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.matchesPattern
 import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
@@ -27,11 +29,30 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
 
-        assertEquals("bearer", createSession.body().jsonPath().getString("token_type"), "Correct token_type value")
-        assertEquals("openid", createSession.body().jsonPath().getString("scope"), "Correct scope value")
-        assertTrue(createSession.body().jsonPath().getString("access_token").size() > 32, "Access token element exists")
-        assertTrue(createSession.body().jsonPath().getInt("expires_in") <= 1, "Expires in element exists")
-        assertTrue(createSession.body().jsonPath().getString("id_token").size() > 1000, "ID token element exists")
+        assertEquals("bearer", createSession.jsonPath().getString("token_type"), "Correct token_type value")
+        assertEquals("openid", createSession.jsonPath().getString("scope"), "Correct scope value")
+        assertTrue(createSession.jsonPath().getString("access_token").size() > 32, "Access token element exists")
+        assertTrue(createSession.jsonPath().getInt("expires_in") <= 1, "Expires in element exists")
+        assertTrue(createSession.jsonPath().getString("id_token").size() > 1000, "ID token element exists")
+    }
+
+    @Feature("ID_TOKEN")
+    def "Verify ID token response when scope includes phone"() {
+        expect:
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap.put("scope", "openid phone")
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
+        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
+
+        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+
+        assertEquals("bearer", token.jsonPath().getString("token_type"), "Correct token_type value")
+        assertEquals("openid phone", token.jsonPath().getString("scope"), "Correct scope value")
+        assertTrue(token.jsonPath().getString("access_token").size() > 32, "Access token element exists")
+        assertTrue(token.jsonPath().getInt("expires_in") <= 1, "Expires in element exists")
+        assertTrue(token.jsonPath().getString("id_token").size() > 1000, "ID token element exists")
     }
 
     @Feature("ID_TOKEN")
@@ -39,7 +60,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
         assertTrue(claims.getJWTID().size() > 35, "Correct jti claim exists")
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
         assertThat("Correct issuer", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
@@ -55,6 +76,40 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct family name", claims.getClaim("family_name"),  equalTo("JÕEORG"))
         assertThat("Correct LoA level", claims.getClaim("acr"), equalTo("high"))
         assertThat("Correct UUID pattern for session ID", claims.getStringClaim("sid"), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
+        assertThat("Claim phone_number does not exist", claims.getClaims(), not(hasKey("phone_number")))
+        assertThat("Claim phone_number_verified does not exist", claims.getClaims(), not(hasKey("phone_number_verified")))
+        assertTrue(claims.getStringClaim("at_hash").size()  > 20, "Correct at_hash claim exists")
+    }
+
+    @Feature("ID_TOKEN")
+    def "Verify ID token mandatory elements when scope includes phone"() {
+        expect:
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap.put("scope", "openid phone")
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
+        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
+        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, token.jsonPath().get("id_token")).getJWTClaimsSet()
+
+        assertTrue(claims.getJWTID().size() > 35, "Correct jti claim exists")
+        assertThat("Correct phone number", claims.getClaim("phone_number"), equalTo("+37269100366"))
+        assertThat("Correct phone_number_verified claim exists", claims.getClaim("phone_number_verified"), equalTo(true))
+        assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
+        assertThat("Correct issuer", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
+        assertThat("Correct audience", claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
+        Date date = new Date()
+        assertThat("Correct authentication time", Math.abs(date.getTime() - claims.getDateClaim("auth_time").getTime()) < 10000L)
+        assertThat("Correct issued at time", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
+        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(900000L))
+        assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["mID"]))
+        assertThat("Correct subject claim", claims.getSubject(), equalTo("EE60001017716"))
+        assertThat("Correct date of birth", claims.getClaim("birthdate"),  equalTo("2000-01-01"))
+        assertThat("Correct given name", claims.getClaim("given_name"),  equalTo("ONE"))
+        assertThat("Correct family name", claims.getClaim("family_name"),  equalTo("TESTNUMBER"))
+        assertThat("Correct LoA level", claims.getClaim("acr"), equalTo("high"))
+        assertThat("Correct UUID pattern for session ID", claims.getStringClaim("sid"), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertTrue(claims.getStringClaim("at_hash").size()  > 20, "Correct at_hash claim exists")
     }
 
@@ -63,13 +118,11 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
         String idToken = createSession.jsonPath().get("id_token")
-        JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-
+        JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
         Thread.sleep(1000)
-
         Response refreshSession = Steps.refreshSessionWithDefaults(flow, idToken)
 
-        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, refreshSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, refreshSession.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertNotEquals(idToken, refreshSession.jsonPath().get("id_token"), "New token")
         assertNotEquals(claims1.getClaim("at_hash"), claims2.getClaim("at_hash"), "New at_hash")
@@ -88,5 +141,47 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertTrue(claims1.getExpirationTime() < claims2.getExpirationTime(), "Updated exp")
         assertTrue(claims1.getIssueTime() < claims2.getIssueTime(), "Updated iat")
         assertTrue(claims2.getExpirationTime().getTime() - claims2.getIssueTime().getTime() == 900000L, "Correct token validity period")
+    }
+
+    @Feature("ID_TOKEN")
+    def "Verify ID token elements after session refresh, scope includes phone"() {
+        expect:
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap.put("scope", "openid phone")
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
+        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
+        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+
+        String idToken1 = token.jsonPath().get("id_token")
+
+        Response refreshSession = Steps.refreshSessionWithScope(flow, idToken1, "openid phone")
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, refreshSession.jsonPath().get("id_token")).getJWTClaimsSet()
+
+        assertThat("Correct scope value", refreshSession.jsonPath().getString("scope"), equalTo("openid phone"))
+        assertThat("Correct phone number", claims.getClaim("phone_number"), equalTo("+37269100366"))
+        assertThat("Correct phone_number_verified claim exists", claims.getClaim("phone_number_verified"), equalTo(true))
+    }
+
+    @Feature("ID_TOKEN")
+    def "Verify ID token elements after session refresh, scope excludes phone"() {
+        expect:
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap.put("scope", "openid phone")
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
+        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
+        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+
+        String idToken1 = token.jsonPath().get("id_token")
+
+        Response refreshSession = Steps.refreshSessionWithScope(flow, idToken1, "openid")
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, refreshSession.jsonPath().get("id_token")).getJWTClaimsSet()
+
+        assertThat("Correct scope value", refreshSession.jsonPath().getString("scope"), equalTo("openid"))
+        assertThat("Claim phone_number does not exist", claims.getClaims(), not(hasKey("phone_number")))
+        assertThat("Claim phone_number_verified does not exist", claims.getClaims(), not(hasKey("phone_number_verified")))
     }
 }

@@ -55,6 +55,12 @@ class Steps {
         return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
     }
 
+    @Step("Initialize session refresh sequence in OIDC service with scope")
+    static Response startSessionRefreshInSsoOidcWithScope(Flow flow, String idTokenHint, String origin, String scope) {
+        Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParametersWithScope(flow, idTokenHint, scope)
+        return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
+    }
+
     @Step("Initialize session refresh sequence in OIDC service")
     static Response startSessionRefreshInSsoOidc(Flow flow, String idTokenHint, String clientId, String fullResponseUrl) {
         Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParameters(flow, idTokenHint, clientId, fullResponseUrl)
@@ -80,6 +86,17 @@ class Steps {
     @Step("Initialize session refresh and follow redirects to client application with defaults")
     static Response refreshSessionWithDefaults(Flow flow, String idTokenHint) {
         Response oidcRefreshSession = startSessionRefreshInSsoOidcWithDefaults(flow, idTokenHint, flow.oidcClientA.fullBaseUrl)
+        Response initLogin = followRedirectWithOrigin(flow, oidcRefreshSession, flow.oidcClientA.fullBaseUrl)
+        Response loginVerifier = followRedirectWithCookiesAndOrigin(flow, initLogin, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
+        Response initConsent = followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
+        Response consentVerifier = followRedirectWithCookiesAndOrigin(flow, initConsent, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
+        return getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+    }
+
+    @Step("Initialize session refresh and follow redirects to client application with scope")
+    static Response refreshSessionWithScope(Flow flow, String idTokenHint, String scope) {
+        Response oidcRefreshSession = startSessionRefreshInSsoOidcWithScope(flow, idTokenHint, flow.oidcClientA.fullBaseUrl, scope)
         Response initLogin = followRedirectWithOrigin(flow, oidcRefreshSession, flow.oidcClientA.fullBaseUrl)
         Response loginVerifier = followRedirectWithCookiesAndOrigin(flow, initLogin, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
