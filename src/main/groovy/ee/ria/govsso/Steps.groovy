@@ -49,6 +49,12 @@ class Steps {
         return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
     }
 
+    @Step("Initialize authentication sequence in OIDC service")
+    static Response startAuthenticationInSsoOidcWithScope(Flow flow, String clientId, String fullResponseUrl, String scope) {
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithScope(flow, clientId, fullResponseUrl, scope)
+        return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+    }
+
     @Step("Initialize session refresh sequence in OIDC service with defaults")
     static Response startSessionRefreshInSsoOidcWithDefaults(Flow flow, String idTokenHint, String origin) {
         Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParametersWithDefaults(flow, idTokenHint)
@@ -264,6 +270,17 @@ class Steps {
     @Step("Use existing session to authenticate to another client")
     static Response continueWithExistingSession(Flow flow, String clientId, String clientSecret, String fullResponseUrl) {
         Response oidcAuth = startAuthenticationInSsoOidc(flow, clientId, fullResponseUrl)
+        followRedirect(flow, oidcAuth)
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        Response continueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
+        return followRedirectsToClientApplicationWithExistingSession(flow, continueSession, clientId, clientSecret, fullResponseUrl)
+    }
+
+    @Step("Use existing session to authenticate to another client with scope")
+    static Response continueWithExistingSessionWithScope(Flow flow, String clientId, String clientSecret, String fullResponseUrl, String scope) {
+        Response oidcAuth = startAuthenticationInSsoOidcWithScope(flow, clientId, fullResponseUrl, scope)
         followRedirect(flow, oidcAuth)
         HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())

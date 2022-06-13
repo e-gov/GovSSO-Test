@@ -61,6 +61,23 @@ class OpenIdUtils {
         return queryParams
     }
 
+    static Map<String, String> getAuthorizationParametersWithScope(Flow flow, String clientId, String fullResponseUrl, String scope) {
+        Map<String, String> queryParams = new HashMap<>()
+        flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        queryParams.put("response_type", "code")
+        queryParams.put("scope", scope)
+        queryParams.put("client_id", clientId)
+        queryParams.put("redirect_uri", fullResponseUrl)
+        queryParams.put("state", flow.state)
+        queryParams.put("nonce", flow.nonce)
+        queryParams.put("prompt", "consent")
+        queryParams.put("ui_locales", "et")
+        queryParams.put("acr_values", "high")
+        flow.setClientId(clientId)
+        return queryParams
+    }
+
     static Map<String, String> getSessionRefreshParametersWithDefaults(Flow flow, String idTokenHint) {
         Map<String, String> queryParams = new HashMap<>()
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
