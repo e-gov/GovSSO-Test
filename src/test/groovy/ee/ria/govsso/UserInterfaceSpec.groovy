@@ -105,6 +105,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
 //        "ru"     | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
     }
 
+    //TODO: Improve logoutText assertion
     @Unroll
     @Feature("LOGOUT")
     def "Correct logout client and active client displayed in logout display with specified ui_locales: #uiLocale"() {
@@ -121,9 +122,9 @@ class UserInterfaceSpec extends GovSsoSpecification {
         assertTrue(initLogout.body().asString().contains(Utils.getFileAsString("src/test/resources/base64_client_B_logo")), "Correct logo")
 
         where:
-        uiLocale | logoutText                                    | sessionText
-        "et"     | "Olete välja logitud Teenusenimi B teenusest" | "Olete jätkuvalt sisse logitud järgnevatesse teenustesse:Teenusenimi A"
-        "en"     | "You have been logged out from Service name B"| "You are still logged in to the following services:Service name A"
+        uiLocale | logoutText      | sessionText
+        "et"     | "Teenusenimi B" | "Olete jätkuvalt sisse logitud järgnevatesse teenustesse:Teenusenimi A"
+        "en"     | "Service name B"| "You are still logged in to the following services:Service name A"
     }
 
     @Unroll
