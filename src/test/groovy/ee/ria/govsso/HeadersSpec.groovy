@@ -5,8 +5,8 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.hamcrest.Matchers.*
+import static org.hamcrest.MatcherAssert.assertThat
 
 class HeadersSpec extends GovSsoSpecification {
 
@@ -30,20 +30,20 @@ class HeadersSpec extends GovSsoSpecification {
         Response initConsent = Steps.followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
         Response consentVerifier = Steps.followRedirectWithCookiesAndOrigin(flow, initConsent, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
 
-        assertEquals("true", oidcRefreshSession.getHeader("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is present and has correct value")
-        assertEquals((flow.oidcClientA.fullBaseUrl).toString(), oidcRefreshSession.getHeader("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is present and has correct value")
+        assertThat("Access-Control-Allow-Credentials header is present and has correct value", oidcRefreshSession.getHeader("Access-Control-Allow-Credentials"), is("true"))
+        assertThat("Access-Control-Allow-Origin header is present and has correct value", oidcRefreshSession.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
 
-        assertEquals("true", initLogin.getHeader("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is present and has correct value")
-        assertEquals((flow.oidcClientA.fullBaseUrl).toString(), initLogin.getHeader("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is present and has correct value")
+        assertThat("Access-Control-Allow-Credentials header is present and has correct value", initLogin.getHeader("Access-Control-Allow-Credentials"), is("true"))
+        assertThat("Access-Control-Allow-Origin header is present and has correct value", initLogin.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
 
-        assertEquals("true", loginVerifier.getHeader("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is present and has correct value")
-        assertEquals((flow.oidcClientA.fullBaseUrl).toString(), loginVerifier.getHeader("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is present and has correct value")
+        assertThat("Access-Control-Allow-Credentials header is present and has correct value", loginVerifier.getHeader("Access-Control-Allow-Credentials"), is("true"))
+        assertThat("Access-Control-Allow-Origin header is present and has correct value", loginVerifier.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
 
-        assertEquals("true", initConsent.getHeader("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is present and has correct value")
-        assertEquals((flow.oidcClientA.fullBaseUrl).toString(), initConsent.getHeader("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is present and has correct value")
+        assertThat("Access-Control-Allow-Credentials header is present and has correct value", initConsent.getHeader("Access-Control-Allow-Credentials"), is("true"))
+        assertThat("Access-Control-Allow-Origin header is present and has correct value", initConsent.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
 
-        assertEquals("true", consentVerifier.getHeader("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is present and has correct value")
-        assertEquals((flow.oidcClientA.fullBaseUrl).toString(), consentVerifier.getHeader("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is present and has correct value")
+        assertThat("Access-Control-Allow-Credentials header is present and has correct value", consentVerifier.getHeader("Access-Control-Allow-Credentials"), is("true"))
+        assertThat("Access-Control-Allow-Origin header is present and has correct value", consentVerifier.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
     }
 
     @Feature("CORS")
@@ -58,17 +58,17 @@ class HeadersSpec extends GovSsoSpecification {
         Response initConsent = Steps.followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
         Response consentVerifier = Steps.followRedirectWithCookiesAndOrigin(flow, initConsent, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
 
-        assertTrue(!oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in login request sequence")
-        assertTrue(!oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in login request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in login request sequence", !oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in login request sequence", !oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
 
-        assertTrue(!taracallback.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in login request sequence")
-        assertTrue(!taracallback.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in login request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in login request sequence", !taracallback.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in login request sequence", !taracallback.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
 
-        assertTrue(!loginVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in login request sequence")
-        assertTrue(!loginVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in login request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in login request sequence", !loginVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in login request sequence", !loginVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
 
-        assertTrue(!consentVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in login request sequence")
-        assertTrue(!consentVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in login request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in login request sequence", !consentVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in login request sequence", !consentVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
     }
 
     @Feature("CORS")
@@ -87,17 +87,17 @@ class HeadersSpec extends GovSsoSpecification {
         Response initConsent = Steps.followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientB.fullBaseUrl)
         Response consentVerifier = Steps.followRedirectWithCookiesAndOrigin(flow, initConsent, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
 
-        assertTrue(!oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in session continuation request sequence")
-        assertTrue(!oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in session continuation request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in session continuation request sequence", !oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in session continuation request sequence", !oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
 
-        assertTrue(!continueSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in session continuation request sequence")
-        assertTrue(!continueSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in session continuation request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in session continuation request sequence", !continueSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in session continuation request sequence", !continueSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
 
-        assertTrue(!loginVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in session continuation request sequence")
-        assertTrue(!loginVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in session continuation request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in session continuation request sequence", !loginVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in session continuation request sequence", !loginVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
 
-        assertTrue(!consentVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in session continuation request sequence")
-        assertTrue(!consentVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in session continuation request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in session continuation request sequence", !consentVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in session continuation request sequence", !consentVerifier.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
     }
 
     @Feature("CORS")
@@ -116,14 +116,14 @@ class HeadersSpec extends GovSsoSpecification {
         Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
         Response logoutContinueSession = Requests.postRequestWithCookiesParamsAndOrigin(flow, flow.sessionService.fullLogoutContinueSessionUrl, Collections.emptyMap(), formParams, flow.oidcClientB.fullBaseUrl)
 
-        assertTrue(!oidcLogout.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in logout with session continuation request sequence")
-        assertTrue(!oidcLogout.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in logout with session continuation request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in logout with session continuation request sequence", !oidcLogout.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in logout with session continuation request sequence", !oidcLogout.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
 
-        assertTrue(!initLogout.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in logout with session continuation request sequence")
-        assertTrue(!initLogout.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in logout with session continuation request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in logout with session continuation request sequence", !initLogout.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in logout with session continuation request sequence", !initLogout.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
 
-        assertTrue(!logoutContinueSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in logout with session continuation request sequence")
-        assertTrue(!logoutContinueSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in logout with session continuation request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in logout with session continuation request sequence", !logoutContinueSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in logout with session continuation request sequence", !logoutContinueSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
     }
 
     @Feature("CORS")
@@ -142,8 +142,8 @@ class HeadersSpec extends GovSsoSpecification {
         Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
         Response logoutEndSession = Requests.postRequestWithCookiesParamsAndOrigin(flow, flow.sessionService.fullLogoutEndSessionUrl, Collections.emptyMap(), formParams, flow.oidcClientB.fullBaseUrl)
 
-        assertTrue(!logoutEndSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in logout with end session request sequence")
-        assertTrue(!logoutEndSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in logout with end session request sequence")
+        assertThat("Access-Control-Allow-Credentials header is not present in logout with end session request sequence", !logoutEndSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in logout with end session request sequence", !logoutEndSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
     }
 
     @Feature("CORS")
@@ -153,8 +153,8 @@ class HeadersSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response oidcError = Steps.followRedirectWithOrigin(flow, oidcAuth, flow.oidcClientA.fullBaseUrl)
 
-        assertTrue(!oidcError.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"), "Access-Control-Allow-Credentials header is not present in oidc error request")
-        assertTrue(!oidcError.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"), "Access-Control-Allow-Origin header is not present in oidc error request")
+        assertThat("Access-Control-Allow-Credentials header is not present in oidc error request", !oidcError.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
+        assertThat("Access-Control-Allow-Origin header is not present in oidc error request", !oidcError.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
     }
 
     @Feature("CSP_ENABLED")

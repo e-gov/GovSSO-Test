@@ -1,6 +1,5 @@
 package ee.ria.govsso
 
-import com.google.common.hash.Hashing
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
@@ -9,14 +8,8 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Unroll
 
-import java.nio.charset.StandardCharsets
-
+import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.hasKey
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertTrue
 
 class SessionServiceSpec extends GovSsoSpecification {
 
@@ -34,16 +27,16 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        assertEquals(302, initLogin.getStatusCode(), "Correct HTTP status code")
-        assertTrue(initLogin.getHeader("location").contains("scope"), "Query parameters contain scope")
-        assertTrue(initLogin.getHeader("location").contains("response_type"), "Query parameters contain response_type")
-        assertTrue(initLogin.getHeader("location").contains("redirect_uri"), "Query parameters contain redirect_uri")
-        assertTrue(initLogin.getHeader("location").contains("state"), "Query parameters contain state")
-        assertTrue(initLogin.getHeader("location").contains("nonce"), "Query parameters contain nonce")
-        assertTrue(initLogin.getHeader("location").contains("client_id"), "Query parameters contain client_id")
-        assertTrue(initLogin.getHeader("location").contains("govsso_login_challenge"), "Query parameters contain govsso_login_challenge")
-        assertTrue(initLogin.getHeader("location").contains("ui_locales"), "Query parameters contain ui_locales")
-        assertTrue(initLogin.getHeader("location").contains("acr_values"), "Query parameters contain acr_values")
+        assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(302))
+        assertThat("Query parameters contain scope", initLogin.getHeader("location").contains("scope"))
+        assertThat("Query parameters contain response_type", initLogin.getHeader("location").contains("response_type"))
+        assertThat("Query parameters contain redirect_uri", initLogin.getHeader("location").contains("redirect_uri"))
+        assertThat("Query parameters contain state", initLogin.getHeader("location").contains("state"))
+        assertThat("Query parameters contain nonce", initLogin.getHeader("location").contains("nonce"))
+        assertThat("Query parameters contain client_id", initLogin.getHeader("location").contains("client_id"))
+        assertThat("Query parameters contain govsso_login_challenge", initLogin.getHeader("location").contains("govsso_login_challenge"))
+        assertThat("Query parameters contain ui_locales", initLogin.getHeader("location").contains("ui_locales"))
+        assertThat("Query parameters contain acr_values", initLogin.getHeader("location").contains("acr_values"))
     }
 
     @Unroll
@@ -55,7 +48,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        assertEquals(302, initLogin.statusCode(), "Correct HTTP status code")
+        assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(302))
 
         where:
         acrValue     | _
@@ -72,9 +65,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        assertEquals(400, initLogin.jsonPath().get("status"), "Correct HTTP status code")
-        assertEquals("USER_INPUT", initLogin.jsonPath().get("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", initLogin.jsonPath().get("message"), "Correct message")
+        assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(400))
+        assertThat("Correct error", initLogin.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct error message", initLogin.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Unroll
@@ -86,9 +79,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response initLogin = Requests.getRequestWithParams(flow, flow.sessionService.fullInitUrl, paramsMap, Collections.emptyMap())
 
-        assertEquals(400, initLogin.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", initLogin.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", initLogin.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(400))
+        assertThat("Correct error", initLogin.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct error message", initLogin.jsonPath().getString("message"), is("Ebakorrektne päring."))
 
         where:
         reason                | paramKey          | paramValue
@@ -135,7 +128,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        assertEquals(uiLocales, initLogin.getCookie("__Host-LOCALE"), "Correct ui_locale passed to cookie")
+        assertThat("Correct ui_locale passed to cookie", initLogin.getCookie("__Host-LOCALE"), is(uiLocales))
 
         where:
         _ | uiLocales
@@ -151,12 +144,12 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
-        assertEquals(302, taraAuthentication.getStatusCode(), "Correct HTTP status code")
-        assertTrue(taraAuthentication.getHeader("location").startsWith(flow.sessionService.getFullTaraCallbackUrl()), "Correct URL is returned")
-        assertTrue(taraAuthentication.getHeader("location").contains("code"), "Query parameters contain code")
-        assertTrue(taraAuthentication.getHeader("location").contains("scope"), "Query parameters contain scope")
-        assertTrue(taraAuthentication.getHeader("location").contains("state"), "Query parameters contain state")
-        assertEquals(Utils.getParamValueFromResponseHeader(initLogin, "state"), Utils.getParamValueFromResponseHeader(taraAuthentication, "state"), "Query contains correct state parameter value")
+        assertThat("Correct HTTP status code", taraAuthentication.getStatusCode(), is(302))
+        assertThat("Correct URL", taraAuthentication.getHeader("location").startsWith(flow.sessionService.getFullTaraCallbackUrl()))
+        assertThat("Query parameters contain code", taraAuthentication.getHeader("location").contains("code"))
+        assertThat("Query parameters contain scope", taraAuthentication.getHeader("location").contains("scope"))
+        assertThat("Query parameters contain state", taraAuthentication.getHeader("location").contains("state"))
+        assertThat("Query contains correct state parameter value", Utils.getParamValueFromResponseHeader(initLogin, "state"), is(Utils.getParamValueFromResponseHeader(taraAuthentication, "state")))
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
@@ -176,9 +169,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response taracallback = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
 
-        assertEquals(400, taracallback.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", taracallback.getBody().jsonPath().get("error"), "Correct error message is returned")
-        assertEquals("Ebakorrektne päring.", taracallback.getBody().jsonPath().get("message"), "Correct error message is returned")
+        assertThat("Correct HTTP status code", taracallback.getStatusCode(), is(400))
+        assertThat("Correct error", taracallback.getBody().jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct error message", taracallback.getBody().jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
@@ -197,9 +190,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response taracallback = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
 
-        assertEquals(400, taracallback.getStatusCode())
-        assertEquals("USER_INPUT", taracallback.getBody().jsonPath().get("error"), "Correct error message is returned")
-        assertEquals("Ebakorrektne päring.", taracallback.getBody().jsonPath().get("message"), "Correct error message is returned")
+        assertThat("Correct HTTP status code", taracallback.getStatusCode(), is(400))
+        assertThat("Correct error", taracallback.getBody().jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct error message", taracallback.getBody().jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
@@ -215,9 +208,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response taracallback = Requests.getRequestWithParams(flow, flow.sessionService.fullTaraCallbackUrl, paramsMap, Collections.emptyMap())
 
-        assertEquals(400, taracallback.getStatusCode())
-        assertEquals("USER_COOKIE_MISSING", taracallback.getBody().jsonPath().get("error"), "Correct error message is returned")
-        assertEquals("Küpsis on puudu või kehtivuse kaotanud", taracallback.getBody().jsonPath().get("message"), "Correct error message is returned")
+        assertThat("Correct HTTP status code", taracallback.getStatusCode(), is(400))
+        assertThat("Correct error", taracallback.getBody().jsonPath().getString("error"), is("USER_COOKIE_MISSING"))
+        assertThat("Correct error message", taracallback.getBody().jsonPath().getString("message"), is("Küpsis on puudu või kehtivuse kaotanud"))
     }
 
     @Unroll
@@ -237,9 +230,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response taracallback = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
 
-        assertEquals(400, taracallback.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", taracallback.jsonPath().get("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", taracallback.jsonPath().get("message"), "Correct message")
+        assertThat("Correct HTTP status code", taracallback.getStatusCode(), is(400))
+        assertThat("Correct error", taracallback.getBody().jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct error message", taracallback.getBody().jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
@@ -258,10 +251,10 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response taraOidcAuth2 = Steps.followRedirect(flow, taraReject)
 
-        assertTrue(taraOidcAuth2.getHeader("location").startsWith(flow.sessionService.fullTaraCallbackUrl), "Correct redirect URL")
-        assertTrue(taraOidcAuth2.getHeader("location").contains("error=user_cancel"), "Correct error in URL")
-        assertTrue(taraOidcAuth2.getHeader("location").contains("error_description=User+canceled+the+authentication+process."), "Correct error description in URL")
-        assertTrue(taraOidcAuth2.getHeader("location").contains("state"), "URL contains state parameter")
+        assertThat("Correct redirect URL", taraOidcAuth2.getHeader("location").startsWith(flow.sessionService.fullTaraCallbackUrl))
+        assertThat("Correct error in URL", taraOidcAuth2.getHeader("location").contains("error=user_cancel"))
+        assertThat("Correct error description in URL", taraOidcAuth2.getHeader("location").contains("error_description=User+canceled+the+authentication+process."))
+        assertThat("URL contains state parameter", taraOidcAuth2.getHeader("location").contains("state"))
     }
 
     @Unroll
@@ -273,9 +266,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response initConsent = Requests.getRequestWithParams(flow, flow.sessionService.fullConsentUrl, paramsMap, Collections.emptyMap())
 
-        assertEquals(status, initConsent.getStatusCode(), "Correct HTTP status code")
-        assertEquals(error, initConsent.jsonPath().getString("error"), "Correct error")
-        assertEquals(errorMessage, initConsent.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", initConsent.getStatusCode(), is(status))
+        assertThat("Correct error", initConsent.jsonPath().getString("error"), is(error))
+        assertThat("Correct message", initConsent.jsonPath().getString("message"), is(errorMessage))
 
         where:
         reason                | paramKey            | paramValue | status | error               | errorMessage
@@ -300,9 +293,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response continueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
 
-        assertEquals(400, continueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", continueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", continueSession.getStatusCode(), is(400))
+        assertThat("Correct error", continueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", continueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -320,9 +313,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
         Response continueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
 
-        assertEquals(403, continueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", continueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", continueSession.getStatusCode(), is(403))
+        assertThat("Correct error", continueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", continueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -339,9 +332,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response continueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
 
-        assertEquals(403, continueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", continueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", continueSession.getStatusCode(), is(403))
+        assertThat("Correct error", continueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", continueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -358,9 +351,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response continueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
 
-        assertEquals(400, continueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", continueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", continueSession.getStatusCode(), is(400))
+        assertThat("Correct error", continueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", continueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
@@ -378,9 +371,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
         Response reauthenticateWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies, formParams)
 
-        assertEquals(403, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", reauthenticateWithExistingSession.getStatusCode(), is(403))
+        assertThat("Correct error", reauthenticateWithExistingSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", reauthenticateWithExistingSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
@@ -397,9 +390,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response reauthenticateWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies, formParams)
 
-        assertEquals(403, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", reauthenticateWithExistingSession.getStatusCode(), is(403))
+        assertThat("Correct error", reauthenticateWithExistingSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", reauthenticateWithExistingSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
@@ -416,9 +409,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response reauthenticateWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies, formParams)
 
-        assertEquals(400, reauthenticateWithExistingSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", reauthenticateWithExistingSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", reauthenticateWithExistingSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", reauthenticateWithExistingSession.getStatusCode(), is(400))
+        assertThat("Correct error", reauthenticateWithExistingSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", reauthenticateWithExistingSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
@@ -428,9 +421,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.followRedirect(flow, oidcAuth)
         Response continueSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
 
-        assertEquals(403, continueSession.jsonPath().get("status"), "Correct HTTP status code")
-        assertEquals("USER_INPUT", continueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", continueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", continueSession.getStatusCode(), is(403))
+        assertThat("Correct error", continueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", continueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
@@ -440,9 +433,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.followRedirect(flow, oidcAuth)
         Response reauthenticate = Requests.postRequestWithCookies(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies)
 
-        assertEquals(403, reauthenticate.jsonPath().get("status"), "Correct HTTP status code")
-        assertEquals("USER_INPUT", reauthenticate.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", reauthenticate.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", reauthenticate.getStatusCode(), is(403))
+        assertThat("Correct error", reauthenticate.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", reauthenticate.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
@@ -455,8 +448,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        assertEquals("substantial", claims.getClaim("acr"), "Correct acr value in token")
-        assertEquals(200, initLogin.getStatusCode(), "Correct status code")
+        assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(200))
+        assertThat("Correct acr value in token", claims.getClaim("acr"), is("substantial"))
     }
 
     @Feature("AUTHENTICATION")
@@ -468,9 +461,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response initRefresh = Steps.startSessionRefreshInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
         Response initLogin = Steps.followRedirect(flow, initRefresh)
 
-        assertEquals(500, initLogin.jsonPath().get("status"), "Correct status code")
-        assertEquals("TECHNICAL_GENERAL", initLogin.jsonPath().get("error"), "Correct error code")
-        assertEquals("Protsess ebaõnnestus tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti.", initLogin.jsonPath().get("message"), "Correct message")
+        assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(500))
+        assertThat("Correct error", initLogin.jsonPath().getString("error"), is("TECHNICAL_GENERAL"))
+        assertThat("Correct message", initLogin.jsonPath().getString("message"), is("Protsess ebaõnnestus tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 
     @Feature("LOGOUT")
@@ -489,9 +482,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutContinueSessionUrl, formParams)
 
-        assertEquals(403, logoutContinueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", logoutContinueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", logoutContinueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", logoutContinueSession.getStatusCode(), is(403))
+        assertThat("Correct error", logoutContinueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGOUT")
@@ -510,9 +503,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutContinueSessionUrl, formParams)
 
-        assertEquals(400, logoutContinueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", logoutContinueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", logoutContinueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", logoutContinueSession.getStatusCode(), is(400))
+        assertThat("Correct error", logoutContinueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGOUT")
@@ -532,9 +525,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutContinueSessionUrl, formParams)
 
-        assertEquals(403, logoutContinueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", logoutContinueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", logoutContinueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", logoutContinueSession.getStatusCode(), is(403))
+        assertThat("Correct error", logoutContinueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGOUT")
@@ -554,9 +547,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutContinueSessionUrl, formParams)
 
-        assertEquals(400, logoutContinueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", logoutContinueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", logoutContinueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", logoutContinueSession.getStatusCode(), is(400))
+        assertThat("Correct error", logoutContinueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
 
@@ -579,9 +572,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(cookieMap, "__Host-XSRF-TOKEN", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
         Response logoutContinueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullLogoutContinueSessionUrl, cookieMap, formParams)
 
-        assertEquals(403, logoutContinueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", logoutContinueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", logoutContinueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", logoutContinueSession.getStatusCode(), is(403))
+        assertThat("Correct error", logoutContinueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGOUT")
@@ -600,9 +593,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutEndSessionUrl, formParams)
 
-        assertEquals(403, logoutContinueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", logoutContinueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", logoutContinueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", logoutContinueSession.getStatusCode(), is(403))
+        assertThat("Correct error", logoutContinueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGOUT")
@@ -621,9 +614,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutEndSessionUrl, formParams)
 
-        assertEquals(400, logoutContinueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", logoutContinueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", logoutContinueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", logoutContinueSession.getStatusCode(), is(400))
+        assertThat("Correct error", logoutContinueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGOUT")
@@ -641,9 +634,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(formParams, "_csrf", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutEndSessionUrl, formParams)
 
-        assertEquals(403, logoutContinueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", logoutContinueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", logoutContinueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", logoutContinueSession.getStatusCode(), is(403))
+        assertThat("Correct error", logoutContinueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGOUT")
@@ -661,9 +654,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutEndSessionUrl, formParams)
 
-        assertEquals(400, logoutContinueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", logoutContinueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", logoutContinueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", logoutContinueSession.getStatusCode(), is(400))
+        assertThat("Correct error", logoutContinueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGOUT")
@@ -686,9 +679,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response logoutContinueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullLogoutEndSessionUrl, cookieMap, formParams)
 
-        assertEquals(403, logoutContinueSession.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", logoutContinueSession.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", logoutContinueSession.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", logoutContinueSession.getStatusCode(), is(403))
+        assertThat("Correct error", logoutContinueSession.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGOUT")
@@ -710,9 +703,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response initLogout = Requests.getRequestWithParams(flow, flow.sessionService.fullLogoutInitUrl, queryParamsSession, Collections.emptyMap())
 
-        assertEquals(400, initLogout.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", initLogout.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", initLogout.jsonPath().getString("message"), "Correct error description")
+        assertThat("Correct HTTP status code", initLogout.getStatusCode(), is(400))
+        assertThat("Correct error", initLogout.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", initLogout.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGOUT")
@@ -726,9 +719,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, "")
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        assertEquals(400, initLogout.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", initLogout.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", initLogout.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", initLogout.getStatusCode(), is(400))
+        assertThat("Correct error", initLogout.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", initLogout.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGOUT")
@@ -747,9 +740,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        assertEquals(400, initLogout.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", initLogout.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", initLogout.jsonPath().getString("message"), "Correct message")
+        assertThat("Correct HTTP status code", initLogout.getStatusCode(), is(400))
+        assertThat("Correct error", initLogout.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", initLogout.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
@@ -763,9 +756,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
         Response loginReject = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullLoginRejectUrl, flow.sessionService.cookies, formParams)
 
-        assertEquals(400, loginReject.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", loginReject.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", loginReject.jsonPath().getString("message"), "Correct error description")
+        assertThat("Correct HTTP status code", loginReject.getStatusCode(), is(400))
+        assertThat("Correct error", loginReject.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", loginReject.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
@@ -779,8 +772,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
         Response loginReject = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullLoginRejectUrl, flow.sessionService.cookies, formParams)
 
-        assertEquals(403, loginReject.getStatusCode(), "Correct HTTP status code")
-        assertEquals("USER_INPUT", loginReject.jsonPath().getString("error"), "Correct error")
-        assertEquals("Ebakorrektne päring.", loginReject.jsonPath().getString("message"), "Correct error description")
+        assertThat("Correct HTTP status code", loginReject.getStatusCode(), is(403))
+        assertThat("Correct error", loginReject.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", loginReject.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 }
