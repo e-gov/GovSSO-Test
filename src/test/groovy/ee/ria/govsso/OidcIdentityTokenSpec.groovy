@@ -90,7 +90,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, token.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct jti claim exists", claims.getJWTID().size() > 35)
-        assertThat("Correct phone number", claims.getClaim("phone_number"), equalTo("+37269100366"))
+        assertThat("Correct phone_number claim", claims.getClaim("phone_number"), equalTo("+37269100366"))
         assertThat("Correct phone_number_verified claim exists", claims.getClaim("phone_number_verified"), equalTo(true))
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
         assertThat("Correct issuer", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
@@ -156,8 +156,8 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, refreshSession.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct scope value", refreshSession.jsonPath().getString("scope"), equalTo("openid phone"))
-        assertThat("Correct phone number", claims.getClaim("phone_number"), equalTo("+37269100366"))
-        assertThat("Correct phone_number_verified claim exists", claims.getClaim("phone_number_verified"), equalTo(true))
+        assertThat("Correct phone_number claim", claims.getClaim("phone_number"), equalTo("+37269100366"))
+        assertThat("Correct phone_number_verified claim", claims.getClaim("phone_number_verified"), equalTo(true))
     }
 
     @Feature("ID_TOKEN")
@@ -256,7 +256,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token"), flow.oidcClientB.clientId).getJWTClaimsSet()
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid phone"))
-        assertThat("Claim phone_number does not exist", claimsClientB.getClaims().get("phone_number"), is("+37269100366"))
-        assertThat("Claim phone_number_verified does not exist", claimsClientB.getClaims().get("phone_number_verified"), is(true))
+        assertThat("Correct phone_number claim", claimsClientB.getClaims().get("phone_number"), is("+37269100366"))
+        assertThat("Correct phone_number_verified claim", claimsClientB.getClaims().get("phone_number_verified"), is(true))
     }
 }
