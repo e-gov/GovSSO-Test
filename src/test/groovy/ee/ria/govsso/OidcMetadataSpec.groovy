@@ -31,7 +31,7 @@ class OidcMetadataSpec extends GovSsoSpecification {
         assertThat("Supported response type", configuration.getList("response_types_supported"), is(["code"]))
         assertThat("Supported grant type", configuration.getList("grant_types_supported"), is(["authorization_code"]))
         assertThat("Supported response mode", configuration.getList("response_modes_supported"), is(["query"]))
-        assertThat("Supported scope", configuration.getList("scopes_supported"), is(["openid"]))
+        assertThat("Supported scope", configuration.getList("scopes_supported"), is(["openid", "phone"]))
         assertThat("Correct token endpoint auth method", configuration.getList("token_endpoint_auth_methods_supported"), is(["client_secret_basic"]))
         assertThat("Supported alg values", configuration.getList("id_token_signing_alg_values_supported"), is(["RS256"]))
         assertThat("Correct request_uri_parameter_supported value", configuration.getBoolean("request_uri_parameter_supported") == (false))
@@ -43,7 +43,7 @@ class OidcMetadataSpec extends GovSsoSpecification {
         assertThat("Correct service documentation URL", configuration.getString("end_session_endpoint"), is(flow.ssoOidcService.fullLogoutUrl.toString()))
 
         List<String> claimsSupported = configuration.getList("claims_supported")
-        def claimsList = ["sub", "acr", "amr", "at_hash", "aud", "auth_time", "exp", "iat", "iss", "jti", "nonce", "birthdate", "family_name", "given_name", "sid"]
+        def claimsList = ["sub", "acr", "amr", "at_hash", "aud", "auth_time", "exp", "iat", "iss", "jti", "nonce", "birthdate", "family_name", "given_name", "sid", "phone_number", "phone_number_verified"]
         claimsList.each {
             assertThat("Claims supported. Contains $it", claimsSupported.contains(it))
         }
