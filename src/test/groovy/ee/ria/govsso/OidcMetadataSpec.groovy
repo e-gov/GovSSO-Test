@@ -11,14 +11,14 @@ class OidcMetadataSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
 
-    @Feature("OIDC_DISCOVERY_ENDPOINT")
+    @Feature("OIDC_DISCOVERY")
     def "Verify discovery path"() {
         expect:
         Response configuration = Requests.getRequest(flow.ssoOidcService.fullConfigurationUrl)
         assertThat("Correct HTTP status code", configuration.statusCode(), is(200))
     }
 
-    @Feature("OIDC_DISCOVERY_CONTENT")
+    @Feature("OIDC_DISCOVERY")
     def "Verify discovery content"() {
         expect:
         JsonPath configuration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
@@ -61,7 +61,7 @@ class OidcMetadataSpec extends GovSsoSpecification {
         }
     }
 
-    @Feature("OIDC_ENDPOINTS")
+    @Feature("OIDC_DISCOVERY")
     def "Verify keystore endpoint"() {
         expect:
         JsonPath configuration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)

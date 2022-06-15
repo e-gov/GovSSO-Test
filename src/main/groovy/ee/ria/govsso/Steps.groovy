@@ -338,7 +338,7 @@ class Steps {
         return getIdentityTokenResponse(flow, consentVerifier, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
     }
 
-    @Step("verify session service response headers")
+    @Step("Verify session service response headers")
     static void verifyResponseHeaders(Response response) {
         assertThat(response.getHeader("X-Frame-Options"), equalTo("DENY"))
         String policyString = "connect-src 'self'; default-src 'none'; font-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'; block-all-mixed-content"

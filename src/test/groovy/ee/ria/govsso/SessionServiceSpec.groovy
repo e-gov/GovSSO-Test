@@ -106,6 +106,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct cookie attributes", initLogin.getDetailedCookie("__Host-LOCALE").toString(), allOf(containsString("Path=/"), containsString("Secure")))
     }
 
+    @Feature("SECURE_COOKIE_HANDLING")
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Verify __Host-GOVSSO JWT cookie elements"() {
         expect:
@@ -187,6 +188,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "__Host-GOVSSO", initLogin.getCookie("__Host-GOVSSO"))
+        Utils.setParameter(cookieMap, "__Host-XSRF-TOKEN", initLogin.getCookie("__Host-XSRF-TOKEN"))
 
         Response taracallback = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
 
@@ -195,6 +197,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct error message", taracallback.getBody().jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
+    @Feature("SECURE_COOKIE_HANDLING")
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Taracallback request with missing __Host-GOVSSO cookie"() {
         expect:
@@ -213,7 +216,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct error message", taracallback.getBody().jsonPath().getString("message"), is("Küpsis on puudu või kehtivuse kaotanud"))
     }
 
-    @Unroll
+    @Feature("SECURE_COOKIE_HANDLING")
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Taracallback request with incorrect __Host-GOVSSO cookie"() {
         expect:
@@ -235,6 +238,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct error message", taracallback.getBody().jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
+    @Feature("LOGIN_REJECT_ENDPOINT")
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct redirect URL is returned from TARA after 'back to service provider' request"() {
         expect:
@@ -298,6 +302,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", continueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
+    @Feature("SECURE_COOKIE_HANDLING")
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
     def "Continue session with invalid __Host-XSRF-TOKEN cookie"() {
         expect:
@@ -356,6 +361,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", continueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
+    @Feature("SECURE_COOKIE_HANDLING")
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
     def "Reauthenticate with invalid __Host-XSRF-TOKEN cookie"() {
         expect:
@@ -438,8 +444,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", reauthenticate.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
+    @Feature("BUSINESS_LOGIC")
     @Feature("LOGIN_INIT_ENDPOINT")
-    @Feature("AUTHENTICATION")
     def "Create session in client-A with eIDAS substantial acr and initialize authentication sequence in client-B with high acr"() {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
@@ -452,7 +458,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct acr value in token", claims.getClaim("acr"), is("substantial"))
     }
 
-    @Feature("AUTHENTICATION")
+    @Feature("LOGIN_INIT_ENDPOINT")
     def "Create session in client-A with eIDAS substantial acr and initialize session refresh with high acr"() {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
@@ -466,7 +472,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", initLogin.jsonPath().getString("message"), is("Protsess ebaõnnestus tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session without _csrf form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -487,7 +493,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session without logoutChallenge form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -508,7 +514,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session with invalid _csrf form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -530,7 +536,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session with invalid logoutChallenge form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -552,8 +558,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-
-    @Feature("LOGOUT")
+    @Feature("SECURE_COOKIE_HANDLING")
+    @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session with incorrect __Host-XSRF-TOKEN cookie"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -577,7 +583,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session without _csrf form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -598,7 +604,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session without logoutChallenge form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -619,7 +625,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session with invalid _csrf form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -639,7 +645,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session with invalid logoutChallenge form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -659,7 +665,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("SECURE_COOKIE_HANDLING")
+    @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session with incorrect __Host-XSRF-TOKEN cookie"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -684,7 +691,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", logoutContinueSession.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out request for client-B with incorrect logout_challenge query parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -708,7 +715,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", initLogout.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out request with empty post_logout_redirect_uri parameter value" () {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -724,7 +731,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", initLogout.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out request with missing post_logout_redirect_uri parameter" () {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -745,7 +752,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", initLogout.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGIN_INIT_ENDPOINT")
+    @Feature("LOGIN_REJECT_ENDPOINT")
     def "Login reject request with missing loginChallenge form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -761,7 +768,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", loginReject.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Feature("LOGIN_INIT_ENDPOINT")
+    @Feature("LOGIN_REJECT_ENDPOINT")
     def "Login reject request with missing _csrf form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)

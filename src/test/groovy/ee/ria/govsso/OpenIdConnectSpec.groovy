@@ -18,7 +18,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
     }
 
-    @Feature("OPENID_CONNECT")
+    @Feature("OIDC_TOKEN")
     def "Metadata and token key ID matches"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
@@ -28,7 +28,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertThat("Matching key ID", keyID, is(flow.jwkSet.getKeys().get(0).getKeyID()))
     }
 
-    @Feature("OPENID_CONNECT")
+    @Feature("OIDC_TOKEN")
     def "Request a token twice"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
@@ -46,7 +46,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertThat("Correct error_description", token2.body().jsonPath().getString("error_description"), endsWith("The authorization code has already been used."))
     }
 
-    @Feature("OPENID_CONNECT")
+    @Feature("OIDC_TOKEN")
     def "Request with invalid authorization code"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
@@ -61,7 +61,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertThat("Correct error message", token.body().jsonPath().getString("error"), is("invalid_grant"))
     }
 
-    @Feature("OPENID_CONNECT")
+    @Feature("OIDC_TOKEN")
     def "Request with missing parameter #paramName"() {
         expect:
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
@@ -84,7 +84,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         "redirect_uri" || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
     }
 
-    @Feature("OPENID_CONNECT")
+    @Feature("OIDC_TOKEN")
     def "Request with invalid parameter value #paramName"() {
         expect:
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
@@ -107,7 +107,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         "code"         | "45678"                   || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
     }
 
-    @Feature("OPENID_CONNECT")
+    @Feature("OIDC_TOKEN")
     def "Request with url encoded nonce"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)

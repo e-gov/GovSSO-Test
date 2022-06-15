@@ -21,8 +21,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("AUTHENTICATION")
-    @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
+    @Feature("LOGIN_INIT_VIEW")
     def "Correct buttons with correct form actions exist in session continuation display with specified ui_locales: #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
@@ -44,7 +43,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_INIT_VIEW")
     def "Correct buttons with correct form actions exist in session logout display with specified ui_locales: #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
@@ -67,8 +66,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("AUTHENTICATION")
-    @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
+    @Feature("LOGIN_INIT_VIEW")
     def "Correct translations used in session continuation display: translation #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
@@ -86,7 +84,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_INIT_VIEW")
     def "Correct translations used in session logout display: translation #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
@@ -107,7 +105,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
 
     //TODO: Improve logoutText assertion
     @Unroll
-    @Feature("LOGOUT")
+    @Feature("LOGOUT_INIT_VIEW")
     def "Correct logout client and active client displayed in logout display with specified ui_locales: #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
@@ -128,7 +126,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
+    @Feature("LOGIN_INIT_VIEW")
     def "Correct user data displayed in session continuation display"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -143,7 +141,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("AUTHENTICATION")
+    @Feature("LOGIN_INIT_REDIRECT_TO_TARA")
     def "Correct GOVSSO client logo and service name displayed in TARA"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
@@ -155,8 +153,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         assertThat("Correct logo", taraInitLogin.body().asString().contains(Utils.getFileAsString("src/test/resources/base64_client_A_logo")))
     }
 
-    @Feature("LOGIN_INIT_ENDPOINT")
-    @Feature("AUTHENTICATION")
+    @Feature("LOGIN_INIT_VIEW")
     def "Correct buttons with correct form actions exist in session continuation if original acr is lower than expected with specified ui_locales: #uiLocale"() {
         expect:
         Steps.authenticateWithEidasInGovssoWithUiLocales(flow, "substantial", "C", uiLocale)

@@ -22,7 +22,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
     }
 
-    @Feature("OIDC_REQUEST")
+    @Feature("OIDC_ENDPOINT")
     def "Start SSO authentication request with correct parameters"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
@@ -33,7 +33,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat("Correct location", oidcAuth.getHeader("location").endsWith(flow.getLoginChallenge()))
     }
 
-    @Feature("OIDC_REQUEST")
+    @Feature("OIDC_ENDPOINT")
     def "Authentication request with incorrect client ID"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "invalid-client-id", flow.oidcClientA.fullResponseUrl)
@@ -48,7 +48,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("OIDC_REQUEST")
+    @Feature("OIDC_ENDPOINT")
     def "Start OIDC authentication with invalid parameter: #paramKey"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
@@ -71,7 +71,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("OIDC_REQUEST")
+    @Feature("OIDC_ENDPOINT")
     def "Start SSO authentication with missing parameter: #missingParam"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
@@ -89,7 +89,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         "client_id"     | "invalid_client"            | 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
     }
 
-    @Feature("OIDC_LANGUAGE_SELECTION")
+    @Feature("OIDC_ENDPOINT")
     def "Authentication request with different ui_locales: #label"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
@@ -115,7 +115,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         null       | "Without locale parameter"                | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
     }
 
-    @Feature("OIDC_REQUEST")
+    @Feature("OIDC_ENDPOINT")
     def "Authentication request with unknown parameter"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
@@ -128,6 +128,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     }
 
     @Unroll
+    @Feature("OIDC_ENDPOINT")
     @Feature("SECURE_COOKIE_HANDLING")
     def "Correct set-cookie parameters in responses"() {
         expect:
@@ -143,7 +144,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("OIDC_REQUEST")
+    @Feature("OIDC_ENDPOINT")
     def "Incorrect OIDC login verifier request: #reason"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
@@ -175,7 +176,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     }
 
     @Unroll
-    @Feature("OIDC_REQUEST")
+    @Feature("OIDC_ENDPOINT")
     def "Incorrect OIDC consent verifier request: #reason"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
@@ -208,8 +209,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         "Incorrect state"            | "client_id" | "consent_verifier" | "redirect_uri" | "response_type" | "scope"     | "scope" | 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
     }
 
-    @Feature("OIDC_REQUEST")
-    @Feature("LOGOUT")
+    @Feature("OIDC_LOGOUT_ENDPOINT")
     def "Start logout request with correct parameters"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
@@ -220,8 +220,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat("Correct location", initLogout.getHeader("location").endsWith(flow.getLogoutChallenge()))
     }
 
-    @Feature("OIDC_REQUEST")
-    @Feature("LOGOUT")
+    @Feature("OIDC_LOGOUT_ENDPOINT")
     def "Start logout request with not registered logout_redirect_uri"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
@@ -235,8 +234,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(initLogout, "error_description"), is(errorDescription))
     }
 
-    @Feature("OIDC_REQUEST")
-    @Feature("LOGOUT")
+    @Feature("OIDC_LOGOUT_ENDPOINT")
     def "Logout request for client-B with id_token_hint from client-A"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
@@ -257,7 +255,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(initLogout, "error_description"), is(errorDescription))
     }
 
-    @Feature("LOGOUT")
+    @Feature("OIDC_LOGOUT_ENDPOINT")
     def "Logout request with incorrect logout_verifier parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -277,7 +275,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(logoutVerifier, "error_description"), is("Unable to locate the requested resource"))
     }
 
-    @Feature("OIDC_REQUEST")
+    @Feature("OIDC_LOGOUT_ENDPOINT")
     def "Correct URL returned from OIDC after return to service provider request"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -297,7 +295,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat("URL contains state parameter", loginVerifier.getHeader("location").contains("state"))
     }
 
-    @Feature("OIDC_REQUEST")
+    @Feature("OIDC_ENDPOINT")
     def "Incorrect govsso_login_challenge passed to TARA: #govssoLoginChallenge"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
@@ -319,7 +317,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         _ | ""
     }
 
-    @Feature("OIDC_REQUEST")
+    @Feature("OIDC_ENDPOINT")
     def "Start session refresh in client-A after initiating reauthentication with client-B due to acr discrepancy"() {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")

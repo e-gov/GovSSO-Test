@@ -19,7 +19,8 @@ class MainFlowSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
     }
 
-    @Feature("AUTHENTICATION")
+    @Feature("BUSINESS_LOGIC")
+    @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication with Mobile-ID"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
@@ -38,7 +39,8 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct given name value", claims.getClaim("given_name"), is("ONE"))
     }
 
-    @Feature("AUTHENTICATION")
+    @Feature("BUSINESS_LOGIC")
+    @Feature("LOGIN_INIT_ENDPOINT")
     def "Authenticate with Smart-ID"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
@@ -57,7 +59,8 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct given name value", claims.getClaim("given_name"), is("QUALIFIED OK1"))
     }
 
-    @Feature("AUTHENTICATION")
+    @Feature("BUSINESS_LOGIC")
+    @Feature("LOGIN_INIT_ENDPOINT")
     def "Authenticate with ID-Card"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
@@ -76,7 +79,8 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct given name value", claims.getClaim("given_name"), is("JAAK-KRISTJAN"))
     }
 
-    @Feature("AUTHENTICATION")
+    @Feature("BUSINESS_LOGIC")
+    @Feature("LOGIN_INIT_ENDPOINT")
     def "Authenticate with eIDAS"() {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovsso(flow, "high", "E")
@@ -88,7 +92,8 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct given name value", claims.getClaim("given_name"), is("javier"))
     }
 
-    @Feature("AUTHENTICATION")
+    @Feature("BUSINESS_LOGIC")
+    @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication with ID-card in client-A and refresh session"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
@@ -102,7 +107,7 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct given name value", claims.getClaim("given_name"), is("JAAK-KRISTJAN"))
     }
 
-    @Feature("AUTHENTICATION")
+    @Feature("BUSINESS_LOGIC")
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
     def "Authentication with ID-card in client-A and continue session in client-B"() {
         expect:
@@ -118,7 +123,7 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct session ID", claimsClientB.getClaim("sid"), is(claimsClientA.getClaim("sid")))
     }
 
-    @Feature("AUTHENTICATION")
+    @Feature("BUSINESS_LOGIC")
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
     def "Authentication with ID-card in client-A and reauthenticate in client-B"() {
         expect:
@@ -135,8 +140,8 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("New session ID", claimsClientB.getClaim("sid"), not(is(claimsClientA.getClaim("sid"))))
     }
 
-    @Feature("LOGIN_INIT_ENDPOINT")
-    @Feature("AUTHENTICATION")
+    @Feature("BUSINESS_LOGIC")
+    @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
     def "Reauthenticate in client-B with high acr after acr discrepancy with client-A session"() {
         expect:
         Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
@@ -151,7 +156,8 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct audience value", claims.getAudience().get(0), is(flow.oidcClientB.clientId))
     }
 
-    @Feature("LOGOUT")
+    @Feature("BUSINESS_LOGIC")
+    @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out from single client session"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
@@ -162,7 +168,8 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct redirect URL", logout.getHeader("Location"), is((flow.oidcClientA.fullBaseUrl).toString()))
     }
 
-    @Feature("LOGOUT")
+    @Feature("BUSINESS_LOGIC")
+    @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out after session refresh"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
@@ -176,7 +183,8 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct redirect URL", logout.getHeader("Location"), is((flow.oidcClientA.fullBaseUrl).toString()))
     }
 
-    @Feature("LOGOUT")
+    @Feature("BUSINESS_LOGIC")
+    @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
@@ -190,7 +198,8 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct redirect URL", logoutVerifier.getHeader("Location"), is((flow.oidcClientB.fullBaseUrl).toString()))
     }
 
-    @Feature("LOGOUT")
+    @Feature("BUSINESS_LOGIC")
+    @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session"() {
         expect:
         Steps.authenticateWithIdCardInGovsso(flow)
