@@ -9,7 +9,6 @@ import spock.lang.Unroll
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-//TODO: add/enable russian translations
 class UserInterfaceSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
@@ -40,6 +39,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         uiLocale | continueButton     | reauthenticateButton | returnButton
         "et"     | "Jätka seanssi"    | "Autendi uuesti"     | "Tagasi teenusepakkuja juurde"
         "en"     | "Continue session" | "Re-authenticate"    | "Return to service provider"
+        "ru"     | "Продолжить сеанс" | "Войти снова"        | "Вернуться к поставщику услуг"
     }
 
     @Unroll
@@ -63,6 +63,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         uiLocale | endButton              | continueButton
         "et"     | "Logi kõikidest välja" | "Jätka seanssi"
         "en"     | "Log out all"          | "Continue session"
+        "ru"     | "Выйти из всех услуг"  | "Продолжить сеанс"
     }
 
     @Unroll
@@ -80,7 +81,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         uiLocale | title
         "et"     | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
         "en"     | "National authentication service - Secure authentication for e-services"
-//        "ru" | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "ru"     | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
     }
 
     @Unroll
@@ -100,7 +101,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         uiLocale | title
         "et"     | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
         "en"     | "National authentication service - Secure authentication for e-services"
-//        "ru"     | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "ru"     | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
     }
 
     //TODO: Improve logoutText assertion
@@ -120,9 +121,10 @@ class UserInterfaceSpec extends GovSsoSpecification {
         assertThat("Correct logo", initLogout.body().asString().contains(Utils.getFileAsString("src/test/resources/base64_client_B_logo")))
 
         where:
-        uiLocale | logoutText      | sessionText
-        "et"     | "Teenusenimi B" | "Olete jätkuvalt sisse logitud järgnevatesse teenustesse:Teenusenimi A"
-        "en"     | "Service name B"| "You are still logged in to the following services:Service name A"
+        uiLocale | logoutText         | sessionText
+        "et"     | "Teenusenimi B"    | "Olete jätkuvalt sisse logitud järgnevatesse teenustesse:Teenusenimi A"
+        "en"     | "Service name B"   | "You are still logged in to the following services:Service name A"
+        "ru"     | "Название службы B"| "Вы авторизованы в следующих услугах:Название службы A"
     }
 
     @Unroll
@@ -172,5 +174,6 @@ class UserInterfaceSpec extends GovSsoSpecification {
         uiLocale | backButton | reauthenticateButton
         "et"     | "Tagasi"   | "Autendi uuesti"
         "en"     | "Back"     | "Re-authenticate"
+        "ru"     | "Назад"    | "Войти снова"
     }
 }
