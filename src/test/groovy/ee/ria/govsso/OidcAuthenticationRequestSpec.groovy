@@ -42,7 +42,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat("Correct HTTP status code", oidcError.statusCode(), is(400))
         assertThat("Correct path", oidcError.jsonPath().getString("path"), is("/error/oidc"))
         assertThat("Correct error", oidcError.jsonPath().getString("error"), is("USER_INVALID_OIDC_CLIENT"))
-        assertThat("Correct message", oidcError.jsonPath().getString("message"), is("Vale <span translate=\"no\"> OIDC </span> klient."))
+        assertThat("Correct message", oidcError.jsonPath().getString("message"), is("Vale <span translate=\"no\">OIDC</span> klient."))
         assertThat("Contains incident number", oidcError.jsonPath().getString("incident_nr").size()==32)
     }
 

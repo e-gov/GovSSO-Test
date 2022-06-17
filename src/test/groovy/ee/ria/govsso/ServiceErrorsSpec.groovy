@@ -25,7 +25,7 @@ class ServiceErrorsSpec extends GovSsoSpecification {
         assertThat("Contains error status code", oidcError.jsonPath().getInt("status"), is(400))
         assertThat("Contains path", oidcError.jsonPath().getString("path"), is("/error/oidc"))
         assertThat("Contains error", oidcError.jsonPath().getString("error"), is("USER_INVALID_OIDC_CLIENT"))
-        assertThat("Contains message", oidcError.jsonPath().getString("message"), is("Vale <span translate=\"no\"> OIDC </span> klient."))
+        assertThat("Contains message", oidcError.jsonPath().getString("message"), is("Vale <span translate=\"no\">OIDC</span> klient."))
         assertThat("Contains timestamp", !oidcError.jsonPath().getString("timestamp").isEmpty())
         assertThat("Contains incident number", oidcError.jsonPath().getString("incident_nr").size()==32)
     }
