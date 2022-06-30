@@ -55,7 +55,6 @@ class OpenIdUtils {
         queryParams.put("state", flow.state)
         queryParams.put("nonce", flow.nonce)
         queryParams.put("prompt", "consent")
-        queryParams.put("ui_locales", "et")
         queryParams.put("acr_values", "high")
         flow.setClientId(clientId)
         return queryParams

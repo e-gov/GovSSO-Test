@@ -234,7 +234,7 @@ class Steps {
     }
 
     @Step("Create initial session in GOVSSO with ID-Card in client-A with custom ui_locales")
-    static Response authenticateWithIdCardInGovssoWithUiLocales(flow, String uiLocales) {
+    static Response authenticateWithIdCardInGovssoWithUiLocales(Flow flow, String uiLocales) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("ui_locales", uiLocales)
         Response oidcAuth = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
