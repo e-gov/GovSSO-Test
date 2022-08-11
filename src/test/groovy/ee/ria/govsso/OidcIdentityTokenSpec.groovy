@@ -10,7 +10,7 @@ import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
 
-class OidcIdentityTokenSpec extends GovSsoSpecification {
+class OidcIdentityTokenSpec extends GovssoSpecification {
 
     Flow flow = new Flow(props)
 

@@ -7,7 +7,7 @@ import io.restassured.response.Response
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
-class OidcMetadataSpec extends GovSsoSpecification {
+class OidcMetadataSpec extends GovssoSpecification {
 
     Flow flow = new Flow(props)
 

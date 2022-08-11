@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-class OidcAuthenticationRequestSpec extends GovSsoSpecification {
+class OidcAuthenticationRequestSpec extends GovssoSpecification {
 
     Flow flow = new Flow(props)
 

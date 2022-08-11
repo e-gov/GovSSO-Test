@@ -9,7 +9,7 @@ import io.restassured.response.Response
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-class MainFlowSpec extends GovSsoSpecification {
+class MainFlowSpec extends GovssoSpecification {
 
     Flow flow = new Flow(props)
 

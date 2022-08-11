@@ -4,7 +4,7 @@ import io.qameta.allure.Feature
 import io.restassured.response.Response
 import org.hamcrest.Matchers
 
-class MonitoringSpec extends GovSsoSpecification {
+class MonitoringSpec extends GovssoSpecification {
 
     Flow flow = new Flow(props)
 

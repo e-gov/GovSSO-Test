@@ -9,7 +9,7 @@ import com.nimbusds.jose.jwk.JWKSet
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-class OpenIdConnectSpec extends GovSsoSpecification {
+class OpenIdConnectSpec extends GovssoSpecification {
     Flow flow = new Flow(props)
 
     def setup() {

@@ -11,7 +11,7 @@ import spock.lang.Unroll
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-class SessionServiceSpec extends GovSsoSpecification {
+class SessionServiceSpec extends GovssoSpecification {
 
     Flow flow = new Flow(props)
 

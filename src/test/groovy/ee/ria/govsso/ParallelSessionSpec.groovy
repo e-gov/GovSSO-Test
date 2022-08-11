@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 
-class ParallelSessionSpec extends GovSsoSpecification {
+class ParallelSessionSpec extends GovssoSpecification {
 
     Flow flow1 = new Flow(props)
     Flow flow2 = new Flow(props)
