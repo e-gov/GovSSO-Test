@@ -8,7 +8,7 @@
     <artifactId>govsso-test</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <name>GOVSSO Integration Tests</name>
+    <name>GovSSO Integration Tests</name>
     <licenses>
         <license>
             <name>MIT</name>

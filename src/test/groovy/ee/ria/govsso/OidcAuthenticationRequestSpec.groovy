@@ -308,7 +308,7 @@ class OidcAuthenticationRequestSpec extends GovssoSpecification {
 
         assertThat("Correct HTTP status code", taraInitLogin.getStatusCode(), is(400))
         assertThat("Correct error", taraInitLogin.jsonPath().getString("error"), is("Bad Request"))
-        assertThat("Correct error message", taraInitLogin.jsonPath().getString("message"), is("Vigane päring. GOVSSO päringu volituskood ei ole korrektne."))
+        assertThat("Correct error message", taraInitLogin.jsonPath().getString("message"), is("Vigane päring. GovSSO päringu volituskood ei ole korrektne."))
 
         where:
         _ | govssoLoginChallenge

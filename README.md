@@ -1,14 +1,14 @@
 <img src="doc/img/eu_regional_development_fund_horizontal.jpg" width="350" height="200">
 
-# GOVSSO integration tests
+# GovSSO integration tests
 
-Tests for GOVSSO (both Ory Hydra OIDC and Estonian specific session service component)
+Tests for GovSSO (both Ory Hydra OIDC and Estonian specific session service component)
 
 ## Prerequisites
 
 * Java 11 JDK
 
-1. SUT (GOVSSO) must be deployed as accessible service
+1. SUT (GovSSO) must be deployed as accessible service
 
 2. Some tests require deployment of TARA2
 
@@ -34,9 +34,9 @@ Description of values:
 
 **sessionservice** - Estonian specific session service parameters.
 
-**ssooidcclienta** - Tests act like connecting OIDC client. This client must be registered in GOVSSO service.
+**ssooidcclienta** - Tests act like connecting OIDC client. This client must be registered in GovSSO service.
 
-**ssooidcclientb** - Tests act like connecting OIDC client. This client must be registered in GOVSSO service.
+**ssooidcclientb** - Tests act like connecting OIDC client. This client must be registered in GovSSO service.
 
 **ca-proxyservice** - Foreign country (CA) proxy service configuration for eIDAS authentication tests.
 
@@ -100,18 +100,18 @@ Description of values:
 | idp.host                                | eidas-caproxy | Service URL.                                           |
 | idp.port                                | 8081 | Service port.                                          |
 | idp.responseUrl                         | /IdP/Response | Authentication response endpoint.                      |
-| ssooidcclienta.protocol                 | https | GOVSSO mock client A protocol.                         |
-| ssooidcclienta.host                     | sso-client-a | GOVSSO mock client A host.                             |
-| ssooidcclienta.port                     | 11443 | GOVSSO mock client A port.                             |
-| ssooidcclienta.responseUrl              | /oauth/response | GOVSSO mock client A authentication response endpoint. |
-| ssooidcclienta.clientId                 | client-a | GOVSSO mock client A ID.                               |
-| ssooidcclienta.secret                   | secreta | GOVSSO mock client A secret.                           |
-| ssooidcclientb.protocol                 | https | GOVSSO mock client B protocol.                         |
-| ssooidcclientb.host                     | sso-client-b | GOVSSO mock client B host.                             |
-| ssooidcclientb.port                     | 12443 | GOVSSO mock client B port.                             |
-| ssooidcclientb.responseUrl              | /oauth/response | GOVSSO mock client B authentication response endpoint. |
-| ssooidcclientb.clientId                 | client-b | GOVSSO mock client B ID.                               |
-| ssooidcclientb.secret                   | secretb | GOVSSO mock client B secret.                           |
+| ssooidcclienta.protocol                 | https | GovSSO mock client A protocol.                         |
+| ssooidcclienta.host                     | sso-client-a | GovSSO mock client A host.                             |
+| ssooidcclienta.port                     | 11443 | GovSSO mock client A port.                             |
+| ssooidcclienta.responseUrl              | /oauth/response | GovSSO mock client A authentication response endpoint. |
+| ssooidcclienta.clientId                 | client-a | GovSSO mock client A ID.                               |
+| ssooidcclienta.secret                   | secreta | GovSSO mock client A secret.                           |
+| ssooidcclientb.protocol                 | https | GovSSO mock client B protocol.                         |
+| ssooidcclientb.host                     | sso-client-b | GovSSO mock client B host.                             |
+| ssooidcclientb.port                     | 12443 | GovSSO mock client B port.                             |
+| ssooidcclientb.responseUrl              | /oauth/response | GovSSO mock client B authentication response endpoint. |
+| ssooidcclientb.clientId                 | client-b | GovSSO mock client B ID.                               |
+| ssooidcclientb.secret                   | secretb | GovSSO mock client B secret.                           |
 
 ## Execute tests and generate report
 

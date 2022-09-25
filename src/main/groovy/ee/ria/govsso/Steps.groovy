@@ -170,14 +170,14 @@ class Steps {
         return Requests.followRedirectWithParams(flow, location, paramsMap)
     }
 
-    @Step("Confirm or reject consent in GOVSSO")
+    @Step("Confirm or reject consent in GovSSO")
     static Response submitConsentSso(Flow flow, boolean consentGiven) {
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
         return Requests.postRequestWithParams(flow, flow.sessionService.fullConsentConfirmUrl, formParamsMap)
     }
 
-    @Step("Confirm or reject consent and finish authentication process in GOVSSO")
+    @Step("Confirm or reject consent and finish authentication process in GovSSO")
     static Response submitConsentAndFollowRedirectsSso(Flow flow, boolean consentGiven, Response consent) {
         if (consent.getStatusCode().toInteger() == 200) {
             consent = submitConsentSso(flow, consentGiven)
@@ -224,7 +224,7 @@ class Steps {
         return getIdentityTokenResponse(flow, consentVerifier, clientId, clientSecret, fullResponseUrl)
     }
 
-    @Step("Create initial session in GOVSSO with ID-Card in client-A")
+    @Step("Create initial session in GovSSO with ID-Card in client-A")
     static Response authenticateWithIdCardInGovsso(flow) {
         Response oidcAuth = startAuthenticationInSsoOidcWithDefaults(flow)
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
@@ -233,7 +233,7 @@ class Steps {
         return getIdentityTokenResponseWithDefaults(flow, consentVerifier)
     }
 
-    @Step("Create initial session in GOVSSO with ID-Card in client-A with custom ui_locales")
+    @Step("Create initial session in GovSSO with ID-Card in client-A with custom ui_locales")
     static Response authenticateWithIdCardInGovssoWithUiLocales(Flow flow, String uiLocales) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("ui_locales", uiLocales)
@@ -244,7 +244,7 @@ class Steps {
         return getIdentityTokenResponseWithDefaults(flow, consentVerifier)
     }
 
-    @Step("Create initial session in GOVSSO with eIDAS in client-A")
+    @Step("Create initial session in GovSSO with eIDAS in client-A")
     static Response authenticateWithEidasInGovsso(flow, String acrValue, String eidasLoa) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("acr_values", acrValue)
@@ -255,7 +255,7 @@ class Steps {
         return getIdentityTokenResponseWithDefaults(flow, consentVerifier)
     }
 
-    @Step("Create initial session in GOVSSO with eIDAS in client-A with custom ui_locales")
+    @Step("Create initial session in GovSSO with eIDAS in client-A with custom ui_locales")
     static Response authenticateWithEidasInGovssoWithUiLocales(flow, String acrValue, String eidasLoa, uiLocales) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         Utils.setParameter(paramsMap, "ui_locales", uiLocales)

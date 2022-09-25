@@ -191,7 +191,7 @@ class UserInterfaceSpec extends GovssoSpecification {
 
     @Unroll
     @Feature("LOGIN_INIT_REDIRECT_TO_TARA")
-    def "Correct GOVSSO client logo and service name displayed in TARA"() {
+    def "Correct GovSSO client logo and service name displayed in TARA"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
