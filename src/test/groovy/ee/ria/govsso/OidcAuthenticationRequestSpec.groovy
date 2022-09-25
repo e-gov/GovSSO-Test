@@ -105,12 +105,12 @@ class OidcAuthenticationRequestSpec extends GovssoSpecification {
         uiLocales | label                                     | expectedValue
         "zu"       | "Fallback into default language et"       | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
         "et"       | "Estonian"                                | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "ru"       | "Russian"                                 | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
-        "en"       | "English"                                 | "National authentication service - Secure authentication for e-services"
-        "fi ru en" | "Select first supported locale from list" | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "ru"       | "Russian"                                 | "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
+        "en"       | "English"                                 | "State authentication service - Secure authentication for e-services"
+        "fi ru en" | "Select first supported locale from list" | "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
         "ET"       | "Estonian with capital letters"           | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "RU"       | "Russian with capital letters"            | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
-        "EN"       | "English with capital letters"            | "National authentication service - Secure authentication for e-services"
+        "RU"       | "Russian with capital letters"            | "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
+        "EN"       | "English with capital letters"            | "State authentication service - Secure authentication for e-services"
         null       | "Without locale parameter"                | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
     }
 

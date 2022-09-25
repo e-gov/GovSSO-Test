@@ -80,8 +80,8 @@ class UserInterfaceSpec extends GovssoSpecification {
         where:
         uiLocale | title
         "et"     | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "en"     | "National authentication service - Secure authentication for e-services"
-        "ru"     | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "en"     | "State authentication service - Secure authentication for e-services"
+        "ru"     | "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
     }
 
     @Unroll
@@ -100,8 +100,8 @@ class UserInterfaceSpec extends GovssoSpecification {
         where:
         uiLocale | title
         "et"     | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "en"     | "National authentication service - Secure authentication for e-services"
-        "ru"     | "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "en"     | "State authentication service - Secure authentication for e-services"
+        "ru"     | "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
     }
 
     //TODO: Improve logoutText assertion
