@@ -295,13 +295,13 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     }
 
     @Feature("OIDC_ENDPOINT")
-    def "Incorrect govsso_login_challenge passed to TARA: #govssoLoginChallenge"() {
+    def "Incorrect govsso_login_challenge passed to TARA: #govSsoLoginChallenge"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
         Map<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "govsso_login_challenge", govssoLoginChallenge)
+        Utils.setParameter(paramsMap, "govsso_login_challenge", govSsoLoginChallenge)
 
         Response taraOidcAuth = Steps.followRedirectWithAlteredQueryParameters(flow, initLogin, paramsMap)
         Response taraInitLogin = Steps.followRedirect(flow, taraOidcAuth)
@@ -311,7 +311,7 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         assertThat("Correct error message", taraInitLogin.jsonPath().getString("message"), is("Vigane päring. GovSSO päringu volituskood ei ole korrektne."))
 
         where:
-        _ | govssoLoginChallenge
+        _ | govSsoLoginChallenge
         _ | "00000000000000000000000000000000"
         _ | ""
     }
