@@ -101,19 +101,19 @@ class SessionServiceSpec extends GovssoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        assertThat("Correct cookie attributes", initLogin.getDetailedCookie("__Host-GOVSSO").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("Secure"), containsString("Max-Age=3600"), containsString("SameSite=Lax")))
+        assertThat("Correct cookie attributes", initLogin.getDetailedCookie("__Host-AUTH").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("Secure"), containsString("Max-Age=3600"), containsString("SameSite=Lax")))
         assertThat("Correct cookie attributes", initLogin.getDetailedCookie("__Host-XSRF-TOKEN").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("Secure"), containsString("Max-Age=3600")))
         assertThat("Correct cookie attributes", initLogin.getDetailedCookie("__Host-LOCALE").toString(), allOf(containsString("Path=/"), containsString("Secure")))
     }
 
     @Feature("SECURE_COOKIE_HANDLING")
     @Feature("LOGIN_INIT_ENDPOINT")
-    def "Verify __Host-GOVSSO JWT cookie elements"() {
+    def "Verify __Host-AUTH JWT cookie elements"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        SignedJWT signedJWT = SignedJWT.parse(initLogin.getCookie("__Host-GOVSSO"))
+        SignedJWT signedJWT = SignedJWT.parse(initLogin.getCookie("__Host-AUTH"))
 
         assertThat("Cookie contains nonce", signedJWT.getJWTClaimsSet().getClaims(), hasKey("tara_nonce"))
         assertThat("Cookie contains state", signedJWT.getJWTClaimsSet().getClaims(), hasKey("tara_state"))
@@ -165,7 +165,7 @@ class SessionServiceSpec extends GovssoSpecification {
         Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(taraAuthentication, "code"))
 
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-GOVSSO", initLogin.getCookie("__Host-GOVSSO"))
+        Utils.setParameter(cookieMap, "__Host-AUTH", initLogin.getCookie("__Host-AUTH"))
         Utils.setParameter(cookieMap, "__Host-XSRF-TOKEN", initLogin.getCookie("__Host-XSRF-TOKEN"))
 
         Response taracallback = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
@@ -187,7 +187,7 @@ class SessionServiceSpec extends GovssoSpecification {
         Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(taraAuthentication, "state"))
 
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-GOVSSO", initLogin.getCookie("__Host-GOVSSO"))
+        Utils.setParameter(cookieMap, "__Host-AUTH", initLogin.getCookie("__Host-AUTH"))
         Utils.setParameter(cookieMap, "__Host-XSRF-TOKEN", initLogin.getCookie("__Host-XSRF-TOKEN"))
 
         Response taracallback = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap, Collections.emptyMap())
@@ -199,7 +199,7 @@ class SessionServiceSpec extends GovssoSpecification {
 
     @Feature("SECURE_COOKIE_HANDLING")
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
-    def "Taracallback request with missing __Host-GOVSSO cookie"() {
+    def "Taracallback request with missing __Host-AUTH cookie"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
@@ -218,14 +218,14 @@ class SessionServiceSpec extends GovssoSpecification {
 
     @Feature("SECURE_COOKIE_HANDLING")
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
-    def "Taracallback request with incorrect __Host-GOVSSO cookie"() {
+    def "Taracallback request with incorrect __Host-AUTH cookie"() {
         expect:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-GOVSSO", "incorrect")
+        Utils.setParameter(cookieMap, "__Host-AUTH", "incorrect")
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(taraAuthentication, "state"))

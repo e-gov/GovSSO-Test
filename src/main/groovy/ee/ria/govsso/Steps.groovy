@@ -76,7 +76,7 @@ class Steps {
     @Step("Initialize session in session service")
     static Response startSessionInSessionService(Flow flow, Response response) {
         Response initSession = followRedirectWithCookies(flow, response, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initSession.getCookie("__Host-GOVSSO"))
+        Utils.setParameter(flow.sessionService.cookies, "__Host-AUTH", initSession.getCookie("__Host-AUTH"))
         Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", initSession.getCookie("__Host-XSRF-TOKEN"))
         return initSession
     }
@@ -84,7 +84,7 @@ class Steps {
     @Step("Initialize session in session service with origin")
     static Response startSessionInSessionServiceWithOrigin(Flow flow, Response response, String origin) {
         Response initSession = followRedirectWithCookiesAndOrigin(flow, response, flow.ssoOidcService.cookies, origin)
-        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initSession.getCookie("__Host-GOVSSO"))
+        Utils.setParameter(flow.sessionService.cookies, "__Host-AUTH", initSession.getCookie("__Host-AUTH"))
         Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", initSession.getCookie("__Host-XSRF-TOKEN"))
         return initSession
     }
@@ -317,7 +317,7 @@ class Steps {
         Response initLogin = followRedirectWithCookies(flow, reauthenticate, flow.ssoOidcService.cookies)
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), initLogin.getCookie("oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Response followRedirect = followRedirect(flow, initLogin)
-        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", followRedirect.getCookie("__Host-GOVSSO"))
+        Utils.setParameter(flow.sessionService.cookies, "__Host-AUTH", followRedirect.getCookie("__Host-AUTH"))
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, followRedirect)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
         return getIdentityTokenResponse(flow, consentVerifier, clientId, clientSecret, fullResponseUrl)
@@ -332,7 +332,7 @@ class Steps {
         Response oidcAuth2 = followRedirect(flow, reauthenticate)
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), oidcAuth2.getCookie("oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Response initLogin = followRedirectWithCookies(flow, oidcAuth2, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.sessionService.cookies, "__Host-GOVSSO", initLogin.getCookie("__Host-GOVSSO"))
+        Utils.setParameter(flow.sessionService.cookies, "__Host-AUTH", initLogin.getCookie("__Host-AUTH"))
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
         return getIdentityTokenResponse(flow, consentVerifier, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
