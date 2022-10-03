@@ -9,8 +9,7 @@ import io.restassured.response.Response
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-
-class OidcIdentityTokenSpec extends GovssoSpecification {
+class OidcIdentityTokenSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
 
@@ -23,7 +22,7 @@ class OidcIdentityTokenSpec extends GovssoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token response"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
 
         assertThat("Correct token_type value", createSession.jsonPath().getString("token_type"), is("bearer"))
         assertThat("Correct scope value", createSession.jsonPath().getString("scope"), is("openid"))
@@ -54,7 +53,7 @@ class OidcIdentityTokenSpec extends GovssoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token mandatory elements"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct JWT ID claim exists", claims.getJWTID().size() > 35)
@@ -112,7 +111,7 @@ class OidcIdentityTokenSpec extends GovssoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token elements after session refresh"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
         JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
         Thread.sleep(1000)
@@ -184,7 +183,7 @@ class OidcIdentityTokenSpec extends GovssoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token elements after continuing session with client-B"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
@@ -213,7 +212,7 @@ class OidcIdentityTokenSpec extends GovssoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token elements after continuing session with client-B. Client-A scope excludes phone, client-b scope includes phone"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
         Response continueSession = Steps.continueWithExistingSessionWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid phone")
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token"), flow.oidcClientB.clientId).getJWTClaimsSet()
 

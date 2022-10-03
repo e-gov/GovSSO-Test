@@ -11,7 +11,7 @@ import spock.lang.Unroll
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-class SessionServiceSpec extends GovssoSpecification {
+class SessionServiceSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
 
@@ -306,7 +306,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
     def "Continue session with invalid __Host-XSRF-TOKEN cookie"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
@@ -326,7 +326,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
     def "Continue session with invalid _csrf form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
@@ -345,7 +345,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
     def "Continue session with invalid loginChallenge form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
@@ -365,7 +365,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
     def "Reauthenticate with invalid __Host-XSRF-TOKEN cookie"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
@@ -385,7 +385,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
     def "Reauthenticate with invalid _csrf form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
@@ -404,7 +404,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
     def "Reauthenticate with invalid loginChallenge form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
@@ -448,7 +448,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Create session in client-A with eIDAS substantial acr and initialize authentication sequence in client-B with high acr"() {
         expect:
-        Response createSession = Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
+        Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
@@ -461,7 +461,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Create session in client-A with eIDAS substantial acr and initialize session refresh with high acr"() {
         expect:
-        Response createSession = Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
+        Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
         String idToken = createSession.jsonPath().get("id_token")
 
         Response initRefresh = Steps.startSessionRefreshInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
@@ -475,7 +475,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session without _csrf form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -496,7 +496,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session without logoutChallenge form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -517,7 +517,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session with invalid _csrf form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -539,7 +539,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session with invalid logoutChallenge form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -562,7 +562,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session with incorrect __Host-XSRF-TOKEN cookie"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -586,7 +586,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session without _csrf form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -607,7 +607,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session without logoutChallenge form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -628,7 +628,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session with invalid _csrf form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -648,7 +648,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session with invalid logoutChallenge form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -669,7 +669,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session with incorrect __Host-XSRF-TOKEN cookie"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -694,7 +694,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out request for client-B with incorrect logout_challenge query parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -718,7 +718,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out request with empty post_logout_redirect_uri parameter value" () {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -734,7 +734,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out request with missing post_logout_redirect_uri parameter" () {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -755,7 +755,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGIN_REJECT_ENDPOINT")
     def "Login reject request with missing loginChallenge form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 
@@ -771,7 +771,7 @@ class SessionServiceSpec extends GovssoSpecification {
     @Feature("LOGIN_REJECT_ENDPOINT")
     def "Login reject request with missing _csrf form parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 

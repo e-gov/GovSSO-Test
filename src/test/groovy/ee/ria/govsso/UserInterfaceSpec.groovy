@@ -9,7 +9,7 @@ import spock.lang.Unroll
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-class UserInterfaceSpec extends GovssoSpecification {
+class UserInterfaceSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
 
@@ -23,7 +23,7 @@ class UserInterfaceSpec extends GovssoSpecification {
     @Feature("LOGIN_INIT_VIEW")
     def "Correct buttons with correct form actions exist in session continuation display with specified ui_locales: #uiLocale"() {
         expect:
-        Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
+        Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
@@ -46,7 +46,7 @@ class UserInterfaceSpec extends GovssoSpecification {
     @Feature("LOGOUT_INIT_VIEW")
     def "Correct buttons with correct form actions exist in session logout display with specified ui_locales: #uiLocale"() {
         expect:
-        Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
+        Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
 
@@ -70,7 +70,7 @@ class UserInterfaceSpec extends GovssoSpecification {
     @Feature("LOGIN_INIT_VIEW")
     def "Correct translations used in session continuation display: translation #uiLocale"() {
         expect:
-        Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
+        Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
@@ -88,7 +88,7 @@ class UserInterfaceSpec extends GovssoSpecification {
     @Feature("LOGOUT_INIT_VIEW")
     def "Correct translations used in session logout display: translation #uiLocale"() {
         expect:
-        Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
+        Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
 
@@ -109,7 +109,7 @@ class UserInterfaceSpec extends GovssoSpecification {
     @Feature("LOGOUT_INIT_VIEW")
     def "Correct logout client and active client displayed in logout display with specified ui_locales: #uiLocale"() {
         expect:
-        Steps.authenticateWithIdCardInGovssoWithUiLocales(flow, uiLocale)
+        Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
 
@@ -131,7 +131,7 @@ class UserInterfaceSpec extends GovssoSpecification {
     @Feature("LOGIN_INIT_VIEW")
     def "Correct user data displayed in session continuation display"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
@@ -205,7 +205,7 @@ class UserInterfaceSpec extends GovssoSpecification {
     @Feature("LOGIN_INIT_VIEW")
     def "Correct buttons with correct form actions exist in session continuation if original acr is lower than expected with specified ui_locales: #uiLocale"() {
         expect:
-        Steps.authenticateWithEidasInGovssoWithUiLocales(flow, "substantial", "C", uiLocale)
+        Steps.authenticateWithEidasInGovSsoWithUiLocales(flow, "substantial", "C", uiLocale)
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)

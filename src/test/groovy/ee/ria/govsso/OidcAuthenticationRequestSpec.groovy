@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-class OidcAuthenticationRequestSpec extends GovssoSpecification {
+class OidcAuthenticationRequestSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
 
@@ -211,7 +211,7 @@ class OidcAuthenticationRequestSpec extends GovssoSpecification {
     @Feature("OIDC_LOGOUT_ENDPOINT")
     def "Start logout request with correct parameters"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         Response initLogout = Steps.startLogout(flow, createSession.jsonPath().get("id_token"), flow.oidcClientA.fullBaseUrl)
 
         assertThat("Correct HTTP status code", initLogout.getStatusCode(), is(302))
@@ -222,7 +222,7 @@ class OidcAuthenticationRequestSpec extends GovssoSpecification {
     @Feature("OIDC_LOGOUT_ENDPOINT")
     def "Start logout request with not registered logout_redirect_uri"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         Response initLogout = Steps.startLogout(flow, createSession.jsonPath().get("id_token"), "https://not.whitelisted.eu")
 
         String errorDescription = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. " +
@@ -236,7 +236,7 @@ class OidcAuthenticationRequestSpec extends GovssoSpecification {
     @Feature("OIDC_LOGOUT_ENDPOINT")
     def "Logout request for client-B with id_token_hint from client-A"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
 
         Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
@@ -257,7 +257,7 @@ class OidcAuthenticationRequestSpec extends GovssoSpecification {
     @Feature("OIDC_LOGOUT_ENDPOINT")
     def "Logout request with incorrect logout_verifier parameter"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -277,7 +277,7 @@ class OidcAuthenticationRequestSpec extends GovssoSpecification {
     @Feature("OIDC_LOGOUT_ENDPOINT")
     def "Correct URL returned from OIDC after return to service provider request"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 
@@ -319,7 +319,7 @@ class OidcAuthenticationRequestSpec extends GovssoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Start session refresh in client-A after initiating reauthentication with client-B due to acr discrepancy"() {
         expect:
-        Response createSession = Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
+        Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
         String idToken = createSession.getBody().jsonPath().get("id_token")
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)

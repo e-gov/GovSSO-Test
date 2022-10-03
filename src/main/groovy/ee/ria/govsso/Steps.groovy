@@ -225,7 +225,7 @@ class Steps {
     }
 
     @Step("Create initial session in GovSSO with ID-Card in client-A")
-    static Response authenticateWithIdCardInGovsso(flow) {
+    static Response authenticateWithIdCardInGovSso(flow) {
         Response oidcAuth = startAuthenticationInSsoOidcWithDefaults(flow)
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
@@ -234,7 +234,7 @@ class Steps {
     }
 
     @Step("Create initial session in GovSSO with ID-Card in client-A with custom ui_locales")
-    static Response authenticateWithIdCardInGovssoWithUiLocales(Flow flow, String uiLocales) {
+    static Response authenticateWithIdCardInGovSsoWithUiLocales(Flow flow, String uiLocales) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("ui_locales", uiLocales)
         Response oidcAuth = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
@@ -245,7 +245,7 @@ class Steps {
     }
 
     @Step("Create initial session in GovSSO with eIDAS in client-A")
-    static Response authenticateWithEidasInGovsso(flow, String acrValue, String eidasLoa) {
+    static Response authenticateWithEidasInGovSso(flow, String acrValue, String eidasLoa) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("acr_values", acrValue)
         Response oidcAuth = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
@@ -256,7 +256,7 @@ class Steps {
     }
 
     @Step("Create initial session in GovSSO with eIDAS in client-A with custom ui_locales")
-    static Response authenticateWithEidasInGovssoWithUiLocales(flow, String acrValue, String eidasLoa, uiLocales) {
+    static Response authenticateWithEidasInGovSsoWithUiLocales(flow, String acrValue, String eidasLoa, uiLocales) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         Utils.setParameter(paramsMap, "ui_locales", uiLocales)
         Utils.setParameter(paramsMap, "acr_values", acrValue)

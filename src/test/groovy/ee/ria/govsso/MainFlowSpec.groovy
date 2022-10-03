@@ -9,7 +9,7 @@ import io.restassured.response.Response
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-class MainFlowSpec extends GovssoSpecification {
+class MainFlowSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
 
@@ -83,7 +83,7 @@ class MainFlowSpec extends GovssoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authenticate with eIDAS"() {
         expect:
-        Response createSession = Steps.authenticateWithEidasInGovsso(flow, "high", "E")
+        Response createSession = Steps.authenticateWithEidasInGovSso(flow, "high", "E")
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct authentication method value", claims.getClaim("amr"), is(["eidas"]))
@@ -96,7 +96,7 @@ class MainFlowSpec extends GovssoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication with ID-card in client-A and refresh session"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
         Response refreshSession = Steps.refreshSessionWithDefaults(flow, idToken)
 
@@ -111,7 +111,7 @@ class MainFlowSpec extends GovssoSpecification {
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
     def "Authentication with ID-card in client-A and continue session in client-B"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
@@ -127,7 +127,7 @@ class MainFlowSpec extends GovssoSpecification {
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
     def "Authentication with ID-card in client-A and reauthenticate in client-B"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response reauthenticate = Steps.reauthenticate(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
@@ -144,7 +144,7 @@ class MainFlowSpec extends GovssoSpecification {
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
     def "Reauthenticate in client-B with high acr after acr discrepancy with client-A session"() {
         expect:
-        Steps.authenticateWithEidasInGovsso(flow, "substantial", "C")
+        Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
@@ -160,7 +160,7 @@ class MainFlowSpec extends GovssoSpecification {
     @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out from single client session"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
 
         Response logout = Steps.logoutSingleClientSession(flow, idToken, flow.oidcClientA.fullBaseUrl)
@@ -172,7 +172,7 @@ class MainFlowSpec extends GovssoSpecification {
     @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out after session refresh"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
 
         Response refreshSession = Steps.refreshSessionWithDefaults(flow, idToken)
@@ -187,7 +187,7 @@ class MainFlowSpec extends GovssoSpecification {
     @Feature("LOGOUT_END_SESSION_ENDPOINT")
     def "Log out with end session"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -202,7 +202,7 @@ class MainFlowSpec extends GovssoSpecification {
     @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")

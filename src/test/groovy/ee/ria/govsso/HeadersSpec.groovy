@@ -8,7 +8,7 @@ import io.restassured.response.Response
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-class HeadersSpec extends GovssoSpecification {
+class HeadersSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
 
@@ -21,7 +21,7 @@ class HeadersSpec extends GovssoSpecification {
     @Feature("CORS")
     def "Cross-Origin Resource Sharing headers are applied correctly in session refresh request sequence"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
 
         Response oidcRefreshSession = Steps.startSessionRefreshInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
@@ -74,7 +74,7 @@ class HeadersSpec extends GovssoSpecification {
     @Feature("CORS")
     def "Cross-Origin Resource Sharing headers are not applied in session continuation request sequence"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithOrigin(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirectWithOrigin(flow, oidcAuth, flow.oidcClientB.fullBaseUrl)
 
@@ -103,7 +103,7 @@ class HeadersSpec extends GovssoSpecification {
     @Feature("CORS")
     def "Cross-Origin Resource Sharing headers are not applied in logout with session continuation request sequence"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -129,7 +129,7 @@ class HeadersSpec extends GovssoSpecification {
     @Feature("CORS")
     def "Cross-Origin Resource Sharing headers are not applied in logout with end session request sequence"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -186,7 +186,7 @@ class HeadersSpec extends GovssoSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify response headers for session service requests in session refresh sequence"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
 
         Response oidcRefreshSession = Steps.startSessionRefreshInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
@@ -207,7 +207,7 @@ class HeadersSpec extends GovssoSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify response headers for session service requests in session continuation sequence"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
@@ -232,7 +232,7 @@ class HeadersSpec extends GovssoSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify response headers for session service requests in reauthentication sequence"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 
@@ -252,7 +252,7 @@ class HeadersSpec extends GovssoSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify response headers for session service requests in logout with session end sequence"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
@@ -270,7 +270,7 @@ class HeadersSpec extends GovssoSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify response headers for session service requests in logout with session continuation sequence"() {
         expect:
-        Steps.authenticateWithIdCardInGovsso(flow)
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")

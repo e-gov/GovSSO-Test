@@ -8,7 +8,7 @@ import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
 
-class ServiceErrorsSpec extends GovssoSpecification {
+class ServiceErrorsSpec extends GovSsoSpecification {
     Flow flow = new Flow(props)
 
     def setup() {

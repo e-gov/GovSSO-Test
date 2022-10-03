@@ -9,7 +9,7 @@ import spock.lang.Specification
 
 import java.nio.file.Paths
 
-class GovssoSpecification extends Specification {
+class GovSsoSpecification extends Specification {
     @Shared
     Properties props = new Properties()
     static String REJECT_ERROR_CODE = "user_cancel"

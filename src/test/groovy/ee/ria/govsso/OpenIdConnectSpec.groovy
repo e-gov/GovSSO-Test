@@ -9,7 +9,7 @@ import com.nimbusds.jose.jwk.JWKSet
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-class OpenIdConnectSpec extends GovssoSpecification {
+class OpenIdConnectSpec extends GovSsoSpecification {
     Flow flow = new Flow(props)
 
     def setup() {
@@ -21,7 +21,7 @@ class OpenIdConnectSpec extends GovssoSpecification {
     @Feature("OIDC_TOKEN")
     def "Metadata and token key ID matches"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String keyID = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
 
         assertThat("Correct HTTP status code", createSession.statusCode(), is(200))

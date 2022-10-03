@@ -10,8 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
-
-class ParallelSessionSpec extends GovssoSpecification {
+class ParallelSessionSpec extends GovSsoSpecification {
 
     Flow flow1 = new Flow(props)
     Flow flow2 = new Flow(props)
@@ -29,11 +28,11 @@ class ParallelSessionSpec extends GovssoSpecification {
     @Feature("PARALLEL_SESSIONS")
     def "Same user's separate concurrent sessions have separate session ID-s"() {
         expect:
-        Response session1 = Steps.authenticateWithIdCardInGovsso(flow1)
+        Response session1 = Steps.authenticateWithIdCardInGovSso(flow1)
         String idToken1 = session1.jsonPath().get("id_token")
         JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1).getJWTClaimsSet()
 
-        Response session2 = Steps.authenticateWithIdCardInGovsso(flow2)
+        Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
         String idToken2 = session2.jsonPath().get("id_token")
         JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow2, idToken2).getJWTClaimsSet()
 
@@ -54,11 +53,11 @@ class ParallelSessionSpec extends GovssoSpecification {
     @Feature("PARALLEL_SESSIONS")
     def "Same user's separate concurrent sessions - first session stays active after logout from second session"() {
         expect:
-        Response session1 = Steps.authenticateWithIdCardInGovsso(flow1)
+        Response session1 = Steps.authenticateWithIdCardInGovSso(flow1)
         String idToken1 = session1.jsonPath().get("id_token")
         JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1).getJWTClaimsSet()
 
-        Response createSession = Steps.authenticateWithIdCardInGovsso(flow2)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow2)
         String idToken2 = createSession.jsonPath().get("id_token")
         Response logout = Steps.logoutSingleClientSession(flow2, idToken2, flow2.oidcClientA.fullBaseUrl)
 
