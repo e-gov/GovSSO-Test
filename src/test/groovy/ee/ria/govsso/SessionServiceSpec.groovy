@@ -145,7 +145,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
-        assertThat("Correct HTTP status code", taraAuthentication.getStatusCode(), is(302))
+        assertThat("Correct HTTP status code", taraAuthentication.getStatusCode(), is(303))
         assertThat("Correct URL", taraAuthentication.getHeader("location").startsWith(flow.sessionService.getFullTaraCallbackUrl()))
         assertThat("Query parameters contain code", taraAuthentication.getHeader("location").contains("code"))
         assertThat("Query parameters contain scope", taraAuthentication.getHeader("location").contains("scope"))
