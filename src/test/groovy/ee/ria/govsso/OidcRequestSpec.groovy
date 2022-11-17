@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets
 import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-class OidcAuthenticationRequestSpec extends GovSsoSpecification {
+class OidcRequestSpec extends GovSsoSpecification {
 
     Flow flow = new Flow(props)
 
@@ -317,7 +317,70 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
     }
 
     @Feature("OIDC_ENDPOINT")
-    def "Start session refresh in client-A after initiating reauthentication with client-B due to acr discrepancy"() {
+    def "Start logout with an expired ID token"() {
+        expect:
+        Steps.authenticateWithIdCardInGovSso(flow)
+        Response oidcLogout = Steps.startLogout(flow, flow.oidcClientA.expiredJwt, flow.oidcClientA.fullBaseUrl)
+
+        assertThat("Correct HTTP status code", oidcLogout.getStatusCode(), is(302))
+        assertThat("Correct redirect location", oidcLogout.getHeader("Location"), is(flow.oidcClientA.fullBaseUrl.toString()))
+    }
+
+    @Feature("OIDC_ENDPOINT")
+    def "Update session after OIDC logout request"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
+        String idToken = createSession.getBody().jsonPath().get("id_token")
+
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullBaseUrl)
+
+        Response oidcUpdateSession = Steps.updateSessionWithDefaults(flow, idToken)
+
+        Response initLogout = Steps.followRedirect(flow, oidcLogout)
+        Response logoutVerifier = Steps.followRedirect(flow, initLogout)
+
+        assertThat("Correct HTTP status code", oidcUpdateSession.getStatusCode(), is(200))
+        assertThat("Correct HTTP status code", logoutVerifier.getStatusCode(), is(302))
+        assertThat("Correct redirect location", logoutVerifier.getHeader("Location"), is(flow.oidcClientA.fullBaseUrl.toString()))
+    }
+
+    @Feature("OIDC_ENDPOINT")
+    def "Update session after logout init request"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
+        String idToken = createSession.getBody().jsonPath().get("id_token")
+
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response initLogout = Steps.followRedirect(flow, oidcLogout)
+
+        Response oidcUpdateSession = Steps.updateSessionWithDefaults(flow, idToken)
+
+        Response logoutVerifier = Steps.followRedirect(flow, initLogout)
+
+        assertThat("Correct HTTP status code", oidcUpdateSession.getStatusCode(), is(200))
+        assertThat("Correct HTTP status code", logoutVerifier.getStatusCode(), is(302))
+        assertThat("Correct redirect location", logoutVerifier.getHeader("Location"), is(flow.oidcClientA.fullBaseUrl.toString()))
+    }
+
+    @Feature("OIDC_ENDPOINT")
+    def "Update session after OIDC logout verifier request"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
+        String idToken = createSession.getBody().jsonPath().get("id_token")
+
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response initLogout = Steps.followRedirect(flow, oidcLogout)
+        Response logoutVerifier = Steps.followRedirect(flow, initLogout)
+
+        Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
+
+        assertThat("Correct HTTP status code", logoutVerifier.getStatusCode(), is(302))
+        assertThat("Correct HTTP status code", oidcUpdateSession.getStatusCode(), is(303))
+        assertThat("Correct error description in URL", oidcUpdateSession.getHeader("location").contains("error_description=The+Authorization+Server+requires+End-User+authentication.+Prompt+%27none%27+was+requested%2C+but+no+existing+login+session+was+found"))
+    }
+
+    @Feature("OIDC_ENDPOINT")
+    def "Start session update in client-A after initiating reauthentication with client-B due to acr discrepancy"() {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
         String idToken = createSession.getBody().jsonPath().get("id_token")
@@ -330,12 +393,12 @@ class OidcAuthenticationRequestSpec extends GovSsoSpecification {
         Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
         Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.ssoOidcService.cookies, formParams)
 
-        Response oidcRefreshSession = Steps.startSessionRefreshInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
 
-        assertThat("Correct HTTP status code", oidcRefreshSession.getStatusCode(), is(303))
-        assertThat("Correct redirect URL", oidcRefreshSession.getHeader("location").startsWith(flow.oidcClientA.fullBaseUrl))
-        assertThat("Correct error in URL", oidcRefreshSession.getHeader("location").contains("error=login_required"))
-        assertThat("Correct error description in URL", oidcRefreshSession.getHeader("location").contains("error_description=The+Authorization+Server+requires+End-User+authentication.+Prompt+%27none%27+was+requested%2C+but+no+existing+login+session+was+found"))
-        assertThat("URL contains state parameter", oidcRefreshSession.getHeader("location").contains("state"))
+        assertThat("Correct HTTP status code", oidcUpdateSession.getStatusCode(), is(303))
+        assertThat("Correct redirect URL", oidcUpdateSession.getHeader("location").startsWith(flow.oidcClientA.fullBaseUrl))
+        assertThat("Correct error in URL", oidcUpdateSession.getHeader("location").contains("error=login_required"))
+        assertThat("Correct error description in URL", oidcUpdateSession.getHeader("location").contains("error_description=The+Authorization+Server+requires+End-User+authentication.+Prompt+%27none%27+was+requested%2C+but+no+existing+login+session+was+found"))
+        assertThat("URL contains state parameter", oidcUpdateSession.getHeader("location").contains("state"))
     }
 }

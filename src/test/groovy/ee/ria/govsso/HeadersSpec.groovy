@@ -19,19 +19,19 @@ class HeadersSpec extends GovSsoSpecification {
     }
 
     @Feature("CORS")
-    def "Cross-Origin Resource Sharing headers are applied correctly in session refresh request sequence"() {
+    def "Cross-Origin Resource Sharing headers are applied correctly in session update request sequence"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
 
-        Response oidcRefreshSession = Steps.startSessionRefreshInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
-        Response initLogin = Steps.followRedirectWithOrigin(flow, oidcRefreshSession, flow.oidcClientA.fullBaseUrl)
+        Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response initLogin = Steps.followRedirectWithOrigin(flow, oidcUpdateSession, flow.oidcClientA.fullBaseUrl)
         Response loginVerifier = Steps.followRedirectWithCookiesAndOrigin(flow, initLogin, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
         Response initConsent = Steps.followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
         Response consentVerifier = Steps.followRedirectWithCookiesAndOrigin(flow, initConsent, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
 
-        assertThat("Access-Control-Allow-Credentials header is present and has correct value", oidcRefreshSession.getHeader("Access-Control-Allow-Credentials"), is("true"))
-        assertThat("Access-Control-Allow-Origin header is present and has correct value", oidcRefreshSession.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
+        assertThat("Access-Control-Allow-Credentials header is present and has correct value", oidcUpdateSession.getHeader("Access-Control-Allow-Credentials"), is("true"))
+        assertThat("Access-Control-Allow-Origin header is present and has correct value", oidcUpdateSession.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
 
         assertThat("Access-Control-Allow-Credentials header is present and has correct value", initLogin.getHeader("Access-Control-Allow-Credentials"), is("true"))
         assertThat("Access-Control-Allow-Origin header is present and has correct value", initLogin.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
@@ -184,13 +184,13 @@ class HeadersSpec extends GovSsoSpecification {
     @Feature("CACHE_POLICY")
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
-    def "Verify response headers for session service requests in session refresh sequence"() {
+    def "Verify response headers for session service requests in session update sequence"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
 
-        Response oidcRefreshSession = Steps.startSessionRefreshInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
-        Response initLogin = Steps.followRedirect(flow, oidcRefreshSession)
+        Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response initLogin = Steps.followRedirect(flow, oidcUpdateSession)
         Response loginVerifier = Steps.followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
         Response initConsent = Steps.followRedirect(flow, loginVerifier)
 

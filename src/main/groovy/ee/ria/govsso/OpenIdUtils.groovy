@@ -77,7 +77,7 @@ class OpenIdUtils {
         return queryParams
     }
 
-    static Map<String, String> getSessionRefreshParametersWithDefaults(Flow flow, String idTokenHint) {
+    static Map<String, String> getSessionUpdateParametersWithDefaults(Flow flow, String idTokenHint) {
         Map<String, String> queryParams = new HashMap<>()
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
@@ -93,7 +93,7 @@ class OpenIdUtils {
         return queryParams
     }
 
-    static Map<String, String> getSessionRefreshParametersWithScope(Flow flow, String idTokenHint, String scope) {
+    static Map<String, String> getSessionUpdateParametersWithScope(Flow flow, String idTokenHint, String scope) {
         Map<String, String> queryParams = new HashMap<>()
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
@@ -109,7 +109,7 @@ class OpenIdUtils {
         return queryParams
     }
 
-    static Map<String, String> getSessionRefreshParameters(Flow flow, String idTokenHint, String clientId, String fullResponseUrl) {
+    static Map<String, String> getSessionUpdateParameters(Flow flow, String idTokenHint, String clientId, String fullResponseUrl) {
         Map<String, String> queryParams = new HashMap<>()
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))

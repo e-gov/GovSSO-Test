@@ -6,9 +6,8 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertNotEquals
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.hamcrest.Matchers.*
+import static org.hamcrest.MatcherAssert.assertThat
 
 class ParallelSessionSpec extends GovSsoSpecification {
 
@@ -36,18 +35,18 @@ class ParallelSessionSpec extends GovSsoSpecification {
         String idToken2 = session2.jsonPath().get("id_token")
         JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow2, idToken2).getJWTClaimsSet()
 
-        Response session1Refresh = Steps.refreshSessionWithDefaults(flow1, idToken1)
-        String idToken1Refresh = session1Refresh.jsonPath().get("id_token")
-        JWTClaimsSet claims1Refresh = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1Refresh).getJWTClaimsSet()
+        Response session1Update = Steps.updateSessionWithDefaults(flow1, idToken1)
+        String idToken1Update = session1Update.jsonPath().get("id_token")
+        JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1Update).getJWTClaimsSet()
 
-        Response session2Refresh = Steps.refreshSessionWithDefaults(flow2, idToken2)
-        String idToken2Refresh = session2Refresh.jsonPath().get("id_token")
-        JWTClaimsSet claims2Refresh = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow2, idToken2Refresh).getJWTClaimsSet()
+        Response session2Update = Steps.updateSessionWithDefaults(flow2, idToken2)
+        String idToken2Update = session2Update.jsonPath().get("id_token")
+        JWTClaimsSet claims2Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow2, idToken2Update).getJWTClaimsSet()
 
-        assertEquals(claims1.getClaim("sid"), claims1Refresh.getClaim("sid"), "Correct session ID after refresh")
-        assertEquals(claims2.getClaim("sid"), claims2Refresh.getClaim("sid"), "Correct session ID after refresh")
-        assertNotEquals(claims1.getClaim("sid"), claims2.getClaim("sid"), "Concurrent Sessions do not share session ID")
-        assertNotEquals(claims1Refresh.getClaim("sid"), claims2Refresh.getClaim("sid"), "Concurrent Sessions do not share session ID")
+        assertThat("Correct session ID after update", claims1.getClaim("sid"), is(claims1Update.getClaim("sid")))
+        assertThat("Correct session ID after update", claims2.getClaim("sid"), is(claims2Update.getClaim("sid")))
+        assertThat("Concurrent Sessions do not share session ID", claims1.getClaim("sid"), not(is(claims2.getClaim("sid"))))
+        assertThat("Concurrent Sessions do not share session ID", claims1Update.getClaim("sid"), not(is(claims2Update.getClaim("sid"))))
     }
 
     @Feature("PARALLEL_SESSIONS")
@@ -57,16 +56,33 @@ class ParallelSessionSpec extends GovSsoSpecification {
         String idToken1 = session1.jsonPath().get("id_token")
         JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1).getJWTClaimsSet()
 
-        Response createSession = Steps.authenticateWithIdCardInGovSso(flow2)
-        String idToken2 = createSession.jsonPath().get("id_token")
+        Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
+        String idToken2 = session2.jsonPath().get("id_token")
         Response logout = Steps.logoutSingleClientSession(flow2, idToken2, flow2.oidcClientA.fullBaseUrl)
 
-        Response refreshSession1 = Steps.refreshSessionWithDefaults(flow1, idToken1)
-        String idToken1Refresh = refreshSession1.getBody().jsonPath().get("id_token")
-        JWTClaimsSet claims1Refresh = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1Refresh).getJWTClaimsSet()
+        Response session1Update = Steps.updateSessionWithDefaults(flow1, idToken1)
+        String idToken1Update = session1Update.getBody().jsonPath().get("id_token")
+        JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1Update).getJWTClaimsSet()
 
-        assertTrue(logout.getHeader("Location")==(flow2.oidcClientA.fullBaseUrl), "Correct logout redirect URL")
-        assertEquals(200, refreshSession1.getStatusCode(), "Session refresh is successful after logout from second session")
-        assertEquals(claims1.getClaim("sid"), claims1Refresh.getClaim("sid"), "Correct session ID after refresh")
+        assertThat("Correct logout redirect URL", logout.getHeader("Location"), is(flow2.oidcClientA.fullBaseUrl.toString()))
+        assertThat("Correct status code", session1Update.getStatusCode(), is(200))
+        assertThat("Correct session ID after update", claims1.getClaim("sid"), is(claims1Update.getClaim("sid")))
+    }
+
+    @Feature("PARALLEL_SESSIONS")
+    def "Same user's separate concurrent sessions - update session with other sessions' ID token fails"() {
+        expect:
+        Steps.authenticateWithIdCardInGovSso(flow1)
+
+        Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
+        String idToken2 = session2.jsonPath().get("id_token")
+
+        Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow1, idToken2, flow1.oidcClientA.fullBaseUrl)
+        Response initLogin = Steps.followRedirect(flow1, oidcUpdateSession)
+
+        assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(400))
+        assertThat("Correct HTTP status code", initLogin.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct HTTP status code", initLogin.jsonPath().getString("path"), is("/login/init"))
+        assertThat("Correct HTTP status code", initLogin.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 }

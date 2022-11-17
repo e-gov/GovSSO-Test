@@ -109,17 +109,17 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     }
 
     @Feature("ID_TOKEN")
-    def "Verify ID token elements after session refresh"() {
+    def "Verify ID token elements after session update"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
         JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
         Thread.sleep(1000)
-        Response refreshSession = Steps.refreshSessionWithDefaults(flow, idToken)
+        Response updateSession = Steps.updateSessionWithDefaults(flow, idToken)
 
-        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, refreshSession.jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
 
-        assertThat("New token", createSession.jsonPath().get("idToken"), not(refreshSession.jsonPath().get("id_token")))
+        assertThat("New token", createSession.jsonPath().get("idToken"), not(updateSession.jsonPath().get("id_token")))
         assertThat("New at_hash", claims1.getClaim("at_hash"), not(claims2.getClaim("at_hash")))
         assertThat("New jti", claims1.getClaim("jti"), not(claims2.getClaim("jti")))
         assertThat("New nonce", claims1.getClaim("nonce"), not(claims2.getClaim("nonce")))
@@ -139,7 +139,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     }
 
     @Feature("ID_TOKEN")
-    def "Verify ID token elements after session refresh, scope includes phone"() {
+    def "Verify ID token elements after session update, scope includes phone"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("scope", "openid phone")
@@ -151,16 +151,16 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
 
         String idToken1 = token.jsonPath().get("id_token")
 
-        Response refreshSession = Steps.refreshSessionWithScope(flow, idToken1, "openid phone")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, refreshSession.jsonPath().get("id_token")).getJWTClaimsSet()
+        Response updateSession = Steps.updateSessionWithScope(flow, idToken1, "openid phone")
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
 
-        assertThat("Correct scope value", refreshSession.jsonPath().getString("scope"), equalTo("openid phone"))
+        assertThat("Correct scope value", updateSession.jsonPath().getString("scope"), equalTo("openid phone"))
         assertThat("Correct phone_number claim", claims.getClaim("phone_number"), equalTo("+37269100366"))
         assertThat("Correct phone_number_verified claim", claims.getClaim("phone_number_verified"), equalTo(true))
     }
 
     @Feature("ID_TOKEN")
-    def "Verify ID token elements after session refresh, scope excludes phone"() {
+    def "Verify ID token elements after session update, scope excludes phone"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("scope", "openid phone")
@@ -172,10 +172,10 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
 
         String idToken1 = token.jsonPath().get("id_token")
 
-        Response refreshSession = Steps.refreshSessionWithScope(flow, idToken1, "openid")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, refreshSession.jsonPath().get("id_token")).getJWTClaimsSet()
+        Response updateSession = Steps.updateSessionWithScope(flow, idToken1, "openid")
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
 
-        assertThat("Correct scope value", refreshSession.jsonPath().getString("scope"), equalTo("openid"))
+        assertThat("Correct scope value", updateSession.jsonPath().getString("scope"), equalTo("openid"))
         assertThat("Claim phone_number does not exist", claims.getClaims(), not(hasKey("phone_number")))
         assertThat("Claim phone_number_verified does not exist", claims.getClaims(), not(hasKey("phone_number_verified")))
     }

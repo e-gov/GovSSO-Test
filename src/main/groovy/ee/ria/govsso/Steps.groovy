@@ -55,22 +55,16 @@ class Steps {
         return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
-    @Step("Initialize session refresh sequence in OIDC service with defaults")
-    static Response startSessionRefreshInSsoOidcWithDefaults(Flow flow, String idTokenHint, String origin) {
-        Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParametersWithDefaults(flow, idTokenHint)
+    @Step("Initialize session update sequence in OIDC service with defaults")
+    static Response startSessionUpdateInSsoOidcWithDefaults(Flow flow, String idTokenHint, String origin) {
+        Map<String, String> paramsMap = OpenIdUtils.getSessionUpdateParametersWithDefaults(flow, idTokenHint)
         return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
     }
 
-    @Step("Initialize session refresh sequence in OIDC service with scope")
-    static Response startSessionRefreshInSsoOidcWithScope(Flow flow, String idTokenHint, String origin, String scope) {
-        Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParametersWithScope(flow, idTokenHint, scope)
+    @Step("Initialize session update sequence in OIDC service with scope")
+    static Response startSessionUpdateInSsoOidcWithScope(Flow flow, String idTokenHint, String origin, String scope) {
+        Map<String, String> paramsMap = OpenIdUtils.getSessionUpdateParametersWithScope(flow, idTokenHint, scope)
         return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
-    }
-
-    @Step("Initialize session refresh sequence in OIDC service")
-    static Response startSessionRefreshInSsoOidc(Flow flow, String idTokenHint, String clientId, String fullResponseUrl) {
-        Map<String, String> paramsMap = OpenIdUtils.getSessionRefreshParameters(flow, idTokenHint, clientId, fullResponseUrl)
-        return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
     @Step("Initialize session in session service")
@@ -89,10 +83,10 @@ class Steps {
         return initSession
     }
 
-    @Step("Initialize session refresh and follow redirects to client application with defaults")
-    static Response refreshSessionWithDefaults(Flow flow, String idTokenHint) {
-        Response oidcRefreshSession = startSessionRefreshInSsoOidcWithDefaults(flow, idTokenHint, flow.oidcClientA.fullBaseUrl)
-        Response initLogin = followRedirectWithOrigin(flow, oidcRefreshSession, flow.oidcClientA.fullBaseUrl)
+    @Step("Initialize session update and follow redirects to client application with defaults")
+    static Response updateSessionWithDefaults(Flow flow, String idTokenHint) {
+        Response oidcUpdateSession = startSessionUpdateInSsoOidcWithDefaults(flow, idTokenHint, flow.oidcClientA.fullBaseUrl)
+        Response initLogin = followRedirectWithOrigin(flow, oidcUpdateSession, flow.oidcClientA.fullBaseUrl)
         Response loginVerifier = followRedirectWithCookiesAndOrigin(flow, initLogin, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Response initConsent = followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
@@ -100,10 +94,10 @@ class Steps {
         return getIdentityTokenResponseWithDefaults(flow, consentVerifier)
     }
 
-    @Step("Initialize session refresh and follow redirects to client application with scope")
-    static Response refreshSessionWithScope(Flow flow, String idTokenHint, String scope) {
-        Response oidcRefreshSession = startSessionRefreshInSsoOidcWithScope(flow, idTokenHint, flow.oidcClientA.fullBaseUrl, scope)
-        Response initLogin = followRedirectWithOrigin(flow, oidcRefreshSession, flow.oidcClientA.fullBaseUrl)
+    @Step("Initialize session update and follow redirects to client application with scope")
+    static Response updateSessionWithScope(Flow flow, String idTokenHint, String scope) {
+        Response oidcUpdateSession = startSessionUpdateInSsoOidcWithScope(flow, idTokenHint, flow.oidcClientA.fullBaseUrl, scope)
+        Response initLogin = followRedirectWithOrigin(flow, oidcUpdateSession, flow.oidcClientA.fullBaseUrl)
         Response loginVerifier = followRedirectWithCookiesAndOrigin(flow, initLogin, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Response initConsent = followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
@@ -112,17 +106,19 @@ class Steps {
     }
 
     @Step("Initialize logout sequence in OIDC")
-    static Response startLogout(flow, String idTokenHint, String logoutRedirectUri) {
+    static Response startLogout(Flow flow, String idTokenHint, String logoutRedirectUri) {
         HashMap<String, String> queryParamas = new HashMap<>()
         queryParamas.put("id_token_hint", idTokenHint)
         queryParamas.put("post_logout_redirect_uri", logoutRedirectUri)
         Response initLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParamas, Collections.emptyMap())
-        flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(initLogout, "logout_challenge"))
+        if (initLogout.getStatusCode() == 303) {
+            flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(initLogout, "logout_challenge"))
+        }
         return initLogout
     }
 
     @Step("Initialize logout sequence in OIDC with origin")
-    static Response startLogoutWithOrigin(flow, String idTokenHint, String logoutRedirectUri, String origin) {
+    static Response startLogoutWithOrigin(Flow flow, String idTokenHint, String logoutRedirectUri, String origin) {
         HashMap<String, String> headersMap = new HashMap<>()
         headersMap.put("Origin", origin)
         HashMap<String, String> queryParamas = new HashMap<>()
@@ -133,20 +129,13 @@ class Steps {
         return initLogout
     }
 
-    @Step("Getting OAuth2 cookies")
-    static Response getOAuthCookies(flow, Response response) {
-        Response oidcService = followRedirectWithCookies(flow, response, flow.taraService.cookies)
-        Utils.setParameter(flow.taraService.cookies, "oauth2_consent_csrf", oidcService.getCookie("oauth2_consent_csrf"))
-        return oidcService
-    }
-
     @Step("Follow redirect")
     static Response followRedirect(Flow flow, Response response) {
         String location = response.then().extract().response().getHeader("location")
         return Requests.followRedirect(flow, location)
     }
 
-    @Step("Follow session refresh redirect with origin")
+    @Step("Follow session update redirect with origin")
     static Response followRedirectWithOrigin(Flow flow, Response response, String origin) {
         String location = response.then().extract().response().getHeader("location")
         return Requests.followRedirectWithOrigin(flow, location, origin)
@@ -168,21 +157,6 @@ class Steps {
     static Response followRedirectWithAlteredQueryParameters(Flow flow, Response response, Map paramsMap) {
         String location = response.then().extract().response().getHeader("location")
         return Requests.followRedirectWithParams(flow, location, paramsMap)
-    }
-
-    @Step("Confirm or reject consent in GovSSO")
-    static Response submitConsentSso(Flow flow, boolean consentGiven) {
-        HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(formParamsMap, "consent_given", consentGiven)
-        return Requests.postRequestWithParams(flow, flow.sessionService.fullConsentConfirmUrl, formParamsMap)
-    }
-
-    @Step("Confirm or reject consent and finish authentication process in GovSSO")
-    static Response submitConsentAndFollowRedirectsSso(Flow flow, boolean consentGiven, Response consent) {
-        if (consent.getStatusCode().toInteger() == 200) {
-            consent = submitConsentSso(flow, consentGiven)
-        }
-        return followRedirectWithCookies(flow, consent, flow.ssoOidcService.cookies)
     }
 
     @Step("Get identity token response with defaults")
@@ -225,7 +199,7 @@ class Steps {
     }
 
     @Step("Create initial session in GovSSO with ID-Card in client-A")
-    static Response authenticateWithIdCardInGovSso(flow) {
+    static Response authenticateWithIdCardInGovSso(Flow flow) {
         Response oidcAuth = startAuthenticationInSsoOidcWithDefaults(flow)
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
@@ -245,7 +219,7 @@ class Steps {
     }
 
     @Step("Create initial session in GovSSO with eIDAS in client-A")
-    static Response authenticateWithEidasInGovSso(flow, String acrValue, String eidasLoa) {
+    static Response authenticateWithEidasInGovSso(Flow flow, String acrValue, String eidasLoa) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.put("acr_values", acrValue)
         Response oidcAuth = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
@@ -256,7 +230,7 @@ class Steps {
     }
 
     @Step("Create initial session in GovSSO with eIDAS in client-A with custom ui_locales")
-    static Response authenticateWithEidasInGovSsoWithUiLocales(flow, String acrValue, String eidasLoa, uiLocales) {
+    static Response authenticateWithEidasInGovSsoWithUiLocales(Flow flow, String acrValue, String eidasLoa, uiLocales) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         Utils.setParameter(paramsMap, "ui_locales", uiLocales)
         Utils.setParameter(paramsMap, "acr_values", acrValue)

@@ -130,7 +130,6 @@ class SsoOidcService {
     HashMap <String, String> cookies
 
     @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${authenticationRequestUrl}"
-    @Lazy fullRevocationUrl = "${protocol}://${host}${revocationUrl}"
     @Lazy fullLogoutUrl = "${protocol}://${host}${logoutUrl}"
     @Lazy fullJwksUrl = "${protocol}://${host}${jwksUrl}"
     @Lazy fullConfigurationUrl = "${protocol}://${host}${configurationUrl}"
@@ -274,6 +273,7 @@ class SsoOidcClientA {
     String responseUrl
     String clientId
     String clientSecret
+    String expiredJwt
     HashMap <String, String> cookies
 
     @Lazy fullBaseUrl = "${protocol}://${host}${portCheck()}"
@@ -286,6 +286,7 @@ class SsoOidcClientA {
         this.responseUrl = properties."ssooidcclienta.responseUrl"
         this.clientId = properties."ssooidcclienta.clientId"
         this.clientSecret = properties."ssooidcclienta.secret"
+        this.expiredJwt = properties."ssooidcclienta.expiredJwt"
         this.cookies = new HashMap<String, String>()
     }
     private String portCheck() {
