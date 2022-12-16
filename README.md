@@ -42,7 +42,7 @@ Description of values:
 
 **idp** - Foreign country (CA) identity provider configuration for eIDAS authentication tests.
 
-**taraservice** - login service configuration for specific node, used for connecting to the authentication service
+**taraservice** - login service configuration used for connecting to the authentication service
 
 | Parameter                               | Default                                           | Description                                            |
 |-----------------------------------------|---------------------------------------------------|--------------------------------------------------------|
@@ -74,13 +74,13 @@ Description of values:
 | sessionservice.readinessUrl             | /actuator/health/readiness                        | Service readiness endpoint.                            |
 | sessionservice.livenessUrl              | /actuator/health/liveness                         | Service liveness endpoint.                             |
 | sessionservice.infoUrl                  | /actuator/info                                    | Service info endpoint.                                 |
-| taraservice.node.protocol               | https                                             | Service protocol.                                      |
-| taraservice.node.host                   | login-service-backend                             | Service URL.                                           |
-| taraservice.node.port                   | 8444                                              | Service port.                                          |
+| taraservice.protocol                    | https                                             | Service protocol.                                      |
+| taraservice.host                        | login-service-backend                             | Service URL.                                           |
 | taraservice.initUrl                     | https                                             | Authentication start endpoint in login service.        |
 | taraservice.midInitUrl                  | /auth/mid/init                                    | Mobile-ID start endpoint.                              |
 | taraservice.midPollUrl                  | /auth/mid/poll                                    | Mobile-ID status polling endpoint.                     |
-| taraservice.idCardInitUrl               | /auth/id                                          | ID-card authentication endpoint..                      |
+| taraservice.webEidInitUrl               | /auth/id/init                                     | ID-card authentication start endpoint.                 |
+| taraservice.webEidLoginUrl              | /auth/id/login                                    | ID-card authentication authToken submit endpoint.      |
 | taraservice.sidInitUrl                  | /auth/sid/init                                    | Smart-ID start endpoint.                               |
 | taraservice.sidPollUrl                  | /auth/sid/poll                                    | Smart-ID status polling endpoint.                      |
 | taraservice.authAcceptUrl               | /auth/accept                                      | Authentication accept endpoint.                        |

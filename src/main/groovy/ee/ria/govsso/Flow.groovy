@@ -21,9 +21,9 @@ class Flow {
     String clientId
     String loginChallenge
     String logoutChallenge
-
     String state
     String nonce
+    String authCertificate
     JWKSet jwkSet
     JsonPath openIdServiceConfiguration
 
@@ -157,13 +157,13 @@ class SsoOidcService {
 
 @Canonical
 class TaraService {
-    String nodeHost
-    String nodePort
-    String nodeProtocol
+    String host
+    String protocol
     String initUrl
     String midInitUrl
     String midPollUrl
-    String idCardInitUrl
+    String webEidInitUrl
+    String webEidLoginUrl
     String sidInitUrl
     String sidPollUrl
     String authAcceptUrl
@@ -183,17 +183,20 @@ class TaraService {
     HashMap <String, String> cookies
     String taraloginBaseUrl
 
-    @Lazy fullIdCardInitUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${idCardInitUrl}"
-    @Lazy fullAuthRejectUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${authRejectUrl}"
+    @Lazy baseUrl = "${protocol}://${host}"
+    @Lazy fullWebEidInitUrl = "${protocol}://${host}${webEidInitUrl}"
+    @Lazy fullWebEidLoginUrl = "${protocol}://${host}${webEidLoginUrl}"
+    @Lazy fullAuthAcceptUrl = "${protocol}://${host}${authAcceptUrl}"
+    @Lazy fullAuthRejectUrl = "${protocol}://${host}${authRejectUrl}"
 
     TaraService(Properties properties) {
-        this.nodeHost = properties."taraservice.node.host"
-        this.nodePort = properties."taraservice.node.port"
-        this.nodeProtocol = properties."taraservice.node.protocol"
+        this.host = properties."taraservice.host"
+        this.protocol = properties."taraservice.protocol"
         this.initUrl = properties."taraservice.initUrl"
         this.midInitUrl = properties."taraservice.midInitUrl"
         this.midPollUrl = properties."taraservice.midPollUrl"
-        this.idCardInitUrl = properties."taraservice.idCardInitUrl"
+        this.webEidInitUrl = properties."taraservice.webEidInitUrl"
+        this.webEidLoginUrl = properties."taraservice.webEidLoginUrl"
         this.sidInitUrl = properties."taraservice.sidInitUrl"
         this.sidPollUrl = properties."taraservice.sidPollUrl"
         this.authAcceptUrl = properties."taraservice.authAcceptUrl"
@@ -208,13 +211,6 @@ class TaraService {
         this.idCardEndpointUsername = properties."taraservice.id.username"
         this.idCardEndpointPassword = properties."taraservice.id.password"
         this.cookies = new HashMap<String, String>()
-    }
-    private String nodePortCheck() {
-        if (nodePort != null && nodePort.isInteger()) {
-            return ":${nodePort}"
-        } else {
-            return ""
-        }
     }
 }
 

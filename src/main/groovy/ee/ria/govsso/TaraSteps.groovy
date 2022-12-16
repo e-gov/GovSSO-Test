@@ -5,6 +5,10 @@ import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.RestAssured
 import io.restassured.config.EncoderConfig
 import io.restassured.response.Response
+import org.json.JSONObject
+
+import static io.restassured.RestAssured.given
+import static io.restassured.config.EncoderConfig.encoderConfig
 
 class TaraSteps {
 
@@ -264,7 +268,6 @@ class TaraSteps {
     static Response authenticateWithMidInTARA(Flow flow, String idCode, String phoneNo, Response response) {
         startAuthenticationInTara(flow, response.getHeader("location"))
         Response midAuthResponse = authenticateWithMid(flow, idCode, phoneNo)
-// TODO: For SSO consent is never asked in TARA?
         return Requests.followRedirectWithCookie(flow, midAuthResponse.getHeader("location"), flow.taraService.cookies)
     }
 
@@ -272,24 +275,64 @@ class TaraSteps {
     static Response authenticateWithSidInTARA(Flow flow, String idCode, Response response) {
         startAuthenticationInTara(flow, response.getHeader("location"))
         Response sidAuthResponse = authenticateWithSid(flow, idCode)
-// TODO: For SSO consent is never asked in TARA?
         return Requests.followRedirectWithCookie(flow, sidAuthResponse.getHeader("location"), flow.taraService.cookies)
     }
 
-    @Step("Authenticate with ID-Card in TARA")
+    @Step("Authenticate with Web eID in TARA")
     static Response authenticateWithIdCardInTARA(Flow flow, Response response) {
         startAuthenticationInTara(flow, response.getHeader("location"))
-        Response idCardAuthResponse = authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
-// TODO: For SSO consent is never asked in TARA?
-        return Requests.followRedirectWithCookie(flow, idCardAuthResponse.getHeader("location"), flow.taraService.cookies)
+        Response initWebEid = postRequestWithSessionId(flow, flow.taraService.fullWebEidInitUrl)
+        String signAuthValue = Utils.signAuthenticationValue(flow, flow.taraService.baseUrl, initWebEid.jsonPath().get("nonce"))
+        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        postRequestWithJsonBody(flow, flow.taraService.fullWebEidLoginUrl, authToken)
+        Response loginResponse = postRequestWithSessionId(flow, flow.taraService.fullAuthAcceptUrl)
+        Response oidcLoginVerifier = Steps.followRedirectWithCookies(flow, loginResponse, flow.taraService.cookies)
+        Utils.setParameter(flow.taraService.cookies, "oauth2_consent_csrf", oidcLoginVerifier.getCookie("oauth2_consent_csrf"))
+        Response consentResponse = Steps.followRedirectWithCookies(flow, oidcLoginVerifier, flow.taraService.cookies)
+        Response oidcConsentVerifier = Steps.followRedirectWithCookies(flow, consentResponse, flow.taraService.cookies)
+        return oidcConsentVerifier
     }
 
     @Step("Authenticate with eIDAS in TARA")
     static Response authenticateWithEidasInTARA(Flow flow, String country, String username, String password, String loa, Response response) {
         startAuthenticationInTara(flow, response.getHeader("location"))
         Response eidasAuthResponse = authenticateWithEidas(flow, country, username, password, loa)
-// TODO: For SSO consent is never asked in TARA?
         return Requests.followRedirectWithCookie(flow, eidasAuthResponse.getHeader("location"), flow.taraService.cookies)
+    }
+
+
+    @Step("Post request to init Web eID authentication")
+    static Response postRequestWithSessionId(Flow flow, String location) {
+        return given()
+                .filter(flow.cookieFilter)
+                .cookie("SESSION", flow.taraService.sessionId)
+                .formParam("_csrf", flow.taraService.csrf)
+                .relaxedHTTPSValidation()
+                .log().cookies()
+                .filter(new AllureRestAssured())
+                .redirects().follow(false)
+                .urlEncodingEnabled(false)
+                .post(location)
+                .then()
+                .extract().response()
+    }
+
+    @Step("Post request with json body")
+    static Response postRequestWithJsonBody(Flow flow, String location, JSONObject body) {
+        return given()
+                .filter(flow.cookieFilter)
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .cookie("SESSION", flow.taraService.sessionId)
+                .contentType("application/json")
+                .header("X-CSRF-TOKEN", flow.taraService.csrf)
+                .body(body.toString())
+                .when()
+                .urlEncodingEnabled(true)
+                .post(location)
+                .then()
+                .log().cookies()
+                .extract().response()
     }
 
     @Step("Mobile-ID authentication init request")

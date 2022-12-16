@@ -31,6 +31,7 @@
         <com.fasterxml.jackson.core.version>2.13.4</com.fasterxml.jackson.core.version>
         <hamcrest.version>2.2</hamcrest.version>
         <junite.jupiter.version>5.9.0</junite.jupiter.version>
+        <json.version>20220924</json.version>
 
         <!-- Plugin versions -->
         <maven.surefire.plugin.version>3.0.0-M7</maven.surefire.plugin.version>
@@ -64,6 +65,12 @@
             <version>${hamcrest.version}</version>
         </dependency>
 
+        <!-- JSON -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>${json.version}</version>
+        </dependency>
 
         <!-- Spock -->
         <dependency>
