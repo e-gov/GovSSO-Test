@@ -111,7 +111,7 @@ class Steps {
         queryParamas.put("id_token_hint", idTokenHint)
         queryParamas.put("post_logout_redirect_uri", logoutRedirectUri)
         Response initLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParamas, Collections.emptyMap())
-        if (initLogout.getStatusCode() == 303) {
+        if (initLogout.getStatusCode() == 302 && initLogout.getHeader("Location") != logoutRedirectUri) {
             flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(initLogout, "logout_challenge"))
         }
         return initLogout

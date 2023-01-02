@@ -56,7 +56,7 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct authentication method value", claims.getClaim("amr"), is(["smartid"]))
         assertThat("Correct audience value", claims.getAudience().get(0), is(flow.oidcClientA.clientId))
         assertThat("Correct subject value", claims.getSubject(), is("EE30303039914"))
-        assertThat("Correct given name value", claims.getClaim("given_name"), is("QUALIFIED OK1"))
+        assertThat("Correct given name value", claims.getClaim("given_name"), is("OK"))
     }
 
     @Feature("BUSINESS_LOGIC")
