@@ -63,7 +63,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Date date = new Date()
         assertThat("Correct authentication time", Math.abs(date.getTime() - claims.getDateClaim("auth_time").getTime()) < 10000L)
         assertThat("Correct issued at time", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
-        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(900000L))
+        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(43200000L))
         assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["idcard"]))
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE38001085718"))
         assertThat("Correct date of birth", claims.getClaim("birthdate"),  equalTo("1980-01-08"))
@@ -97,7 +97,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Date date = new Date()
         assertThat("Correct authentication time", Math.abs(date.getTime() - claims.getDateClaim("auth_time").getTime()) < 10000L)
         assertThat("Correct issued at time", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
-        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(900000L))
+        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(43200000L))
         assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["mID"]))
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE60001017716"))
         assertThat("Correct date of birth", claims.getClaim("birthdate"),  equalTo("2000-01-01"))
@@ -135,7 +135,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct subject", claims1.getSubject(), is(claims2.getSubject()))
         assertThat("Updated expiration time", claims1.getExpirationTime() < (claims2.getExpirationTime()))
         assertThat("Updated issued at time", claims1.getIssueTime() < (claims2.getIssueTime()))
-        assertThat("Correct token validity period", claims2.getExpirationTime().getTime() - claims2.getIssueTime().getTime() == 900000L)
+        assertThat("Correct token validity period", claims2.getExpirationTime().getTime() - claims2.getIssueTime().getTime() == 43200000L)
     }
 
     @Feature("ID_TOKEN")
@@ -206,7 +206,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct subject", claimsClientA.getSubject(), is(claimsClientB.getSubject()))
         assertThat("Updated expiration time", claimsClientA.getExpirationTime() < (claimsClientB.getExpirationTime()))
         assertThat("Updated issued at time", claimsClientA.getIssueTime() < (claimsClientB.getIssueTime()))
-        assertThat("Correct token validity period", claimsClientB.getExpirationTime().getTime() - claimsClientB.getIssueTime().getTime() == 900000L)
+        assertThat("Correct token validity period", claimsClientB.getExpirationTime().getTime() - claimsClientB.getIssueTime().getTime() == 43200000L)
     }
 
     @Feature("ID_TOKEN")
