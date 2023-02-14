@@ -2,7 +2,6 @@ package ee.ria.govsso
 
 import com.google.common.hash.Hashing
 import com.nimbusds.jose.jwk.JWKSet
-import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -379,10 +378,10 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
         assertThat("Correct HTTP status code", logoutVerifier.getStatusCode(), is(302))
-        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(500))
-        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("server_error"))
-        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("The authorization server encountered an unexpected condition " +
-                "that prevented it from fulfilling the request."))
+        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(400))
+        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("invalid_request"))
+        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("The request is missing a required parameter, includes an invalid parameter value, " +
+                "includes a parameter more than once, or is otherwise malformed. Authentication session not found or expired."))
     }
 
     @Feature("OIDC_ENDPOINT")
@@ -473,5 +472,36 @@ class OidcRequestSpec extends GovSsoSpecification {
         assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(400))
         assertThat("Correct error", initLogin.jsonPath().getString("error"), is("USER_INPUT"))
         assertThat("Correct error message", initLogin.jsonPath().getString("message"), is("Ebakorrektne päring."))
+    }
+
+    @Unroll
+    @Feature("OIDC_ENDPOINT")
+    def "Missing session cookie in login init request in session continuation flow"() {
+        expect:
+        Steps.authenticateWithIdCardInGovSso(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response initLogin = Requests.getRequest(oidcAuth.then().extract().response().getHeader("location"))
+
+        assertThat("Correct HTTP status code", initLogin.getBody().jsonPath().getString("status"), is("400"))
+        assertThat("Correct path", initLogin.getBody().jsonPath().getString("path"), is("/login/init"))
+        assertThat("Correct error", initLogin.getBody().jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", initLogin.getBody().jsonPath().getString("message"), is("Ebakorrektne päring."))
+    }
+
+    @Unroll
+    @Feature("OIDC_ENDPOINT")
+    def "Incorrect session cookie in login init request in session continuation flow"() {
+        expect:
+        Steps.authenticateWithIdCardInGovSso(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+
+        Map cookies = [:]
+        Utils.setParameter(cookies, "oauth2_authentication_session", "SW5jb3JyZWN0IHNlc3Npb24gY29va2ll")
+        Response initLogin = Steps.followRedirectWithCookies(flow, oidcAuth, cookies)
+
+        assertThat("Correct HTTP status code", initLogin.getBody().jsonPath().getString("status"), is("400"))
+        assertThat("Correct path", initLogin.getBody().jsonPath().getString("path"), is("/login/init"))
+        assertThat("Correct error", initLogin.getBody().jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", initLogin.getBody().jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 }
