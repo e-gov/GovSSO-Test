@@ -104,6 +104,7 @@ Description of values:
 | ssooidcclienta.host                     | sso-client-a                                      | GovSSO mock client A host.                             |
 | ssooidcclienta.port                     | 11443                                             | GovSSO mock client A port.                             |
 | ssooidcclienta.responseUrl              | /oauth/response                                   | GovSSO mock client A authentication response endpoint. |
+| ssooidcclienta.logoutRedirectUrl        | /logout/url                                       | GovSSO mock client A logout redirect endpoint.         |
 | ssooidcclienta.clientId                 | client-a                                          | GovSSO mock client A ID.                               |
 | ssooidcclienta.secret                   | secreta                                           | GovSSO mock client A secret.                           |
 | ssooidcclienta.expiredJwt               | eyJhbG...                                         | GovSSO mock client A expired ID token.                 |
@@ -111,6 +112,7 @@ Description of values:
 | ssooidcclientb.host                     | sso-client-b                                      | GovSSO mock client B host.                             |
 | ssooidcclientb.port                     | 12443                                             | GovSSO mock client B port.                             |
 | ssooidcclientb.responseUrl              | /oauth/response                                   | GovSSO mock client B authentication response endpoint. |
+| ssooidcclientb.logoutRedirectUrl        | /logout/url                                       | GovSSO mock client B logout redirect endpoint.         |
 | ssooidcclientb.clientId                 | client-b                                          | GovSSO mock client B ID.                               |
 | ssooidcclientb.secret                   | secretb                                           | GovSSO mock client B secret.                           |
 

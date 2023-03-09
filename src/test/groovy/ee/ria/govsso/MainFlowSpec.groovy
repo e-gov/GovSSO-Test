@@ -179,9 +179,9 @@ class MainFlowSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
 
-        Response logout = Steps.logoutSingleClientSession(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response logout = Steps.logoutSingleClientSession(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
         assertThat("Correct status code", logout.getStatusCode(), is(302))
-        assertThat("Correct redirect URL", logout.getHeader("Location"), is((flow.oidcClientA.fullBaseUrl).toString()))
+        assertThat("Correct redirect URL", logout.getHeader("Location"), startsWith((flow.oidcClientA.fullLogoutRedirectUrl).toString()))
     }
 
     @Feature("BUSINESS_LOGIC")
@@ -194,9 +194,9 @@ class MainFlowSpec extends GovSsoSpecification {
         Response updateSession = Steps.updateSessionWithDefaults(flow, idToken)
         String idToken2 = updateSession.getBody().jsonPath().get("id_token")
 
-        Response logout = Steps.logoutSingleClientSession(flow, idToken2, flow.oidcClientA.fullBaseUrl)
+        Response logout = Steps.logoutSingleClientSession(flow, idToken2, flow.oidcClientA.fullLogoutRedirectUrl)
         assertThat("Correct status code", logout.getStatusCode(), is(302))
-        assertThat("Correct redirect URL", logout.getHeader("Location"), is((flow.oidcClientA.fullBaseUrl).toString()))
+        assertThat("Correct redirect URL", logout.getHeader("Location"), startsWith((flow.oidcClientA.fullLogoutRedirectUrl).toString()))
     }
 
     @Feature("BUSINESS_LOGIC")
@@ -208,10 +208,10 @@ class MainFlowSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
 
-        Response initLogout = Steps.logout(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.sessionService.fullLogoutEndSessionUrl)
+        Response initLogout = Steps.logout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, flow.sessionService.fullLogoutEndSessionUrl)
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
         assertThat("Correct status code", logoutVerifier.getStatusCode(), is(302))
-        assertThat("Correct redirect URL", logoutVerifier.getHeader("Location"), is((flow.oidcClientB.fullBaseUrl).toString()))
+        assertThat("Correct redirect URL", logoutVerifier.getHeader("Location"), startsWith((flow.oidcClientB.fullLogoutRedirectUrl).toString()))
     }
 
     @Feature("BUSINESS_LOGIC")
@@ -223,8 +223,8 @@ class MainFlowSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
 
-        Response initLogout = Steps.logout(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.sessionService.fullLogoutContinueSessionUrl)
+        Response initLogout = Steps.logout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, flow.sessionService.fullLogoutContinueSessionUrl)
         assertThat("Correct status code", initLogout.getStatusCode(), is(302))
-        assertThat("Correct redirect URL", initLogout.getHeader("Location"), is((flow.oidcClientB.fullBaseUrl).toString()))
+        assertThat("Correct redirect URL", initLogout.getHeader("Location"), startsWith((flow.oidcClientB.fullLogoutRedirectUrl).toString()))
     }
 }

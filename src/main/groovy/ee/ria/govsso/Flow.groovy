@@ -267,12 +267,14 @@ class SsoOidcClientA {
     String port
     String protocol
     String responseUrl
+    String logoutRedirectUrl
     String clientId
     String clientSecret
     String expiredJwt
     HashMap <String, String> cookies
 
     @Lazy fullBaseUrl = "${protocol}://${host}${portCheck()}"
+    @Lazy fullLogoutRedirectUrl = "${protocol}://${host}${portCheck()}${logoutRedirectUrl}"
     @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
     SsoOidcClientA(Properties properties) {
@@ -280,6 +282,7 @@ class SsoOidcClientA {
         this.port = properties."ssooidcclienta.port"
         this.protocol = properties."ssooidcclienta.protocol"
         this.responseUrl = properties."ssooidcclienta.responseUrl"
+        this.logoutRedirectUrl = properties."ssooidcclienta.logoutRedirectUrl"
         this.clientId = properties."ssooidcclienta.clientId"
         this.clientSecret = properties."ssooidcclienta.secret"
         this.expiredJwt = properties."ssooidcclienta.expiredJwt"
@@ -300,11 +303,13 @@ class SsoOidcClientB {
     String port
     String protocol
     String responseUrl
+    String logoutRedirectUrl
     String clientId
     String clientSecret
     HashMap <String, String> cookies
 
     @Lazy fullBaseUrl = "${protocol}://${host}${portCheck()}"
+    @Lazy fullLogoutRedirectUrl = "${protocol}://${host}${portCheck()}${logoutRedirectUrl}"
     @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
     SsoOidcClientB(Properties properties) {
@@ -312,6 +317,7 @@ class SsoOidcClientB {
         this.port = properties."ssooidcclientb.port"
         this.protocol = properties."ssooidcclientb.protocol"
         this.responseUrl = properties."ssooidcclientb.responseUrl"
+        this.logoutRedirectUrl = properties."ssooidcclienta.logoutRedirectUrl"
         this.clientId = properties."ssooidcclientb.clientId"
         this.clientSecret = properties."ssooidcclientb.secret"
         this.cookies = new HashMap<String, String>()

@@ -50,7 +50,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
 
-        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
         String buttonEndSession = initLogout.body().htmlPath().getString("**.find { button -> button.@formaction == '/logout/endsession'}")
@@ -92,7 +92,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
 
-        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
         initLogout.then().body("html.head.title", equalTo(title))
@@ -113,7 +113,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
         String idToken = continueSession.jsonPath().get("id_token")
 
-        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
         assertThat("Correct logged out client", initLogout.body().htmlPath().getString("/c-tab-login/*}").contains(logoutText))

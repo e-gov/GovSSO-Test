@@ -58,13 +58,13 @@ class ParallelSessionSpec extends GovSsoSpecification {
 
         Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
         String idToken2 = session2.jsonPath().get("id_token")
-        Response logout = Steps.logoutSingleClientSession(flow2, idToken2, flow2.oidcClientA.fullBaseUrl)
+        Response logout = Steps.logoutSingleClientSession(flow2, idToken2, flow2.oidcClientA.fullLogoutRedirectUrl)
 
         Response session1Update = Steps.updateSessionWithDefaults(flow1, idToken1)
         String idToken1Update = session1Update.getBody().jsonPath().get("id_token")
         JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1Update).getJWTClaimsSet()
 
-        assertThat("Correct logout redirect URL", logout.getHeader("Location"), is(flow2.oidcClientA.fullBaseUrl.toString()))
+        assertThat("Correct logout redirect URL", logout.getHeader("Location"), startsWith(flow2.oidcClientA.fullLogoutRedirectUrl.toString()))
         assertThat("Correct status code", session1Update.getStatusCode(), is(200))
         assertThat("Correct session ID after update", claims1.getClaim("sid"), is(claims1Update.getClaim("sid")))
     }

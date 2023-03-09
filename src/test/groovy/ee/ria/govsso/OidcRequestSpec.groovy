@@ -212,7 +212,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Start logout request with correct parameters"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        Response initLogout = Steps.startLogout(flow, createSession.jsonPath().get("id_token"), flow.oidcClientA.fullBaseUrl)
+        Response initLogout = Steps.startLogout(flow, createSession.jsonPath().get("id_token"), flow.oidcClientA.fullLogoutRedirectUrl)
 
         assertThat("Correct HTTP status code", initLogout.getStatusCode(), is(302))
         assertThat("Correct location", initLogout.getHeader("location").startsWith(flow.sessionService.baseUrl))
@@ -320,10 +320,10 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Start logout with an expired ID token"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcLogout = Steps.startLogout(flow, flow.oidcClientA.expiredJwt, flow.oidcClientA.fullBaseUrl)
+        Response oidcLogout = Steps.startLogout(flow, flow.oidcClientA.expiredJwt, flow.oidcClientA.fullLogoutRedirectUrl)
 
         assertThat("Correct HTTP status code", oidcLogout.getStatusCode(), is(302))
-        assertThat("Correct redirect location", oidcLogout.getHeader("Location"), is(flow.oidcClientA.fullBaseUrl.toString()))
+        assertThat("Correct redirect location", oidcLogout.getHeader("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl.toString()))
     }
 
     @Feature("OIDC_ENDPOINT")
@@ -332,7 +332,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.getBody().jsonPath().get("id_token")
 
-        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
 
         Response oidcUpdateSession = Steps.updateSessionWithDefaults(flow, idToken)
 
@@ -341,7 +341,7 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         assertThat("Correct HTTP status code", oidcUpdateSession.getStatusCode(), is(200))
         assertThat("Correct HTTP status code", logoutVerifier.getStatusCode(), is(302))
-        assertThat("Correct redirect location", logoutVerifier.getHeader("Location"), is(flow.oidcClientA.fullBaseUrl.toString()))
+        assertThat("Correct redirect location", logoutVerifier.getHeader("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl.toString()))
     }
 
     @Feature("OIDC_ENDPOINT")
@@ -350,7 +350,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.getBody().jsonPath().get("id_token")
 
-        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
         Response oidcUpdateSession = Steps.updateSessionWithDefaults(flow, idToken)
@@ -359,7 +359,7 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         assertThat("Correct HTTP status code", oidcUpdateSession.getStatusCode(), is(200))
         assertThat("Correct HTTP status code", logoutVerifier.getStatusCode(), is(302))
-        assertThat("Correct redirect location", logoutVerifier.getHeader("Location"), is(flow.oidcClientA.fullBaseUrl.toString()))
+        assertThat("Correct redirect location", logoutVerifier.getHeader("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl.toString()))
     }
 
     @Feature("OIDC_ENDPOINT")
@@ -368,7 +368,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.getBody().jsonPath().get("id_token")
 
-        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
 
