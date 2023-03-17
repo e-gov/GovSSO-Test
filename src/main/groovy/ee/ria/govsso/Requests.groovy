@@ -313,23 +313,6 @@ class Requests {
                 .extract().response()
     }
 
-    @Step("Get request with ID-Card authentication")
-    static Response idCardAuthentication(Flow flow, Map<String, String> headers) {
-        return given()
-                .filter(flow.cookieFilter)
-                .headers(headers)
-                .auth().preemptive().basic(flow.taraService.idCardEndpointUsername, flow.taraService.idCardEndpointPassword)
-                .cookie("SESSION", flow.taraService.sessionId)
-                .relaxedHTTPSValidation()
-                .log().cookies()
-                .filter(new AllureRestAssured())
-                .redirects().follow(false)
-                .urlEncodingEnabled(false)
-                .get(flow.taraService.fullIdCardInitUrl)
-                .then()
-                .extract().response()
-    }
-
     @Step("Download openid service configuration")
     static JsonPath getOpenidConfiguration(String url) {
         return given()
@@ -370,13 +353,29 @@ class Requests {
                 .extract().response()
     }
 
-    @Step("Get token")
-    static Response getWebToken(Flow flow, String authorizationCode, String clientId, String clientSecret, String redirectUrl) {
+    @Step("Get authentication response")
+    static Response getAuthenticationWebToken(Flow flow, String authorizationCode, String clientId, String clientSecret, String redirectUrl) {
         return given()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .formParam("grant_type", "authorization_code")
                 .formParam("code", authorizationCode)
+                .formParam("redirect_uri", redirectUrl)
+                .auth().preemptive().basic(clientId, clientSecret)
+                .when()
+                .urlEncodingEnabled(true)
+                .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
+                .then()
+                .extract().response()
+    }
+
+    @Step("Get session update response")
+    static Response getSessionUpdateWebToken(Flow flow, String refreshToken, String clientId, String clientSecret, String redirectUrl) {
+        return given()
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .formParam("grant_type", "refresh_token")
+                .formParam("refresh_token", refreshToken)
                 .formParam("redirect_uri", redirectUrl)
                 .auth().preemptive().basic(clientId, clientSecret)
                 .when()

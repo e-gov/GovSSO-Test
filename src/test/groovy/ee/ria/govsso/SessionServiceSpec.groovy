@@ -458,33 +458,6 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct acr value in token", claims.getClaim("acr"), is("substantial"))
     }
 
-    @Feature("LOGIN_INIT_ENDPOINT")
-    def "Create session in client-A with eIDAS substantial acr and initialize session update with high acr"() {
-        expect:
-        Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
-        String idToken = createSession.jsonPath().get("id_token")
-
-        Response initUpdate = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
-        Response initLogin = Steps.followRedirect(flow, initUpdate)
-
-        assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(500))
-        assertThat("Correct error", initLogin.jsonPath().getString("error"), is("TECHNICAL_GENERAL"))
-        assertThat("Correct message", initLogin.jsonPath().getString("message"), is("Protsess ebaõnnestus tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
-    }
-
-    @Feature("LOGIN_INIT_ENDPOINT")
-    def "Create session in client-A and request session update with an expired ID token"() {
-        expect:
-        Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, flow.oidcClientA.expiredJwt, flow.oidcClientA.fullBaseUrl)
-        Response initLogin = Steps.followRedirect(flow, oidcUpdateSession)
-
-        assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(400))
-        assertThat("Correct HTTP status code", initLogin.jsonPath().getString("error"), is("USER_INPUT"))
-        assertThat("Correct HTTP status code", initLogin.jsonPath().getString("path"), is("/login/init"))
-        assertThat("Correct HTTP status code", initLogin.jsonPath().getString("message"), is("Ebakorrektne päring."))
-    }
-
     @Feature("LOGOUT_CONTINUE_SESSION_ENDPOINT")
     def "Log out with continue session without _csrf form parameter"() {
         expect:

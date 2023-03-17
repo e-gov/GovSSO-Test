@@ -3,7 +3,6 @@ package ee.ria.govsso
 import io.qameta.allure.Step
 import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.RestAssured
-import io.restassured.config.EncoderConfig
 import io.restassured.response.Response
 import org.json.JSONObject
 
@@ -186,21 +185,6 @@ class TaraSteps {
         return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
 
-    @Step("Authenticate with ID-Card")
-    static Response authenticateWithIdCard(Flow flow, String certificatePath) {
-        String certificate = Utils.getFileAsString(certificatePath)
-
-        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
-        Requests.idCardAuthentication(flow, headersMap)
-        Response acceptResponse = acceptAuthTara(flow, flow.taraService.taraloginBaseUrl + flow.taraService.authAcceptUrl)
-
-        Response oidcServiceResponse = Requests.followRedirectWithCookie(flow, acceptResponse.getHeader("location"), flow.taraService.cookies)
-        Utils.setParameter(flow.taraService.cookies, "oauth2_consent_csrf", oidcServiceResponse.getCookie("oauth2_consent_csrf"))
-
-        return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
-    }
-
     @Step("Authenticate with eIDAS")
     static Response authenticateWithEidas(Flow flow, String country, String username, String password, String loa) {
         LinkedHashMap<String, String> queryParamsMap = (LinkedHashMap) Collections.emptyMap()
@@ -252,16 +236,6 @@ class TaraSteps {
             sleep(pollingIntevalMillis)
         }
         return response
-    }
-
-    @Step("Confirm or reject consent in TARA")
-    static Response submitConsentTara(Flow flow, boolean consentGiven) {
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "SESSION", flow.taraService.sessionId)
-        HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(formParamsMap, "consent_given", consentGiven)
-        Utils.setParameter(formParamsMap, "_csrf", flow.taraService.csrf)
-        return Requests.postRequestWithCookiesAndParams(flow, flow.taraService.fullConsentConfirmUrl, cookiesMap, formParamsMap)
     }
 
     @Step("Authenticate with MID in TARA")
@@ -338,7 +312,7 @@ class TaraSteps {
     @Step("Mobile-ID authentication init request")
     static Response startMidAuthentication(Flow flow, String idCode, String phoneNo) {
         Response response =
-                RestAssured.given()
+                given()
                         .filter(new AllureRestAssured())
                         .filter(flow.cookieFilter)
                         .formParam("idCode", idCode)
@@ -346,7 +320,7 @@ class TaraSteps {
                         .cookie("SESSION", flow.taraService.sessionId)
                         .formParam("_csrf", flow.taraService.csrf)
                         .log().cookies()
-                        .config(RestAssured.config().encoderConfig(EncoderConfig.encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                        .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()
                         .redirects().follow(false)
                         .post(flow.taraService.taraloginBaseUrl + flow.taraService.midInitUrl)
@@ -358,12 +332,12 @@ class TaraSteps {
     @Step("Mobile-ID response poll request")
     static Response pollMid(Flow flow) {
         Response response =
-                RestAssured.given()
+                given()
                         .filter(flow.cookieFilter)
                         .filter(new AllureRestAssured())
                         .cookie("SESSION", flow.taraService.sessionId)
                         .log().cookies()
-                        .config(RestAssured.config().encoderConfig(EncoderConfig.encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                        .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()
                         .redirects().follow(false)
                         .get(flow.taraService.taraloginBaseUrl + flow.taraService.midPollUrl)
@@ -375,14 +349,14 @@ class TaraSteps {
     @Step("Smart-ID authentication init request")
     static Response startSidAuthentication(Flow flow, String idCode) {
         Response response =
-                RestAssured.given()
+                given()
                         .filter(new AllureRestAssured())
                         .filter(flow.cookieFilter)
                         .formParam("idCode", idCode)
                         .cookie("SESSION", flow.taraService.sessionId)
                         .formParam("_csrf", flow.taraService.csrf)
                         .log().cookies()
-                        .config(RestAssured.config().encoderConfig(EncoderConfig.encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                        .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()
                         .redirects().follow(false)
                         .post(flow.taraService.taraloginBaseUrl+flow.taraService.sidInitUrl)
@@ -394,13 +368,13 @@ class TaraSteps {
     @Step("Smart-ID response poll request")
     static Response pollSid(Flow flow) {
         Response response =
-                RestAssured.given()
+                given()
                         .filter(flow.cookieFilter)
                         .filter(new AllureRestAssured())
                         .cookie("SESSION", flow.taraService.sessionId)
                         .cookie("LOGIN_LOCALE", flow.taraService.login_locale)
                         .log().cookies()
-                        .config(RestAssured.config().encoderConfig(EncoderConfig.encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                        .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()
                         .redirects().follow(false)
                         .get(flow.taraService.taraloginBaseUrl + flow.taraService.sidPollUrl)
@@ -411,13 +385,13 @@ class TaraSteps {
 
     @Step("Accept authentication in TARA login service")
     static Response acceptAuthTara(Flow flow, String location) {
-        return RestAssured.given()
+        return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
                 .cookie("SESSION", flow.taraService.sessionId)
                 .formParam("_csrf", flow.taraService.csrf)
                 .log().cookies()
-                .config(RestAssured.config().encoderConfig(EncoderConfig.encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .when()
                 .redirects().follow(false)
                 .post(location)

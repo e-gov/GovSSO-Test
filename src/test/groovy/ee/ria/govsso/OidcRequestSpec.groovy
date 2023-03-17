@@ -2,6 +2,7 @@ package ee.ria.govsso
 
 import com.google.common.hash.Hashing
 import com.nimbusds.jose.jwk.JWKSet
+import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -137,9 +138,9 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
         Response loginVerifier = Steps.followRedirectWithCookies(flow, taracallback, flow.ssoOidcService.cookies)
 
-        assertThat("Correct cookie attributes", oidcAuth.getDetailedCookie("oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure"), containsString("Max-Age=3600")))
-        assertThat("Correct cookie attributes", loginVerifier.getDetailedCookie("oauth2_authentication_session").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure"), containsString("Max-Age=900")))
-        assertThat("Correct cookie attributes", loginVerifier.getDetailedCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=None"), containsString("Secure"), containsString("Max-Age=3600")))
+        assertThat("Correct cookie attributes", oidcAuth.getDetailedCookie("oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure"), containsString("Max-Age=3600")))
+        assertThat("Correct cookie attributes", loginVerifier.getDetailedCookie("oauth2_authentication_session").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure")))
+        assertThat("Correct cookie attributes", loginVerifier.getDetailedCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure"), containsString("Max-Age=3600")))
     }
 
     @Unroll
@@ -331,10 +332,11 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.getBody().jsonPath().get("id_token")
+        String refreshToken = createSession.getBody().jsonPath().get("refresh_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
 
-        Response oidcUpdateSession = Steps.updateSessionWithDefaults(flow, idToken)
+        Response oidcUpdateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
@@ -349,11 +351,12 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.getBody().jsonPath().get("id_token")
+        String refreshToken = createSession.getBody().jsonPath().get("refresh_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        Response oidcUpdateSession = Steps.updateSessionWithDefaults(flow, idToken)
+        Response oidcUpdateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
 
@@ -367,23 +370,26 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.getBody().jsonPath().get("id_token")
+        String refreshToken = createSession.getBody().jsonPath().get("refresh_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
 
-        Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
         assertThat("Correct HTTP status code", logoutVerifier.getStatusCode(), is(302))
-        assertThat("Correct HTTP status code", oidcUpdateSession.getStatusCode(), is(303))
-        assertThat("Correct error description in URL", oidcUpdateSession.getHeader("location").contains("error_description=The+Authorization+Server+requires+End-User+authentication.+Prompt+%27none%27+was+requested%2C+but+no+existing+login+session+was+found"))
+        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(500))
+        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("server_error"))
+        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("The authorization server encountered an unexpected condition " +
+                "that prevented it from fulfilling the request."))
     }
 
     @Feature("OIDC_ENDPOINT")
     def "Start session update in client-A after initiating reauthentication with client-B due to acr discrepancy"() {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
-        String idToken = createSession.getBody().jsonPath().get("id_token")
+        String refreshToken = createSession.getBody().jsonPath().get("refresh_token")
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
@@ -393,12 +399,79 @@ class OidcRequestSpec extends GovSsoSpecification {
         Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
         Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.ssoOidcService.cookies, formParams)
 
-        Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
-        assertThat("Correct HTTP status code", oidcUpdateSession.getStatusCode(), is(303))
-        assertThat("Correct redirect URL", oidcUpdateSession.getHeader("location").startsWith(flow.oidcClientA.fullBaseUrl))
-        assertThat("Correct error in URL", oidcUpdateSession.getHeader("location").contains("error=login_required"))
-        assertThat("Correct error description in URL", oidcUpdateSession.getHeader("location").contains("error_description=The+Authorization+Server+requires+End-User+authentication.+Prompt+%27none%27+was+requested%2C+but+no+existing+login+session+was+found"))
-        assertThat("URL contains state parameter", oidcUpdateSession.getHeader("location").contains("state"))
+        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(400))
+        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("invalid_grant"))
+        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("The provided authorization grant " +
+                "(e.g., authorization code, resource owner credentials) " +
+                "or refresh token is invalid, expired, revoked, " +
+                "does not match the redirection URI used in the authorization request, " +
+                "or was issued to another client."))
+    }
+
+    @Feature("ID_TOKEN")
+    def "Update session in client-A with refresh token from client-B"() {
+        expect:
+        Steps.authenticateWithIdCardInGovSso(flow)
+
+        Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        String refreshToken2 = continueSession.jsonPath().get("refresh_token")
+
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken2, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+
+        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(400))
+        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("invalid_grant"))
+        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("The provided authorization grant " +
+                "(e.g., authorization code, resource owner credentials) " +
+                "or refresh token is invalid, expired, revoked, " +
+                "does not match the redirection URI used in the authorization request, " +
+                "or was issued to another client. " +
+                "The OAuth 2.0 Client ID from this request does not match the ID during the initial token issuance."))
+    }
+
+    @Feature("ID_TOKEN")
+    def "Update session with already used refresh token"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
+        String refreshToken1 = createSession.jsonPath().get("refresh_token")
+
+        Steps.getSessionUpdateResponse(flow, refreshToken1, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken1, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+
+        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(401))
+        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("token_inactive"))
+        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("Token is inactive because it is malformed, expired or otherwise invalid. " +
+                "Token validation failed."))
+    }
+
+    @Feature("ID_TOKEN")
+    def "Update session with invalid refresh token"() {
+        expect:
+        Steps.authenticateWithIdCardInGovSso(flow)
+
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, "123abc.123abc", flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+
+        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(400))
+        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("invalid_grant"))
+        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("The provided authorization grant (e.g., authorization code, resource owner credentials) " +
+                "or refresh token is invalid, expired, revoked, " +
+                "does not match the redirection URI used in the authorization request, " +
+                "or was issued to another client."))
+    }
+
+    @Feature("OIDC_ENDPOINT")
+    def "Update session with not supported session update flow with prompt=none"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
+
+        String idToken = createSession.jsonPath().get("id_token")
+        Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
+        Response initLogin = Steps.followRedirectWithOrigin(flow, oidcUpdateSession, flow.oidcClientA.fullBaseUrl)
+
+        assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(400))
+        assertThat("Correct error", initLogin.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct error message", initLogin.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 }

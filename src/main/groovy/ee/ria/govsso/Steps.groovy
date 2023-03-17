@@ -61,12 +61,6 @@ class Steps {
         return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
     }
 
-    @Step("Initialize session update sequence in OIDC service with scope")
-    static Response startSessionUpdateInSsoOidcWithScope(Flow flow, String idTokenHint, String origin, String scope) {
-        Map<String, String> paramsMap = OpenIdUtils.getSessionUpdateParametersWithScope(flow, idTokenHint, scope)
-        return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
-    }
-
     @Step("Initialize session in session service")
     static Response startSessionInSessionService(Flow flow, Response response) {
         Response initSession = followRedirectWithCookies(flow, response, flow.ssoOidcService.cookies)
@@ -81,28 +75,6 @@ class Steps {
         Utils.setParameter(flow.sessionService.cookies, "__Host-AUTH", initSession.getCookie("__Host-AUTH"))
         Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", initSession.getCookie("__Host-XSRF-TOKEN"))
         return initSession
-    }
-
-    @Step("Initialize session update and follow redirects to client application with defaults")
-    static Response updateSessionWithDefaults(Flow flow, String idTokenHint) {
-        Response oidcUpdateSession = startSessionUpdateInSsoOidcWithDefaults(flow, idTokenHint, flow.oidcClientA.fullBaseUrl)
-        Response initLogin = followRedirectWithOrigin(flow, oidcUpdateSession, flow.oidcClientA.fullBaseUrl)
-        Response loginVerifier = followRedirectWithCookiesAndOrigin(flow, initLogin, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
-        Response initConsent = followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
-        Response consentVerifier = followRedirectWithCookiesAndOrigin(flow, initConsent, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
-        return getIdentityTokenResponseWithDefaults(flow, consentVerifier)
-    }
-
-    @Step("Initialize session update and follow redirects to client application with scope")
-    static Response updateSessionWithScope(Flow flow, String idTokenHint, String scope) {
-        Response oidcUpdateSession = startSessionUpdateInSsoOidcWithScope(flow, idTokenHint, flow.oidcClientA.fullBaseUrl, scope)
-        Response initLogin = followRedirectWithOrigin(flow, oidcUpdateSession, flow.oidcClientA.fullBaseUrl)
-        Response loginVerifier = followRedirectWithCookiesAndOrigin(flow, initLogin, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
-        Response initConsent = followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
-        Response consentVerifier = followRedirectWithCookiesAndOrigin(flow, initConsent, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
-        return getIdentityTokenResponseWithDefaults(flow, consentVerifier)
     }
 
     @Step("Initialize logout sequence in OIDC")
@@ -135,7 +107,7 @@ class Steps {
         return Requests.followRedirect(flow, location)
     }
 
-    @Step("Follow session update redirect with origin")
+    @Step("Follow redirect with origin")
     static Response followRedirectWithOrigin(Flow flow, Response response, String origin) {
         String location = response.then().extract().response().getHeader("location")
         return Requests.followRedirectWithOrigin(flow, location, origin)
@@ -172,7 +144,16 @@ class Steps {
     @Step("Get identity token")
     static Response getIdentityTokenResponse(Flow flow, Response response, String clientId, String clientSecret, String redirectUrl) {
         String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
-        Response token = Requests.getWebToken(flow, authorizationCode, clientId, clientSecret, redirectUrl)
+        Response token = Requests.getAuthenticationWebToken(flow, authorizationCode, clientId, clientSecret, redirectUrl)
+        SignedJWT signedJWT = SignedJWT.parse(token.getBody().jsonPath().get("id_token"))
+        Utils.addJsonAttachment("Header", signedJWT.getHeader().toString())
+        Utils.addJsonAttachment("Payload", signedJWT.getJWTClaimsSet().toString())
+        return token
+    }
+
+    @Step("Update session")
+    static Response getSessionUpdateResponse(Flow flow, String refreshToken, String clientId, String clientSecret, String redirectUrl) {
+        Response token = Requests.getSessionUpdateWebToken(flow, refreshToken, clientId, clientSecret, redirectUrl)
         SignedJWT signedJWT = SignedJWT.parse(token.getBody().jsonPath().get("id_token"))
         Utils.addJsonAttachment("Header", signedJWT.getHeader().toString())
         Utils.addJsonAttachment("Payload", signedJWT.getJWTClaimsSet().toString())

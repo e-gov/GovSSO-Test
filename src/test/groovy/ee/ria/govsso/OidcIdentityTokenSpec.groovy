@@ -27,8 +27,9 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct token_type value", createSession.jsonPath().getString("token_type"), is("bearer"))
         assertThat("Correct scope value", createSession.jsonPath().getString("scope"), is("openid"))
         assertThat("Access token element exists", createSession.jsonPath().getString("access_token").size() > 32)
-        assertThat("Expires in element exists", createSession.jsonPath().getInt("expires_in") <= 1)
+        assertThat("Expires in element exists", createSession.jsonPath().getInt("expires_in") <= 900)
         assertThat("ID token element exists", createSession.jsonPath().getString("id_token").size() > 1000)
+        assertThat("Refresh token element exists", createSession.jsonPath().getString("refresh_token").size() == 87)
     }
 
     @Feature("ID_TOKEN")
@@ -46,7 +47,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct token_type value", token.jsonPath().getString("token_type"), is("bearer"))
         assertThat("Correct scope value", token.jsonPath().getString("scope"), is("openid phone"))
         assertThat("Access token element exists", token.jsonPath().getString("access_token").size() > 32)
-        assertThat("Expires in element exists", token.jsonPath().getInt("expires_in") <= 1)
+        assertThat("Expires in element exists", token.jsonPath().getInt("expires_in") <= 900)
         assertThat("ID token element exists", token.jsonPath().getString("id_token").size() > 1000)
     }
 
@@ -63,7 +64,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Date date = new Date()
         assertThat("Correct authentication time", Math.abs(date.getTime() - claims.getDateClaim("auth_time").getTime()) < 10000L)
         assertThat("Correct issued at time", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
-        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(43200000L))
+        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(900000L))
         assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["idcard"]))
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE38001085718"))
         assertThat("Correct date of birth", claims.getClaim("birthdate"),  equalTo("1980-01-08"))
@@ -97,7 +98,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Date date = new Date()
         assertThat("Correct authentication time", Math.abs(date.getTime() - claims.getDateClaim("auth_time").getTime()) < 10000L)
         assertThat("Correct issued at time", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
-        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(43200000L))
+        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(900000L))
         assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["mID"]))
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE60001017716"))
         assertThat("Correct date of birth", claims.getClaim("birthdate"),  equalTo("2000-01-01"))
@@ -112,17 +113,17 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     def "Verify ID token elements after session update"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.jsonPath().get("id_token")
+        String refreshToken = createSession.jsonPath().get("refresh_token")
         JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
         Thread.sleep(1000)
-        Response updateSession = Steps.updateSessionWithDefaults(flow, idToken)
+        Response updateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
         JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("New token", createSession.jsonPath().get("idToken"), not(updateSession.jsonPath().get("id_token")))
         assertThat("New at_hash", claims1.getClaim("at_hash"), not(claims2.getClaim("at_hash")))
         assertThat("New jti", claims1.getClaim("jti"), not(claims2.getClaim("jti")))
-        assertThat("New nonce", claims1.getClaim("nonce"), not(claims2.getClaim("nonce")))
+        assertThat("Correct nonce", claims1.getClaim("nonce"), is(claims2.getClaim("nonce")))
         assertThat("Correct LoA level", claims1.getClaim("acr"), is(claims2.getClaim("acr")))
         assertThat("Correct authentication method", claims1.getClaim("amr"), is(claims2.getClaim("amr")))
         assertThat("Correct authentication time", claims1.getClaim("auth_time"), is(claims2.getClaim("auth_time")))
@@ -135,7 +136,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct subject", claims1.getSubject(), is(claims2.getSubject()))
         assertThat("Updated expiration time", claims1.getExpirationTime() < (claims2.getExpirationTime()))
         assertThat("Updated issued at time", claims1.getIssueTime() < (claims2.getIssueTime()))
-        assertThat("Correct token validity period", claims2.getExpirationTime().getTime() - claims2.getIssueTime().getTime() == 43200000L)
+        assertThat("Correct token validity period", claims2.getExpirationTime().getTime() - claims2.getIssueTime().getTime() == 900000L)
     }
 
     @Feature("ID_TOKEN")
@@ -149,35 +150,14 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
         Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
 
-        String idToken1 = token.jsonPath().get("id_token")
+        String refreshToken = token.jsonPath().get("refresh_token")
 
-        Response updateSession = Steps.updateSessionWithScope(flow, idToken1, "openid phone")
+        Response updateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct scope value", updateSession.jsonPath().getString("scope"), equalTo("openid phone"))
         assertThat("Correct phone_number claim", claims.getClaim("phone_number"), equalTo("+37269100366"))
         assertThat("Correct phone_number_verified claim", claims.getClaim("phone_number_verified"), equalTo(true))
-    }
-
-    @Feature("ID_TOKEN")
-    def "Verify ID token elements after session update, scope excludes phone"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        paramsMap.put("scope", "openid phone")
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
-        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
-        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
-
-        String idToken1 = token.jsonPath().get("id_token")
-
-        Response updateSession = Steps.updateSessionWithScope(flow, idToken1, "openid")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
-
-        assertThat("Correct scope value", updateSession.jsonPath().getString("scope"), equalTo("openid"))
-        assertThat("Claim phone_number does not exist", claims.getClaims(), not(hasKey("phone_number")))
-        assertThat("Claim phone_number_verified does not exist", claims.getClaims(), not(hasKey("phone_number_verified")))
     }
 
     @Feature("ID_TOKEN")
@@ -206,7 +186,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct subject", claimsClientA.getSubject(), is(claimsClientB.getSubject()))
         assertThat("Updated expiration time", claimsClientA.getExpirationTime() < (claimsClientB.getExpirationTime()))
         assertThat("Updated issued at time", claimsClientA.getIssueTime() < (claimsClientB.getIssueTime()))
-        assertThat("Correct token validity period", claimsClientB.getExpirationTime().getTime() - claimsClientB.getIssueTime().getTime() == 43200000L)
+        assertThat("Correct token validity period", claimsClientB.getExpirationTime().getTime() - claimsClientB.getIssueTime().getTime() == 900000L)
     }
 
     @Feature("ID_TOKEN")

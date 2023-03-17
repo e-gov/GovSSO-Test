@@ -97,8 +97,9 @@ class MainFlowSpec extends GovSsoSpecification {
     def "Authentication with ID-card in client-A and update session"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.jsonPath().get("id_token")
-        Response updateSession = Steps.updateSessionWithDefaults(flow, idToken)
+        String refreshToken = createSession.jsonPath().get("refresh_token")
+
+        Response updateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, updateSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct authentication method value", claims.getClaim("amr"), is(["idcard"]))
@@ -189,9 +190,9 @@ class MainFlowSpec extends GovSsoSpecification {
     def "Log out after session update"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.jsonPath().get("id_token")
+        String refreshToken = createSession.jsonPath().get("refresh_token")
 
-        Response updateSession = Steps.updateSessionWithDefaults(flow, idToken)
+        Response updateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
         String idToken2 = updateSession.getBody().jsonPath().get("id_token")
 
         Response logout = Steps.logoutSingleClientSession(flow, idToken2, flow.oidcClientA.fullLogoutRedirectUrl)

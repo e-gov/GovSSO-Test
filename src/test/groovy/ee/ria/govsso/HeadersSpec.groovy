@@ -19,34 +19,6 @@ class HeadersSpec extends GovSsoSpecification {
     }
 
     @Feature("CORS")
-    def "Cross-Origin Resource Sharing headers are applied correctly in session update request sequence"() {
-        expect:
-        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.jsonPath().get("id_token")
-
-        Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
-        Response initLogin = Steps.followRedirectWithOrigin(flow, oidcUpdateSession, flow.oidcClientA.fullBaseUrl)
-        Response loginVerifier = Steps.followRedirectWithCookiesAndOrigin(flow, initLogin, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
-        Response initConsent = Steps.followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
-        Response consentVerifier = Steps.followRedirectWithCookiesAndOrigin(flow, initConsent, flow.ssoOidcService.cookies, flow.oidcClientA.fullBaseUrl)
-
-        assertThat("Access-Control-Allow-Credentials header is present and has correct value", oidcUpdateSession.getHeader("Access-Control-Allow-Credentials"), is("true"))
-        assertThat("Access-Control-Allow-Origin header is present and has correct value", oidcUpdateSession.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
-
-        assertThat("Access-Control-Allow-Credentials header is present and has correct value", initLogin.getHeader("Access-Control-Allow-Credentials"), is("true"))
-        assertThat("Access-Control-Allow-Origin header is present and has correct value", initLogin.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
-
-        assertThat("Access-Control-Allow-Credentials header is present and has correct value", loginVerifier.getHeader("Access-Control-Allow-Credentials"), is("true"))
-        assertThat("Access-Control-Allow-Origin header is present and has correct value", loginVerifier.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
-
-        assertThat("Access-Control-Allow-Credentials header is present and has correct value", initConsent.getHeader("Access-Control-Allow-Credentials"), is("true"))
-        assertThat("Access-Control-Allow-Origin header is present and has correct value", initConsent.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
-
-        assertThat("Access-Control-Allow-Credentials header is present and has correct value", consentVerifier.getHeader("Access-Control-Allow-Credentials"), is("true"))
-        assertThat("Access-Control-Allow-Origin header is present and has correct value", consentVerifier.getHeader("Access-Control-Allow-Origin"), is((flow.oidcClientA.fullBaseUrl).toString()))
-    }
-
-    @Feature("CORS")
     def "Cross-Origin Resource Sharing headers are not applied in login request sequence"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
@@ -176,27 +148,6 @@ class HeadersSpec extends GovSsoSpecification {
         Steps.verifyResponseHeaders(initLogin)
         Steps.verifyResponseHeaders(taracallback)
         Steps.verifyResponseHeaders(initConsent)
-    }
-
-    @Feature("CSP_ENABLED")
-    @Feature("HSTS_ENABLED")
-    @Feature("DISALLOW_IFRAMES")
-    @Feature("CACHE_POLICY")
-    @Feature("NOSNIFF")
-    @Feature("XSS_DETECTION_FILTER_ENABLED")
-    def "Verify response headers for session service requests in session update sequence"() {
-        expect:
-        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.jsonPath().get("id_token")
-
-        Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
-        Response initLogin = Steps.followRedirect(flow, oidcUpdateSession)
-        Response loginVerifier = Steps.followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
-        Response initConsent = Steps.followRedirect(flow, loginVerifier)
-
-        Steps.verifyResponseHeaders(initLogin)
-        Steps.verifyResponseHeaders(initConsent)
-        Steps.verifyResponseHeaders(initLogin)
     }
 
     @Feature("CSP_ENABLED")
