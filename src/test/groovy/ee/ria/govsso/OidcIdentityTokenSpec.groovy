@@ -27,7 +27,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct token_type value", createSession.jsonPath().getString("token_type"), is("bearer"))
         assertThat("Correct scope value", createSession.jsonPath().getString("scope"), is("openid"))
         assertThat("Access token element exists", createSession.jsonPath().getString("access_token").size() > 32)
-        assertThat("Expires in element exists", createSession.jsonPath().getInt("expires_in") <= 900)
+        assertThat("Expires in element exists", createSession.jsonPath().getInt("expires_in") <= 1)
         assertThat("ID token element exists", createSession.jsonPath().getString("id_token").size() > 1000)
         assertThat("Refresh token element exists", createSession.jsonPath().getString("refresh_token").size() == 87)
     }
@@ -47,7 +47,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct token_type value", token.jsonPath().getString("token_type"), is("bearer"))
         assertThat("Correct scope value", token.jsonPath().getString("scope"), is("openid phone"))
         assertThat("Access token element exists", token.jsonPath().getString("access_token").size() > 32)
-        assertThat("Expires in element exists", token.jsonPath().getInt("expires_in") <= 900)
+        assertThat("Expires in element exists", token.jsonPath().getInt("expires_in") <= 1)
         assertThat("ID token element exists", token.jsonPath().getString("id_token").size() > 1000)
     }
 
