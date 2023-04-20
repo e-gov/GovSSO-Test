@@ -10,6 +10,7 @@ class Flow {
     Properties properties
     SsoSessionService sessionService
     SsoOidcService ssoOidcService
+    SsoOidcDatabase ssoOidcDatabase
     TaraService taraService
     TaraForeignIdpProvider foreignIdpProvider
     TaraForeignProxyService foreignProxyService
@@ -21,6 +22,9 @@ class Flow {
     String clientId
     String loginChallenge
     String logoutChallenge
+    String consentChallenge
+    String refreshToken
+    String idToken
     String state
     String nonce
     String authCertificate
@@ -35,6 +39,7 @@ class Flow {
         this.properties = properties
         this.sessionService = new SsoSessionService(properties)
         this.ssoOidcService = new SsoOidcService(properties)
+        this.ssoOidcDatabase = new SsoOidcDatabase(properties)
         this.taraService = new TaraService(properties)
         this.foreignIdpProvider = new TaraForeignIdpProvider(properties)
         this.foreignProxyService = new TaraForeignProxyService(properties)
@@ -148,6 +153,34 @@ class SsoOidcService {
         this.jwksUrl = properties."ssooidcservice.jwksUrl"
         this.configurationUrl = properties."ssooidcservice.configurationUrl"
         this.cookies = new HashMap<String, String>()
+    }
+    private String portCheck() {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
+}
+
+@Canonical
+class SsoOidcDatabase {
+    String host
+    String port
+    String protocol
+    String databaseUrl
+    String username
+    String password
+
+    @Lazy fullSsoOidcDatabaseUrl = "${protocol}://${host}${portCheck()}${databaseUrl}"
+
+    SsoOidcDatabase(Properties properties) {
+        this.host = properties."ssooidcdatabase.host"
+        this.port = properties."ssooidcdatabase.port"
+        this.protocol = properties."ssooidcdatabase.protocol"
+        this.databaseUrl = properties."ssooidcdatabase.databaseUrl"
+        this.username = properties."ssooidcdatabase.username"
+        this.password = properties."ssooidcdatabase.password"
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {

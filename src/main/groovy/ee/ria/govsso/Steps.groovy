@@ -135,6 +135,8 @@ class Steps {
     static Response getIdentityTokenResponseWithDefaults(Flow flow, Response response) {
         String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
         Response token = Requests.getWebTokenWithDefaults(flow, authorizationCode)
+        flow.setRefreshToken(token.jsonPath().get("refresh_token"))
+        flow.setIdToken(token.jsonPath().get("id_token"))
         SignedJWT signedJWT = SignedJWT.parse(token.getBody().jsonPath().get("id_token"))
         Utils.addJsonAttachment("Header", signedJWT.getHeader().toString())
         Utils.addJsonAttachment("Payload", signedJWT.getJWTClaimsSet().toString())
@@ -151,19 +153,33 @@ class Steps {
         return token
     }
 
+    @Step("Update session with defaults")
+    static Response getSessionUpdateResponse(Flow flow) {
+        return getSessionUpdateResponse(flow,
+                flow.refreshToken,
+                flow.oidcClientA.clientId,
+                flow.oidcClientA.clientSecret,
+                flow.oidcClientA.fullBaseUrl)
+    }
+
     @Step("Update session")
     static Response getSessionUpdateResponse(Flow flow, String refreshToken, String clientId, String clientSecret, String redirectUrl) {
-        Response token = Requests.getSessionUpdateWebToken(flow, refreshToken, clientId, clientSecret, redirectUrl)
-        SignedJWT signedJWT = SignedJWT.parse(token.getBody().jsonPath().get("id_token"))
+        Response tokenResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, clientId, clientSecret, redirectUrl)
+        if (tokenResponse.getStatusCode() != 200) {
+            return tokenResponse
+        } else {
+        SignedJWT signedJWT = SignedJWT.parse(tokenResponse.getBody().jsonPath().get("id_token"))
         Utils.addJsonAttachment("Header", signedJWT.getHeader().toString())
         Utils.addJsonAttachment("Payload", signedJWT.getJWTClaimsSet().toString())
-        return token
+        return tokenResponse
+        }
     }
 
     @Step("Follow redirects to client application")
     static Response followRedirectsToClientApplication(Flow flow, Response authenticationFinishedResponse) {
         Response initLogin = followRedirectWithCookies(flow, authenticationFinishedResponse, flow.sessionService.cookies)
         Response loginVerifier = followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
+        flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_session", loginVerifier.getCookie("oauth2_authentication_session"))
         Response initConsent = followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
@@ -225,12 +241,31 @@ class Steps {
     @Step("Use existing session to authenticate to another client")
     static Response continueWithExistingSession(Flow flow, String clientId, String clientSecret, String fullResponseUrl) {
         Response oidcAuth = startAuthenticationInSsoOidc(flow, clientId, fullResponseUrl)
-        followRedirect(flow, oidcAuth)
+        Response redirectResponse = followRedirect(flow, oidcAuth)
         HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
         Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        if (redirectResponse.getStatusCode() != 200) {
+            return redirectResponse
+        } else {
         Response continueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
         return followRedirectsToClientApplicationWithExistingSession(flow, continueSession, clientId, clientSecret, fullResponseUrl)
+        }
+    }
+
+    @Step("Use existing session to authenticate to client-B")
+    static Response continueWithExistingSession(Flow flow) {
+        Response oidcAuth = startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response redirectResponse = followRedirect(flow, oidcAuth)
+        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
+        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        if (redirectResponse.getStatusCode() != 200) {
+            return redirectResponse
+        } else {
+            Response continueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
+            return followRedirectsToClientApplicationWithExistingSession(flow, continueSession, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        }
     }
 
     @Step("Use existing session to authenticate to another client with scope")
@@ -257,6 +292,13 @@ class Steps {
     @Step("Initialize logout with session for a single client")
     static Response logoutSingleClientSession(Flow flow, String idTokenHint, String logoutRedirectUri) {
         Response oidcLogout = startLogout(flow, idTokenHint, logoutRedirectUri)
+        Response initLogout = followRedirect(flow, oidcLogout)
+        return followRedirect(flow, initLogout)
+    }
+
+    @Step("Initialize logout with session for client-A")
+    static Response logoutSingleClientSession(Flow flow) {
+        Response oidcLogout = startLogout(flow, flow.idToken, flow.oidcClientA.fullLogoutRedirectUrl)
         Response initLogout = followRedirect(flow, oidcLogout)
         return followRedirect(flow, initLogout)
     }

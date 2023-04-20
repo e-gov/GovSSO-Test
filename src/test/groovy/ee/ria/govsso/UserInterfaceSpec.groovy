@@ -47,7 +47,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     def "Correct buttons with correct form actions exist in session logout display with specified ui_locales: #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
-        Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.jsonPath().get("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
@@ -89,7 +89,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     def "Correct translations used in session logout display: translation #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
-        Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.jsonPath().get("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
@@ -110,7 +110,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     def "Correct logout client and active client displayed in logout display with specified ui_locales: #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
-        Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.jsonPath().get("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)

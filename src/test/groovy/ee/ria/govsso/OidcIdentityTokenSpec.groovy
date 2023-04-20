@@ -113,10 +113,11 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     def "Verify ID token elements after session update"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String refreshToken = createSession.jsonPath().get("refresh_token")
         JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
-        Thread.sleep(1000)
-        Response updateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+
+        // Sleep for one second to test that time claims in new ID token are unique from original ID token.
+        sleep 1000
+        Response updateSession = Steps.getSessionUpdateResponse(flow)
 
         JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
 
@@ -148,11 +149,9 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
         Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
-        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+        Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
 
-        String refreshToken = token.jsonPath().get("refresh_token")
-
-        Response updateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+        Response updateSession = Steps.getSessionUpdateResponse(flow)
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct scope value", updateSession.jsonPath().getString("scope"), equalTo("openid phone"))
@@ -166,7 +165,9 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
-        Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        //Sleep for one second to test that time claims in client-B ID token are unique from Client-A ID token.
+        sleep 1000
+        Response continueSession = Steps.continueWithExistingSession(flow)
 
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 

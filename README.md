@@ -54,6 +54,12 @@ Description of values:
 | ssooidcservice.authenticationRequestUrl | /oauth2/auth                                      | OIDC flow start endpoint.                              |
 | ssooidcservice.configurationUrl         | /.well-known/openid-configuration                 | OIDC metadata endpoint.                                |
 | ssooidcservice.jwksUrl                  | /.well-known/jwks.json                            | Signing key info endpoint.                             |
+| ssooidcdatabase.protocol                | jdbc                                              | Database protocol.                                     |
+| ssooidcdatabase.host                    | oidc-db                                           | Database URL.                                          |
+| ssooidcdatabase.port                    | 5432                                              | Database port.                                         |
+| ssooidcdatabase.databaseUrl             | /oidc-db                                          | Database endpoint.                                     |
+| ssooidcdatabase.username                | username                                          | Database users' username                               |
+| ssooidcdatabase.password                | password                                          | Database users' password                               |
 | sessionservice.protocol                 | http                                              | Service protocol.                                      |
 | sessionservice.host                     | session-service                                   | Service URL.                                           |
 | sessionservice.port                     | 14080                                             | Service port.                                          |

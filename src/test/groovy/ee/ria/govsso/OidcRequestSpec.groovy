@@ -239,7 +239,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.jsonPath().get("id_token")
 
-        Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        Steps.continueWithExistingSession(flow)
 
         HashMap<String, String> queryParams = new HashMap<>()
         Utils.setParameter(queryParams, "id_token_hint", idToken)
@@ -259,7 +259,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.jsonPath().get("id_token")
 
         Steps.logout(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.sessionService.fullLogoutEndSessionUrl)
@@ -331,11 +331,10 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.getBody().jsonPath().get("id_token")
-        String refreshToken = createSession.getBody().jsonPath().get("refresh_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
 
-        Response oidcUpdateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+        Response oidcUpdateSession = Steps.getSessionUpdateResponse(flow)
 
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
@@ -350,12 +349,11 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String idToken = createSession.getBody().jsonPath().get("id_token")
-        String refreshToken = createSession.getBody().jsonPath().get("refresh_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        Response oidcUpdateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+        Response oidcUpdateSession = Steps.getSessionUpdateResponse(flow)
 
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
 
@@ -414,7 +412,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        Response continueSession = Steps.continueWithExistingSession(flow)
         String refreshToken2 = continueSession.jsonPath().get("refresh_token")
 
         Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken2, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
@@ -435,7 +433,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String refreshToken1 = createSession.jsonPath().get("refresh_token")
 
-        Steps.getSessionUpdateResponse(flow, refreshToken1, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+        Steps.getSessionUpdateResponse(flow)
 
         Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken1, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
