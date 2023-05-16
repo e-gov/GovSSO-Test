@@ -56,7 +56,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct JWT ID claim exists", claims.getJWTID().size() > 35)
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
         assertThat("Correct issuer", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
@@ -87,7 +87,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
         Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
         Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, token.jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct jti claim exists", claims.getJWTID().size() > 35)
         assertThat("Correct phone_number claim", claims.getClaim("phone_number"), equalTo("+37269100366"))
@@ -114,11 +114,11 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String refreshToken = createSession.jsonPath().get("refresh_token")
-        JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
         Thread.sleep(1000)
         Response updateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
-        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("New token", createSession.jsonPath().get("idToken"), not(updateSession.jsonPath().get("id_token")))
         assertThat("New at_hash", claims1.getClaim("at_hash"), not(claims2.getClaim("at_hash")))
@@ -153,7 +153,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         String refreshToken = token.jsonPath().get("refresh_token")
 
         Response updateSession = Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct scope value", updateSession.jsonPath().getString("scope"), equalTo("openid phone"))
         assertThat("Correct phone_number claim", claims.getClaim("phone_number"), equalTo("+37269100366"))
@@ -164,11 +164,11 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     def "Verify ID token elements after continuing session with client-B"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
 
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token"), flow.oidcClientB.clientId).getJWTClaimsSet()
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("New token", createSession.jsonPath().get("idToken"), not(continueSession.jsonPath().get("id_token")))
         assertThat("New at_hash", claimsClientA.getClaim("at_hash"), not(claimsClientB.getClaim("at_hash")))
@@ -194,7 +194,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
         Response continueSession = Steps.continueWithExistingSessionWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid phone")
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token"), flow.oidcClientB.clientId).getJWTClaimsSet()
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid phone"))
         assertThat("Claim phone_number does not exist", claimsClientB.getClaims(), not(hasKey("phone_number")))
@@ -213,7 +213,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
 
         Response continueSession = Steps.continueWithExistingSessionWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid")
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token"), flow.oidcClientB.clientId).getJWTClaimsSet()
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid"))
         assertThat("Claim phone_number does not exist", claimsClientB.getClaims(), not(hasKey("phone_number")))
@@ -232,7 +232,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
 
         Response continueSession = Steps.continueWithExistingSessionWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid phone")
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token"), flow.oidcClientB.clientId).getJWTClaimsSet()
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid phone"))
         assertThat("Correct phone_number claim", claimsClientB.getClaims().get("phone_number"), is("+37269100366"))

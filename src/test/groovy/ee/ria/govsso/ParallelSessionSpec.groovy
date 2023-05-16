@@ -31,20 +31,20 @@ class ParallelSessionSpec extends GovSsoSpecification {
         Response session1 = Steps.authenticateWithIdCardInGovSso(flow1)
         String idToken1 = session1.jsonPath().get("id_token")
         String refreshToken1 = session1.jsonPath().get("refresh_token")
-        JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1).getJWTClaimsSet()
+        JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1).getJWTClaimsSet()
 
         Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
         String idToken2 = session2.jsonPath().get("id_token")
         String refreshToken2 = session2.jsonPath().get("refresh_token")
-        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow2, idToken2).getJWTClaimsSet()
+        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow2, idToken2).getJWTClaimsSet()
 
         Response session1Update = Steps.getSessionUpdateResponse(flow1, refreshToken1, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret, flow1.oidcClientA.fullBaseUrl)
         String idToken1Update = session1Update.jsonPath().get("id_token")
-        JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1Update).getJWTClaimsSet()
+        JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1Update).getJWTClaimsSet()
 
         Response session2Update = Steps.getSessionUpdateResponse(flow2, refreshToken2, flow2.oidcClientA.clientId, flow2.oidcClientA.clientSecret, flow2.oidcClientA.fullBaseUrl)
         String idToken2Update = session2Update.jsonPath().get("id_token")
-        JWTClaimsSet claims2Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow2, idToken2Update).getJWTClaimsSet()
+        JWTClaimsSet claims2Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow2, idToken2Update).getJWTClaimsSet()
 
         assertThat("Correct session ID after update", claims1.getClaim("sid"), is(claims1Update.getClaim("sid")))
         assertThat("Correct session ID after update", claims2.getClaim("sid"), is(claims2Update.getClaim("sid")))
@@ -58,7 +58,7 @@ class ParallelSessionSpec extends GovSsoSpecification {
         Response session1 = Steps.authenticateWithIdCardInGovSso(flow1)
         String idToken1 = session1.jsonPath().get("id_token")
         String refreshToken1 = session1.jsonPath().get("refresh_token")
-        JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1).getJWTClaimsSet()
+        JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1).getJWTClaimsSet()
 
         Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
         String idToken2 = session2.jsonPath().get("id_token")
@@ -66,7 +66,7 @@ class ParallelSessionSpec extends GovSsoSpecification {
 
         Response session1Update = Steps.getSessionUpdateResponse(flow1, refreshToken1, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret, flow1.oidcClientA.fullBaseUrl)
         String idToken1Update = session1Update.getBody().jsonPath().get("id_token")
-        JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow1, idToken1Update).getJWTClaimsSet()
+        JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1Update).getJWTClaimsSet()
 
         assertThat("Correct logout redirect URL", logout.getHeader("Location"), startsWith(flow2.oidcClientA.fullLogoutRedirectUrl.toString()))
         assertThat("Correct status code", session1Update.getStatusCode(), is(200))

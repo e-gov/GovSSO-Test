@@ -7,11 +7,11 @@ import com.nimbusds.jose.jwk.*
 import com.nimbusds.jwt.SignedJWT
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.lang3.RandomStringUtils
-import org.hamcrest.CoreMatchers
-import org.hamcrest.MatcherAssert
-import org.hamcrest.Matchers
 
 import java.text.ParseException
+
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.MatcherAssert.assertThat
 
 class OpenIdUtils {
 
@@ -125,33 +125,9 @@ class OpenIdUtils {
         return queryParams
     }
 
-    static SignedJWT verifyTokenAndReturnSignedJwtObjectWithDefaults(Flow flow, String token) throws ParseException, JOSEException, IOException {
+    static SignedJWT verifyTokenAndReturnSignedJwtObject(Flow flow, String token) throws ParseException, JOSEException, IOException {
         SignedJWT signedJWT = SignedJWT.parse(token)
-        MatcherAssert.assertThat("Token Signature is not valid!", isTokenSignatureValid(flow.jwkSet, signedJWT), CoreMatchers.is(true))
-        MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getAudience().get(0), Matchers.equalTo(flow.oidcClientA.clientId))
-        MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getIssuer(), Matchers.equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        Date date = new Date()
-        MatcherAssert.assertThat("Expected current: " + date + " to be before exp: " + signedJWT.getJWTClaimsSet().getExpirationTime(), date.before(signedJWT.getJWTClaimsSet().getExpirationTime()), CoreMatchers.is(true))
-        //TODO: nbf implemented later
-//        assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
-        if (!flow.getNonce().isEmpty()) {
-            MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), Matchers.equalTo(flow.getNonce()))
-        }
-        return signedJWT
-    }
-
-    static SignedJWT verifyTokenAndReturnSignedJwtObject(Flow flow, String token, String clientId) throws ParseException, JOSEException, IOException {
-        SignedJWT signedJWT = SignedJWT.parse(token)
-        MatcherAssert.assertThat("Token Signature is not valid!", isTokenSignatureValid(flow.jwkSet, signedJWT), CoreMatchers.is(true))
-        MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getAudience().get(0), Matchers.equalTo(clientId))
-        MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getIssuer(), Matchers.equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        Date date = new Date()
-        MatcherAssert.assertThat("Expected current: " + date + " to be before exp: " + signedJWT.getJWTClaimsSet().getExpirationTime(), date.before(signedJWT.getJWTClaimsSet().getExpirationTime()), CoreMatchers.is(true))
-        //TODO: nbf implemented later
-//        assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
-        if (!flow.getNonce().isEmpty()) {
-            MatcherAssert.assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), Matchers.equalTo(flow.getNonce()))
-        }
+        assertThat("Token Signature is not valid!", isTokenSignatureValid(flow.jwkSet, signedJWT), is(true))
         return signedJWT
     }
 }

@@ -74,6 +74,7 @@ Description of values:
 | sessionservice.readinessUrl             | /actuator/health/readiness                        | Service readiness endpoint.                            |
 | sessionservice.livenessUrl              | /actuator/health/liveness                         | Service liveness endpoint.                             |
 | sessionservice.infoUrl                  | /actuator/info                                    | Service info endpoint.                                 |
+| sessionservice.sessions                 | /admin/sessions                                   | Service sessions endpoint.                             |
 | taraservice.protocol                    | https                                             | Service protocol.                                      |
 | taraservice.host                        | login-service-backend                             | Service URL.                                           |
 | taraservice.initUrl                     | https                                             | Authentication start endpoint in login service.        |

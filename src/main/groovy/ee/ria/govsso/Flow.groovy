@@ -65,6 +65,7 @@ class SsoSessionService {
     String readinessUrl
     String livenessUrl
     String infoUrl
+    String sessionsUrl
     HashMap <String, String> cookies
 
     @Lazy baseUrl = "${protocol}://${host}"
@@ -82,6 +83,7 @@ class SsoSessionService {
     @Lazy fullReadinessUrl = "${nodeProtocol}://${nodeHost}${portCheck()}${readinessUrl}"
     @Lazy fullLivenessUrl = "${nodeProtocol}://${nodeHost}${portCheck()}${livenessUrl}"
     @Lazy fullInfoUrl = "${nodeProtocol}://${nodeHost}${portCheck()}${infoUrl}"
+    @Lazy baseSessionsUrl = "${nodeProtocol}://${nodeHost}${portCheck()}${sessionsUrl}"
 
     SsoSessionService(Properties properties) {
         this.host = properties."sessionservice.host"
@@ -104,6 +106,7 @@ class SsoSessionService {
         this.readinessUrl = properties."sessionservice.readinessUrl"
         this.livenessUrl = properties."sessionservice.livenessUrl"
         this.infoUrl = properties."sessionservice.infoUrl"
+        this.sessionsUrl = properties."sessionservice.sessionsUrl"
         this.cookies = new HashMap<String, String>()
 
     }

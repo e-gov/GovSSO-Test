@@ -449,7 +449,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Create session in client-A with eIDAS substantial acr and initialize authentication sequence in client-B with high acr"() {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)

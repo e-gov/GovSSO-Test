@@ -90,6 +90,32 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Simple delete request")
+    static Response deleteRequest(String location) {
+        return given()
+                .relaxedHTTPSValidation()
+                .log().cookies()
+                .when()
+                .redirects().follow(false)
+                .urlEncodingEnabled(false)
+                .delete(location)
+                .then()
+                .extract().response()
+    }
+
+    @Step("Simple {0} request")
+    static Response requestWithType(String requestType, String location) {
+        return given()
+                .relaxedHTTPSValidation()
+                .log().cookies()
+                .when()
+                .redirects().follow(false)
+                .urlEncodingEnabled(false)
+                .request(requestType, location)
+                .then()
+                .extract().response()
+    }
+
     @Step("Login service get request with session id")
     static Response getRequestWithSessionId(Flow flow, String location) {
         return given()
@@ -116,6 +142,7 @@ class Requests {
                 .when()
                 .redirects().follow(false)
                 .urlEncodingEnabled(false)
+                .header("User-Agent", "Test User-Agent")
                 .get(location)
                 .then()
                 .extract().response()

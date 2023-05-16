@@ -22,7 +22,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     def "Metadata and token key ID matches"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String keyID = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, createSession.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
+        String keyID = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
 
         assertThat("Correct HTTP status code", createSession.statusCode(), is(200))
         assertThat("Matching key ID", keyID, is(flow.jwkSet.getKeys().get(0).getKeyID()))
@@ -120,7 +120,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
 
         Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObjectWithDefaults(flow, token.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getClaim("nonce"), equalTo(paramsMap.get("nonce")))
     }
 }
