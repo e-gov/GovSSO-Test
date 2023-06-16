@@ -1,7 +1,6 @@
 package ee.ria.govsso
 
 import io.qameta.allure.Step
-import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.RestAssured
 import io.restassured.response.Response
 import org.json.JSONObject
@@ -283,7 +282,6 @@ class TaraSteps {
                 .formParam("_csrf", flow.taraService.csrf)
                 .relaxedHTTPSValidation()
                 .log().cookies()
-                .filter(new AllureRestAssured())
                 .redirects().follow(false)
                 .urlEncodingEnabled(false)
                 .post(location)
@@ -296,7 +294,6 @@ class TaraSteps {
         return given()
                 .filter(flow.cookieFilter)
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .filter(new AllureRestAssured())
                 .cookie("SESSION", flow.taraService.sessionId)
                 .contentType("application/json")
                 .header("X-CSRF-TOKEN", flow.taraService.csrf)
@@ -313,7 +310,6 @@ class TaraSteps {
     static Response startMidAuthentication(Flow flow, String idCode, String phoneNo) {
         Response response =
                 given()
-                        .filter(new AllureRestAssured())
                         .filter(flow.cookieFilter)
                         .formParam("idCode", idCode)
                         .formParam("telephoneNumber", phoneNo)
@@ -334,7 +330,6 @@ class TaraSteps {
         Response response =
                 given()
                         .filter(flow.cookieFilter)
-                        .filter(new AllureRestAssured())
                         .cookie("SESSION", flow.taraService.sessionId)
                         .log().cookies()
                         .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
@@ -350,7 +345,6 @@ class TaraSteps {
     static Response startSidAuthentication(Flow flow, String idCode) {
         Response response =
                 given()
-                        .filter(new AllureRestAssured())
                         .filter(flow.cookieFilter)
                         .formParam("idCode", idCode)
                         .cookie("SESSION", flow.taraService.sessionId)
@@ -370,7 +364,6 @@ class TaraSteps {
         Response response =
                 given()
                         .filter(flow.cookieFilter)
-                        .filter(new AllureRestAssured())
                         .cookie("SESSION", flow.taraService.sessionId)
                         .cookie("LOGIN_LOCALE", flow.taraService.login_locale)
                         .log().cookies()
@@ -387,7 +380,6 @@ class TaraSteps {
     static Response acceptAuthTara(Flow flow, String location) {
         return given()
                 .filter(flow.cookieFilter)
-                .filter(new AllureRestAssured())
                 .cookie("SESSION", flow.taraService.sessionId)
                 .formParam("_csrf", flow.taraService.csrf)
                 .log().cookies()

@@ -1,7 +1,6 @@
 package ee.ria.govsso
 
 import io.qameta.allure.Step
-import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.RestAssured
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
@@ -16,7 +15,6 @@ class Requests {
     static Response followRedirect(Flow flow, String location) {
         return given()
                 .filter(flow.cookieFilter)
-                .filter(new AllureRestAssured())
                 .relaxedHTTPSValidation()
                 .log().cookies()
                 .when()
@@ -32,7 +30,6 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .header("Origin", origin)
-                .filter(new AllureRestAssured())
                 .relaxedHTTPSValidation()
                 .log().cookies()
                 .when()
@@ -49,7 +46,6 @@ class Requests {
                 .filter(flow.cookieFilter)
                 .cookies(myCookies)
                 .header("Origin", origin)
-                .filter(new AllureRestAssured())
                 .log().cookies()
                 .relaxedHTTPSValidation()
                 .when()
@@ -64,7 +60,6 @@ class Requests {
     static Response followRedirectWithParams(Flow flow, String location, Map<String, String> additionalQueryParams) {
         return given()
                 .filter(flow.cookieFilter)
-                .filter(new AllureRestAssured())
                 .queryParams(additionalQueryParams)
                 .relaxedHTTPSValidation()
                 .log().cookies()
@@ -79,7 +74,6 @@ class Requests {
     @Step("Simple get request")
     static Response getRequest(String location) {
         return given()
-                .filter(new AllureRestAssured())
                 .relaxedHTTPSValidation()
                 .log().cookies()
                 .when()
@@ -120,7 +114,6 @@ class Requests {
     static Response getRequestWithSessionId(Flow flow, String location) {
         return given()
                 .filter(flow.cookieFilter)
-                .filter(new AllureRestAssured())
                 .cookie("SESSION", flow.taraService.sessionId)
                 .log().cookies()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
@@ -136,7 +129,6 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .cookies(myCookies)
-                .filter(new AllureRestAssured())
                 .log().cookies()
                 .relaxedHTTPSValidation()
                 .when()
@@ -158,7 +150,6 @@ class Requests {
                 .cookies(cookies)
                 .queryParams(queryParams)
                 .queryParams(additionalQueryParams)
-                .filter(new AllureRestAssured())
                 .log().cookies()
                 .relaxedHTTPSValidation()
                 .when()
@@ -179,7 +170,6 @@ class Requests {
                 .cookies(cookies)
                 .queryParams(queryParams)
                 .header("Origin", origin)
-                .filter(new AllureRestAssured())
                 .log().cookies()
                 .relaxedHTTPSValidation()
                 .when()
@@ -199,7 +189,6 @@ class Requests {
                 .filter(flow.cookieFilter)
                 .queryParams(queryParams)
                 .queryParams(additionalQueryParams)
-                .filter(new AllureRestAssured())
                 .log().cookies()
                 .relaxedHTTPSValidation()
                 .when()
@@ -220,7 +209,6 @@ class Requests {
                 .queryParams(queryParams)
                 .headers(headers)
                 .queryParams(additionalQueryParams)
-                .filter(new AllureRestAssured())
                 .log().cookies()
                 .relaxedHTTPSValidation()
                 .when()
@@ -235,7 +223,6 @@ class Requests {
     static Response postRequestWithCookiesParamsAndOrigin(Flow flow, String url, Map<String, String> cookies, Map<String, String> formParams, String origin) {
         return given()
                 .filter(flow.cookieFilter)
-                .filter(new AllureRestAssured())
                 .cookies(cookies)
                 .formParams(formParams)
                 .header("Origin", origin)
@@ -251,7 +238,6 @@ class Requests {
     static Response postRequestWithCookiesAndParams(Flow flow, String url, Map<String, String> cookies, Map<String, String> formParams) {
         return given()
                 .filter(flow.cookieFilter)
-                .filter(new AllureRestAssured())
                 .cookies(cookies)
                 .formParams(formParams)
                 .log().cookies()
@@ -266,7 +252,6 @@ class Requests {
     static Response postRequestWithParams(Flow flow, String url, Map<String, String> formParams) {
         return given()
                 .filter(flow.cookieFilter)
-                .filter(new AllureRestAssured())
                 .formParams(formParams)
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .log().cookies()
@@ -281,7 +266,6 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .cookies(cookies)
-                .filter(new AllureRestAssured())
                 .log().cookies()
                 .relaxedHTTPSValidation()
                 .when()
@@ -295,7 +279,6 @@ class Requests {
     @Step("Get health")
     static Response getHealth(Flow flow) {
         return given()
-                .filter(new AllureRestAssured())
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .when()
                 .get(flow.sessionService.fullHealthUrl)
@@ -307,7 +290,6 @@ class Requests {
     @Step("Get readiness")
     static Response getReadiness(Flow flow) {
         return given()
-                .filter(new AllureRestAssured())
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .when()
                 .get(flow.sessionService.fullReadinessUrl)
@@ -319,7 +301,6 @@ class Requests {
     @Step("Get liveness")
     static Response getLiveness(Flow flow) {
         return given()
-                .filter(new AllureRestAssured())
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .when()
                 .get(flow.sessionService.fullLivenessUrl)
@@ -331,7 +312,6 @@ class Requests {
     @Step("Get info")
     static Response getInfo(Flow flow) {
         return given()
-                .filter(new AllureRestAssured())
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .when()
                 .get(flow.sessionService.fullInfoUrl)
@@ -343,7 +323,6 @@ class Requests {
     @Step("Download openid service configuration")
     static JsonPath getOpenidConfiguration(String url) {
         return given()
-                .filter(new AllureRestAssured())
                 .relaxedHTTPSValidation()
                 .when()
                 .get(url)
@@ -355,7 +334,6 @@ class Requests {
     @Step("Download openid service JWKS")
     static InputStream getOpenidJwks(String url) {
         return given()
-                .filter(new AllureRestAssured())
                 .relaxedHTTPSValidation()
                 .when()
                 .get(url)
@@ -368,7 +346,6 @@ class Requests {
     static Response getWebTokenWithDefaults(Flow flow, String authorizationCode) {
         return given()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .filter(new AllureRestAssured())
                 .formParam("grant_type", "authorization_code")
                 .formParam("code", authorizationCode)
                 .formParam("redirect_uri", flow.oidcClientA.fullResponseUrl)
@@ -384,7 +361,6 @@ class Requests {
     static Response getAuthenticationWebToken(Flow flow, String authorizationCode, String clientId, String clientSecret, String redirectUrl) {
         return given()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .filter(new AllureRestAssured())
                 .formParam("grant_type", "authorization_code")
                 .formParam("code", authorizationCode)
                 .formParam("redirect_uri", redirectUrl)
@@ -400,7 +376,6 @@ class Requests {
     static Response getSessionUpdateWebToken(Flow flow, String refreshToken, String clientId, String clientSecret, String redirectUrl) {
         return given()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .filter(new AllureRestAssured())
                 .formParam("grant_type", "refresh_token")
                 .formParam("refresh_token", refreshToken)
                 .formParam("redirect_uri", redirectUrl)
@@ -416,7 +391,6 @@ class Requests {
     static Response getWebTokenResponseBody(Flow flow, Map<String, String> formParams) {
         return given()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .filter(new AllureRestAssured())
                 .formParams(formParams)
                 .auth().preemptive().basic(flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
                 .when()

@@ -1,43 +1,36 @@
 package ee.ria.govsso
 
+import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.RestAssured
 import io.restassured.filter.log.RequestLoggingFilter
 import io.restassured.filter.log.ResponseLoggingFilter
-import org.opensaml.core.config.InitializationService
-import spock.lang.Shared
-import spock.lang.Specification
 
 import java.nio.file.Paths
 
-class GovSsoSpecification extends Specification {
-    @Shared
+class BeforeAll {
     Properties props = new Properties()
-    static String REJECT_ERROR_CODE = "user_cancel"
-    static String IDP_USERNAME = "xavi"
-    static String IDP_PASSWORD = "creus"
-    static String EIDASLOA = "E"
 
-    def setupSpec() {
-        InitializationService.initialize()
-
+    BeforeAll() {
         URL envFile = this.getClass().getResource('/.env')
         Properties envProperties = new Properties()
-        if (envFile) {
+        if (envFile) { // Read base test properties from the location specified in .env file
             envFile.withInputStream {
                 envProperties.load(it)
             }
             Paths.get(envProperties.getProperty("configuration_base_path"), envProperties.getProperty("configuration_path"), "application.properties").withInputStream {
                 props.load(it)
             }
-
-            //Log all requests and responses for debugging
-            if (envProperties."log_all" && envProperties."log_all" != "false") {
-                RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
-            }
-        } else {
+        } else { // Read base test properties from classpath
             this.getClass().getResource('/application.properties').withInputStream {
                 props.load(it)
+                props.put("env.local", true)
             }
         }
+
+        // Rest Assured settings
+        // Log all requests and responses locally and in allure report
+        RestAssured.filters(new AllureRestAssured(), new RequestLoggingFilter(), new ResponseLoggingFilter())
+        // Relax validation
+        RestAssured.useRelaxedHTTPSValidation()
     }
 }

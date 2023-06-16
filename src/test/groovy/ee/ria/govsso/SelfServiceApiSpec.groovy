@@ -3,8 +3,6 @@ package ee.ria.govsso
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
-import io.qameta.allure.restassured.AllureRestAssured
-import io.restassured.RestAssured
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Unroll
@@ -24,7 +22,6 @@ class SelfServiceApiSpec extends GovSsoSpecification {
     Flow flow2 = new Flow(props)
 
     def setup() {
-        RestAssured.filters(new AllureRestAssured())
         flow1.cookieFilter = new CookieFilter()
         flow2.cookieFilter = new CookieFilter()
         flow1.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow1.ssoOidcService.fullConfigurationUrl)
