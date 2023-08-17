@@ -4,7 +4,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.is
 import static org.hamcrest.MatcherAssert.assertThat
 
 
@@ -27,7 +27,7 @@ class ServiceErrorsSpec extends GovSsoSpecification {
         assertThat("Contains error", oidcError.jsonPath().getString("error"), is("USER_INVALID_OIDC_CLIENT"))
         assertThat("Contains message", oidcError.jsonPath().getString("message"), is("Vale <span translate=\"no\">OIDC</span> klient."))
         assertThat("Contains timestamp", !oidcError.jsonPath().getString("timestamp").isEmpty())
-        assertThat("Contains incident number", oidcError.jsonPath().getString("incident_nr").size()==32)
+        assertThat("Contains incident number", oidcError.jsonPath().getString("incident_nr").size() == 32)
     }
 
     @Feature("ERROR_CONTENT_JSON")
@@ -43,6 +43,6 @@ class ServiceErrorsSpec extends GovSsoSpecification {
         assertThat("Contains error", sessionError.jsonPath().getString("error"), is("USER_INPUT"))
         assertThat("Contains message", sessionError.jsonPath().getString("message"), is("Ebakorrektne päring."))
         assertThat("Contains timestamp", !sessionError.jsonPath().getString("timestamp").isEmpty())
-        assertThat("Contains incident number", sessionError.jsonPath().getString("incident_nr").size()==32)
+        assertThat("Contains incident number", sessionError.jsonPath().getString("incident_nr").size() == 32)
     }
 }

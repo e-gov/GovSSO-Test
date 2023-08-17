@@ -12,7 +12,10 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.junit.jupiter.api.AfterEach
 
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.startsWith
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.MatcherAssert.assertThat
 
 @Epic("DATABASE")

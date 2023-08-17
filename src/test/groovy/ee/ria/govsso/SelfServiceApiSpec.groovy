@@ -10,7 +10,14 @@ import spock.lang.Unroll
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.hasEntry
+import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.hasSize
+import static org.hamcrest.Matchers.everyItem
+import static org.hamcrest.Matchers.emptyString
 import static org.hamcrest.MatcherAssert.assertThat
 
 class SelfServiceApiSpec extends GovSsoSpecification {
@@ -36,7 +43,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         given: "Create a session"
         Response session = Steps.authenticateWithIdCardInGovSso(flow1)
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, session.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, session.body.jsonPath().get("id_token")).getJWTClaimsSet()
         String sessionId = [claims.getClaim("sid")]
         Instant authRequestTime = claims.getDateClaim("rat").toInstant()
         Instant expiresAt = authRequestTime.plus(15, ChronoUnit.MINUTES)
@@ -164,7 +171,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
 
         then: "DELETE request is successful and user has no active sessions"
         assertThat("Correct status code", delete.statusCode(), is(200))
-        assertThat("User has no active sessions", sessionInfo.getBody().asString(), is("[]"))
+        assertThat("User has no active sessions", sessionInfo.body.asString(), is("[]"))
     }
 
     @Unroll
@@ -175,7 +182,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         Response delete = Requests.deleteRequest(flow1.sessionService.baseSessionsUrl + endpoint)
 
         then: "User has no active sessions and DELETE request is successful"
-        assertThat("User has no active sessions", sessions.getBody().asString(), is("[]"))
+        assertThat("User has no active sessions", sessions.body.asString(), is("[]"))
         assertThat("Correct status code", delete.statusCode(), is(200))
 
         where:

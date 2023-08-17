@@ -44,7 +44,7 @@ class Utils {
         return new File(filename).readLines().join()
     }
 
-    static void storeTaraServiceUrltoflow(Flow flow, String url) {
+    static void storeTaraServiceUrlToflow(Flow flow, String url) {
         URL rawUrl = new URL(url)
         flow.taraService.taraloginBaseUrl = rawUrl.getProtocol() + "://" + rawUrl.getHost() + getPortIfPresent(rawUrl)
     }
@@ -65,20 +65,17 @@ class Utils {
     }
 
     static JSONObject getWebEidAuthTokenParameters(Flow flow, String signature) {
-        JSONObject formParams = new JSONObject()
-        JSONObject authToken = new JSONObject()
-        formParams.put("authToken", authToken)
-        authToken.put("algorithm", "ES384")
-        authToken.put("appVersion", "https://web-eid.eu/web-eid-app/releases/2.0.2+566")
-        authToken.put("format", "web-eid:1.0")
-        authToken.put("signature", signature)
-        authToken.put("unverifiedCertificate", flow.authCertificate)
+        JSONObject formParams = ["authToken": ["algorithm"            : "ES384",
+                                               "appVersion"           : "https://web-eid.eu/web-eid-app/releases/2.0.2+566",
+                                               "format"               : "web-eid:1.0",
+                                               "signature"            : signature,
+                                               "unverifiedCertificate": flow.authCertificate]]
         return formParams
     }
 
     static signAuthenticationValue(Flow flow, String origin, String challenge) {
         //Read keystore and keys
-        KeyStore store = KeyStore.getInstance("PKCS12");
+        KeyStore store = KeyStore.getInstance("PKCS12")
         char[] password = "1234".toCharArray()
         store.load(new FileInputStream("src/test/resources/joeorg_auth_EC.p12"), password)
         Certificate certificate = store.getCertificate("1")
@@ -93,11 +90,11 @@ class Utils {
         byte[] challengeDigest = md.digest(challenge.getBytes())
 
         //Combine origin and challenge nonce hashes to create authentication value to be signed
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
-        outputStream.write(originDigest);
-        outputStream.write(challengeDigest);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream()
+        outputStream.write(originDigest)
+        outputStream.write(challengeDigest)
 
-        byte[] authValue = outputStream.toByteArray( );
+        byte[] authValue = outputStream.toByteArray()
 
         //Sign authentication value
         Signature ecdsaSign = Signature.getInstance("SHA384withECDSAinP1363Format")

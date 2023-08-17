@@ -7,7 +7,9 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Ignore
 
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.MatcherAssert.assertThat
 
 class ParallelSessionSpec extends GovSsoSpecification {
@@ -65,7 +67,7 @@ class ParallelSessionSpec extends GovSsoSpecification {
         Response logout = Steps.logoutSingleClientSession(flow2, idToken2, flow2.oidcClientA.fullLogoutRedirectUrl)
 
         Response session1Update = Steps.getSessionUpdateResponse(flow1, refreshToken1, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret, flow1.oidcClientA.fullBaseUrl)
-        String idToken1Update = session1Update.getBody().jsonPath().get("id_token")
+        String idToken1Update = session1Update.body.jsonPath().get("id_token")
         JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1Update).getJWTClaimsSet()
 
         assertThat("Correct logout redirect URL", logout.getHeader("Location"), startsWith(flow2.oidcClientA.fullLogoutRedirectUrl.toString()))

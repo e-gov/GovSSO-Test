@@ -6,7 +6,9 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.MatcherAssert.assertThat
 
 class MainFlowSpec extends GovSsoSpecification {
@@ -28,14 +30,12 @@ class MainFlowSpec extends GovSsoSpecification {
 
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
 
-        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
-
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct authentication method value", claims.getClaim("amr"), is(["mID"]))
-        assertThat("Correct audience value", claims.getAudience().get(0), is(flow.oidcClientA.clientId))
-        assertThat("Correct subject value", claims.getSubject(), is("EE60001017716"))
+        assertThat("Correct audience value", claims.audience[0], is(flow.oidcClientA.clientId))
+        assertThat("Correct subject value", claims.subject, is("EE60001017716"))
         assertThat("Correct given name value", claims.getClaim("given_name"), is("ONE"))
     }
 
@@ -48,14 +48,12 @@ class MainFlowSpec extends GovSsoSpecification {
 
         Response taraAuthentication = TaraSteps.authenticateWithSidInTARA(flow, "30303039914", initLogin)
 
-        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
-
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct authentication method value", claims.getClaim("amr"), is(["smartid"]))
-        assertThat("Correct audience value", claims.getAudience().get(0), is(flow.oidcClientA.clientId))
-        assertThat("Correct subject value", claims.getSubject(), is("EE30303039914"))
+        assertThat("Correct audience value", claims.audience[0], is(flow.oidcClientA.clientId))
+        assertThat("Correct subject value", claims.subject, is("EE30303039914"))
         assertThat("Correct given name value", claims.getClaim("given_name"), is("OK"))
     }
 
@@ -63,19 +61,12 @@ class MainFlowSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authenticate with ID-Card"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
-        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response token = Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-
-        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
-
-        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
-
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct authentication method value", claims.getClaim("amr"), is(["idcard"]))
-        assertThat("Correct audience value", claims.getAudience().get(0), is(flow.oidcClientA.clientId))
-        assertThat("Correct subject value", claims.getSubject(), is("EE38001085718"))
+        assertThat("Correct audience value", claims.audience[0], is(flow.oidcClientA.clientId))
+        assertThat("Correct subject value", claims.subject, is("EE38001085718"))
         assertThat("Correct given name value", claims.getClaim("given_name"), is("JAAK-KRISTJAN"))
     }
 
@@ -85,10 +76,10 @@ class MainFlowSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovSso(flow, "high", "E")
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct authentication method value", claims.getClaim("amr"), is(["eidas"]))
-        assertThat("Correct audience value", claims.getAudience().get(0), is(flow.oidcClientA.clientId))
-        assertThat("Correct subject value", claims.getSubject(), is("CA12345"))
+        assertThat("Correct audience value", claims.audience[0], is(flow.oidcClientA.clientId))
+        assertThat("Correct subject value", claims.subject, is("CA12345"))
         assertThat("Correct given name value", claims.getClaim("given_name"), is("javier"))
     }
 
@@ -100,10 +91,10 @@ class MainFlowSpec extends GovSsoSpecification {
 
         Response updateSession = Steps.getSessionUpdateResponse(flow)
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct authentication method value", claims.getClaim("amr"), is(["idcard"]))
-        assertThat("Correct audience value", claims.getAudience().get(0), is(flow.oidcClientA.clientId))
-        assertThat("Correct subject value", claims.getSubject(), is("EE38001085718"))
+        assertThat("Correct audience value", claims.audience[0], is(flow.oidcClientA.clientId))
+        assertThat("Correct subject value", claims.subject, is("EE38001085718"))
         assertThat("Correct given name value", claims.getClaim("given_name"), is("JAAK-KRISTJAN"))
     }
 
@@ -112,14 +103,30 @@ class MainFlowSpec extends GovSsoSpecification {
     def "Authentication with ID-card in client-A and continue session in client-B"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response continueSession = Steps.continueWithExistingSession(flow)
 
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct authentication method value", claimsClientB.getClaim("amr"), is(["idcard"]))
-        assertThat("Correct audience value", claimsClientB.getAudience().get(0), is(flow.oidcClientB.clientId))
-        assertThat("Correct subject value", claimsClientB.getSubject(), is("EE38001085718"))
+        assertThat("Correct audience value", claimsClientB.audience[0], is(flow.oidcClientB.clientId))
+        assertThat("Correct subject value", claimsClientB.subject, is("EE38001085718"))
+        assertThat("Correct session ID", claimsClientB.getClaim("sid"), is(claimsClientA.getClaim("sid")))
+    }
+
+    @Feature("BUSINESS_LOGIC")
+    // Client-E has been configured to not ask user permission for transferring authentication related user data to the client
+    def "Authentication with ID-card in client-A and continue session in client-E"() {
+        expect:
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
+        JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
+
+        Response continueSession = Steps.continueWithExistingSession(flow, "client-e", "secrete", "https://cliente.localhost:11443/login/oauth2/code/govsso")
+
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
+        assertThat("Correct authentication method value", claimsClientB.getClaim("amr"), is(["idcard"]))
+        assertThat("Correct audience value", claimsClientB.audience[0], is("client-e"))
+        assertThat("Correct subject value", claimsClientB.subject, is("EE38001085718"))
         assertThat("Correct session ID", claimsClientB.getClaim("sid"), is(claimsClientA.getClaim("sid")))
     }
 
@@ -128,14 +135,14 @@ class MainFlowSpec extends GovSsoSpecification {
     def "Authentication with ID-card in client-A and continue session in client-A"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        JWTClaimsSet claimsClientA1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientA1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullResponseUrl)
 
-        JWTClaimsSet claimsClientA2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientA2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct authentication method value", claimsClientA2.getClaim("amr"), is(["idcard"]))
-        assertThat("Correct audience value", claimsClientA2.getAudience().get(0), is(flow.oidcClientA.clientId))
-        assertThat("Correct subject value", claimsClientA2.getSubject(), is("EE38001085718"))
+        assertThat("Correct audience value", claimsClientA2.audience[0], is(flow.oidcClientA.clientId))
+        assertThat("Correct subject value", claimsClientA2.subject, is("EE38001085718"))
         assertThat("Correct session ID", claimsClientA1.getClaim("sid"), is(claimsClientA2.getClaim("sid")))
     }
 
@@ -144,14 +151,14 @@ class MainFlowSpec extends GovSsoSpecification {
     def "Authentication with ID-card in client-A and reauthenticate in client-B"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
 
         Response reauthenticate = Steps.reauthenticate(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
 
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, reauthenticate.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, reauthenticate.body.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct authentication method value", claimsClientB.getClaim("amr"), is(["idcard"]))
-        assertThat("Correct audience value", claimsClientB.getAudience().get(0), is(flow.oidcClientB.clientId))
-        assertThat("Correct subject value", claimsClientB.getSubject(), is("EE38001085718"))
+        assertThat("Correct audience value", claimsClientB.audience[0], is(flow.oidcClientB.clientId))
+        assertThat("Correct subject value", claimsClientB.subject, is("EE38001085718"))
         assertThat("Correct given name", claimsClientB.getClaim("given_name"), is("JAAK-KRISTJAN"))
         assertThat("New session ID", claimsClientB.getClaim("sid"), not(is(claimsClientA.getClaim("sid"))))
     }
@@ -167,9 +174,9 @@ class MainFlowSpec extends GovSsoSpecification {
 
         Response reauthenticate = Steps.reauthenticateAfterAcrDiscrepancy(flow)
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, reauthenticate.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, reauthenticate.body.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct acr value in token", claims.getClaim("acr"), is("high"))
-        assertThat("Correct audience value", claims.getAudience().get(0), is(flow.oidcClientB.clientId))
+        assertThat("Correct audience value", claims.audience[0], is(flow.oidcClientB.clientId))
     }
 
     @Feature("BUSINESS_LOGIC")
@@ -180,8 +187,8 @@ class MainFlowSpec extends GovSsoSpecification {
         String idToken = createSession.jsonPath().get("id_token")
 
         Response logout = Steps.logoutSingleClientSession(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
-        assertThat("Correct status code", logout.getStatusCode(), is(302))
-        assertThat("Correct redirect URL", logout.getHeader("Location"), startsWith((flow.oidcClientA.fullLogoutRedirectUrl).toString()))
+        assertThat("Correct status code", logout.statusCode, is(302))
+        assertThat("Correct redirect URL", logout.header("Location"), startsWith((flow.oidcClientA.fullLogoutRedirectUrl).toString()))
     }
 
     @Feature("BUSINESS_LOGIC")
@@ -191,11 +198,11 @@ class MainFlowSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response updateSession = Steps.getSessionUpdateResponse(flow)
-        String idToken2 = updateSession.getBody().jsonPath().get("id_token")
+        String idToken2 = updateSession.body.jsonPath().get("id_token")
 
         Response logout = Steps.logoutSingleClientSession(flow, idToken2, flow.oidcClientA.fullLogoutRedirectUrl)
-        assertThat("Correct status code", logout.getStatusCode(), is(302))
-        assertThat("Correct redirect URL", logout.getHeader("Location"), startsWith((flow.oidcClientA.fullLogoutRedirectUrl).toString()))
+        assertThat("Correct status code", logout.statusCode, is(302))
+        assertThat("Correct redirect URL", logout.header("Location"), startsWith((flow.oidcClientA.fullLogoutRedirectUrl).toString()))
     }
 
     @Feature("BUSINESS_LOGIC")
@@ -209,8 +216,8 @@ class MainFlowSpec extends GovSsoSpecification {
 
         Response initLogout = Steps.logout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, flow.sessionService.fullLogoutEndSessionUrl)
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
-        assertThat("Correct status code", logoutVerifier.getStatusCode(), is(302))
-        assertThat("Correct redirect URL", logoutVerifier.getHeader("Location"), startsWith((flow.oidcClientB.fullLogoutRedirectUrl).toString()))
+        assertThat("Correct status code", logoutVerifier.statusCode, is(302))
+        assertThat("Correct redirect URL", logoutVerifier.header("Location"), startsWith((flow.oidcClientB.fullLogoutRedirectUrl).toString()))
     }
 
     @Feature("BUSINESS_LOGIC")
@@ -223,7 +230,7 @@ class MainFlowSpec extends GovSsoSpecification {
         String idToken = continueSession.jsonPath().get("id_token")
 
         Response initLogout = Steps.logout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, flow.sessionService.fullLogoutContinueSessionUrl)
-        assertThat("Correct status code", initLogout.getStatusCode(), is(302))
-        assertThat("Correct redirect URL", initLogout.getHeader("Location"), startsWith((flow.oidcClientB.fullLogoutRedirectUrl).toString()))
+        assertThat("Correct status code", initLogout.statusCode, is(302))
+        assertThat("Correct redirect URL", initLogout.header("Location"), startsWith((flow.oidcClientB.fullLogoutRedirectUrl).toString()))
     }
 }

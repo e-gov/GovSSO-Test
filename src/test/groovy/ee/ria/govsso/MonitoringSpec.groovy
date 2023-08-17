@@ -2,7 +2,10 @@ package ee.ria.govsso
 
 import io.qameta.allure.Feature
 import io.restassured.response.Response
-import org.hamcrest.Matchers
+
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.notNullValue
+import static org.hamcrest.Matchers.hasItems
 
 class MonitoringSpec extends GovSsoSpecification {
 
@@ -14,20 +17,20 @@ class MonitoringSpec extends GovSsoSpecification {
         Response health = Requests.getHealth(flow)
         health.then()
                 .statusCode(200)
-                .body("status", Matchers.is("UP"))
-                .body("components.hydra.status", Matchers.is("UP"))
-                .body("components.tara.status", Matchers.is("UP"))
-                .body("components.ping.status.", Matchers.is("UP"))
-                .body("components.livenessState.status.", Matchers.is("UP"))
-                .body("components.readinessState.status.", Matchers.is("UP"))
-                .body("components.truststore.status.", Matchers.is("UP"))
-                .body("components.truststore.components.Hydra.status.", Matchers.is("UP"))
-                .body("components.truststore.components.Hydra.details.certificates.state[0]", Matchers.is("ACTIVE"))
-                .body("components.truststore.components.Hydra.details.certificates.state[1]", Matchers.is("ACTIVE"))
-                .body("components.truststore.components.TARA.status.", Matchers.is("UP"))
-                .body("components.truststore.components.TARA.details.certificates.state[0]", Matchers.is("ACTIVE"))
-                .body("components.truststore.components.TARA.details.certificates.state[1]", Matchers.is("ACTIVE"))
-                .body("groups", Matchers.hasItems("readiness", "liveness"))
+                .body("status", is("UP"))
+                .body("components.hydra.status", is("UP"))
+                .body("components.tara.status", is("UP"))
+                .body("components.ping.status.", is("UP"))
+                .body("components.livenessState.status.", is("UP"))
+                .body("components.readinessState.status.", is("UP"))
+                .body("components.truststore.status.", is("UP"))
+                .body("components.truststore.components.Hydra.status.", is("UP"))
+                .body("components.truststore.components.Hydra.details.certificates.state[0]", is("ACTIVE"))
+                .body("components.truststore.components.Hydra.details.certificates.state[1]", is("ACTIVE"))
+                .body("components.truststore.components.TARA.status.", is("UP"))
+                .body("components.truststore.components.TARA.details.certificates.state[0]", is("ACTIVE"))
+                .body("components.truststore.components.TARA.details.certificates.state[1]", is("ACTIVE"))
+                .body("groups", hasItems("readiness", "liveness"))
     }
 
     @Feature("MONITORING")
@@ -36,17 +39,17 @@ class MonitoringSpec extends GovSsoSpecification {
         Response readiness = Requests.getReadiness(flow)
         readiness.then()
                 .statusCode(200)
-                .body("status", Matchers.is("UP"))
-                .body("components.hydra.status", Matchers.is("UP"))
-                .body("components.tara.status", Matchers.is("UP"))
-                .body("components.readinessState.status.", Matchers.is("UP"))
-                .body("components.truststore.status.", Matchers.is("UP"))
-                .body("components.truststore.components.Hydra.status.", Matchers.is("UP"))
-                .body("components.truststore.components.Hydra.details.certificates.state[0]", Matchers.is("ACTIVE"))
-                .body("components.truststore.components.Hydra.details.certificates.state[1]", Matchers.is("ACTIVE"))
-                .body("components.truststore.components.TARA.status.", Matchers.is("UP"))
-                .body("components.truststore.components.TARA.details.certificates.state[0]", Matchers.is("ACTIVE"))
-                .body("components.truststore.components.TARA.details.certificates.state[1]", Matchers.is("ACTIVE"))
+                .body("status", is("UP"))
+                .body("components.hydra.status", is("UP"))
+                .body("components.tara.status", is("UP"))
+                .body("components.readinessState.status.", is("UP"))
+                .body("components.truststore.status.", is("UP"))
+                .body("components.truststore.components.Hydra.status.", is("UP"))
+                .body("components.truststore.components.Hydra.details.certificates.state[0]", is("ACTIVE"))
+                .body("components.truststore.components.Hydra.details.certificates.state[1]", is("ACTIVE"))
+                .body("components.truststore.components.TARA.status.", is("UP"))
+                .body("components.truststore.components.TARA.details.certificates.state[0]", is("ACTIVE"))
+                .body("components.truststore.components.TARA.details.certificates.state[1]", is("ACTIVE"))
 
     }
 
@@ -56,7 +59,7 @@ class MonitoringSpec extends GovSsoSpecification {
         Response health = Requests.getLiveness(flow)
         health.then()
                 .statusCode(200)
-                .body("status", Matchers.is("UP"))
+                .body("status", is("UP"))
     }
 
     @Feature("MONITORING")
@@ -65,18 +68,18 @@ class MonitoringSpec extends GovSsoSpecification {
         Response info = Requests.getInfo(flow)
         info.then()
                 .statusCode(200)
-                .body("git.branch", Matchers.notNullValue())
-                .body("git.commit.id", Matchers.notNullValue())
-                .body("git.commit.time", Matchers.notNullValue())
-                .body("git.build.time", Matchers.notNullValue())
-                .body("git.build.version", Matchers.notNullValue())
-                .body("git.build.number", Matchers.notNullValue())
-                .body("build.artifact", Matchers.is("govsso-session"))
-                .body("build.name", Matchers.is("GovSSO Session Service"))
-                .body("build.time", Matchers.notNullValue())
-                .body("build.version", Matchers.notNullValue())
-                .body("build.group", Matchers.is("ee.ria.govsso"))
-                .body("startTime", Matchers.notNullValue())
-                .body("currentTime", Matchers.notNullValue())
+                .body("git.branch", notNullValue())
+                .body("git.commit.id", notNullValue())
+                .body("git.commit.time", notNullValue())
+                .body("git.build.time", notNullValue())
+                .body("git.build.version", notNullValue())
+                .body("git.build.number", notNullValue())
+                .body("build.artifact", is("govsso-session"))
+                .body("build.name", is("GovSSO Session Service"))
+                .body("build.time", notNullValue())
+                .body("build.version", notNullValue())
+                .body("build.group", is("ee.ria.govsso"))
+                .body("startTime", notNullValue())
+                .body("currentTime", notNullValue())
     }
 }

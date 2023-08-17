@@ -8,7 +8,11 @@ import io.restassured.response.Response
 import spock.lang.Unroll
 import java.nio.charset.StandardCharsets
 
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.MatcherAssert.assertThat
 
 class OidcRequestSpec extends GovSsoSpecification {
@@ -24,37 +28,37 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Start SSO authentication request with correct parameters"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
-        assertThat("Correct HTTP status code", oidcAuth.statusCode(), is(302))
-        assertThat("Correct location", oidcAuth.getHeader("location").startsWith(flow.sessionService.baseUrl))
-        assertThat("Correct location", oidcAuth.getHeader("location").endsWith(flow.getLoginChallenge()))
+        assertThat("Correct HTTP status code", oidcAuth.statusCode, is(302))
+        assertThat("Correct location", oidcAuth.header("location").startsWith(flow.sessionService.baseUrl))
+        assertThat("Correct location", oidcAuth.header("location").endsWith(flow.loginChallenge))
     }
 
     @Feature("OIDC_ENDPOINT")
     def "Authentication request with incorrect client ID"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "invalid-client-id", flow.oidcClientA.fullResponseUrl)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "invalid-client-id", flow.oidcClientA.fullResponseUrl)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response oidcError = Steps.followRedirect(flow, oidcAuth)
 
-        assertThat("Correct HTTP status code", oidcError.statusCode(), is(400))
+        assertThat("Correct HTTP status code", oidcError.statusCode, is(400))
         assertThat("Correct path", oidcError.jsonPath().getString("path"), is("/error/oidc"))
         assertThat("Correct error", oidcError.jsonPath().getString("error"), is("USER_INVALID_OIDC_CLIENT"))
         assertThat("Correct message", oidcError.jsonPath().getString("message"), is("Vale <span translate=\"no\">OIDC</span> klient."))
-        assertThat("Contains incident number", oidcError.jsonPath().getString("incident_nr").size()==32)
+        assertThat("Contains incident number", oidcError.jsonPath().getString("incident_nr").size() == 32)
     }
 
     @Unroll
     @Feature("OIDC_ENDPOINT")
     def "Start OIDC authentication with invalid parameter: #paramKey"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        paramsMap.put(paramKey, paramValue)
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap << [(paramKey): paramValue]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
-        assertThat("Correct HTTP status code", oidcAuth.statusCode(), is(statusCode))
+        assertThat("Correct HTTP status code", oidcAuth.statusCode, is(statusCode))
         assertThat("Correct error parameter", Utils.getParamValueFromResponseHeader(oidcAuth, "error"), is(error))
         assertThat("Correct error message", Utils.getParamValueFromResponseHeader(oidcAuth, "error_description"), is(errorMessage))
 
@@ -73,11 +77,11 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Start SSO authentication with missing parameter: #missingParam"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
         paramsMap.remove(missingParam)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
-        assertThat("Correct HTTP status code", oidcAuth.statusCode(), is(statusCode))
+        assertThat("Correct HTTP status code", oidcAuth.statusCode, is(statusCode))
         assertThat("Correct error parameter", Utils.getParamValueFromResponseHeader(oidcAuth, "error"), is(error))
         assertThat("Correct error message", Utils.getParamValueFromResponseHeader(oidcAuth, "error_description"), is(errorMessage))
 
@@ -91,18 +95,18 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Authentication request with different ui_locales: #label"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        paramsMap.put("ui_locales", uiLocales)
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap << [ui_locales: uiLocales]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraOidcAuth = Steps.followRedirect(flow, initLogin)
         Response taraInitLogin = Steps.followRedirect(flow, taraOidcAuth)
 
-        assertThat("Correct HTTP status code", taraInitLogin.statusCode(), is(200))
+        assertThat("Correct HTTP status code", taraInitLogin.statusCode, is(200))
         taraInitLogin.then().body("html.head.title", equalTo(expectedValue))
 
         where:
-        uiLocales | label                                     | expectedValue
+        uiLocales  | label                                     | expectedValue
         "zu"       | "Fallback into default language et"       | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
         "et"       | "Estonian"                                | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
         "ru"       | "Russian"                                 | "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
@@ -117,13 +121,13 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Authentication request with unknown parameter"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        def value = paramsMap.put("my_parameter", "654321")
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap << [my_parameter: "654321"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
-        assertThat("Correct HTTP status code", oidcAuth.statusCode(), is(302))
-        assertThat("Correct location", oidcAuth.getHeader("location").startsWith(flow.sessionService.baseUrl))
-        assertThat("Correct location", oidcAuth.getHeader("location").endsWith(flow.getLoginChallenge()))
+        assertThat("Correct HTTP status code", oidcAuth.statusCode, is(302))
+        assertThat("Correct location", oidcAuth.header("location").startsWith(flow.sessionService.baseUrl))
+        assertThat("Correct location", oidcAuth.header("location").endsWith(flow.loginChallenge))
     }
 
     @Unroll
@@ -137,9 +141,9 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
         Response loginVerifier = Steps.followRedirectWithCookies(flow, taracallback, flow.ssoOidcService.cookies)
 
-        assertThat("Correct cookie attributes", oidcAuth.getDetailedCookie("oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure"), containsString("Max-Age=3600")))
-        assertThat("Correct cookie attributes", loginVerifier.getDetailedCookie("oauth2_authentication_session").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure")))
-        assertThat("Correct cookie attributes", loginVerifier.getDetailedCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure"), containsString("Max-Age=3600")))
+        assertThat("Correct cookie attributes", oidcAuth.detailedCookie("oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure"), containsString("Max-Age=3600")))
+        assertThat("Correct cookie attributes", loginVerifier.detailedCookie("oauth2_authentication_session").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure")))
+        assertThat("Correct cookie attributes", loginVerifier.detailedCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure"), containsString("Max-Age=3600")))
     }
 
     @Unroll
@@ -151,27 +155,26 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
 
-        HashMap<String, String> queryParams = (HashMap) Collections.emptyMap()
-        Utils.setParameter(queryParams, "client_id", Utils.getParamValueFromResponseHeader(taracallback, clientId))
-        Utils.setParameter(queryParams, "login_verifier", Utils.getParamValueFromResponseHeader(taracallback, login_verifier))
-        Utils.setParameter(queryParams, "redirect_uri", Utils.getParamValueFromResponseHeader(taracallback, redirectUri))
-        Utils.setParameter(queryParams, "response_type", Utils.getParamValueFromResponseHeader(taracallback, responseType))
-        Utils.setParameter(queryParams, "scope", Utils.getParamValueFromResponseHeader(taracallback, scope))
-        Utils.setParameter(queryParams, "state", Utils.getParamValueFromResponseHeader(taracallback, state))
+        Map queryParams = [client_id     : Utils.getParamValueFromResponseHeader(taracallback, clientId),
+                           login_verifier: Utils.getParamValueFromResponseHeader(taracallback, login_verifier),
+                           redirect_uri  : Utils.getParamValueFromResponseHeader(taracallback, redirectUri),
+                           response_type : Utils.getParamValueFromResponseHeader(taracallback, responseType),
+                           scope         : Utils.getParamValueFromResponseHeader(taracallback, scope),
+                           state         : Utils.getParamValueFromResponseHeader(taracallback, state)]
 
-        Response loginVerifier = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.cookies, queryParams, Collections.emptyMap())
+        Response loginVerifier = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.cookies, queryParams)
 
-        assertThat("Correct HTTP status code", loginVerifier.getStatusCode(), is(statusCode))
-        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(loginVerifier,"error_description"), is(error))
+        assertThat("Correct HTTP status code", loginVerifier.statusCode, is(statusCode))
+        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(loginVerifier, "error_description"), is(error))
 
         where:
-        reason                    | clientId    | login_verifier    | redirectUri    | responseType    | scope       | state   | statusCode | error
-        "Incorrect client_id"     | "scope"     | "login_verifier" | "redirect_uri" | "response_type" | "scope"     | "state" | 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
-        "Incorrect login_verifier"| "client_id" | "scope"          | "redirect_uri" | "response_type" | "scope"     | "state" | 303        | "The resource owner or authorization server denied the request. The login verifier has already been used, has not been granted, or is invalid."
-        "Incorrect redirect_uri"  | "client_id" | "login_verifier" | "scope"        | "response_type" | "scope"     | "state" | 302        | "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
-        "Incorrect response_type" | "client_id" | "login_verifier" | "redirect_uri" | "scope"         | "scope"     | "state" | 303        | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'openid'."
-        "Incorrect scope"         | "client_id" | "login_verifier" | "redirect_uri" | "response_type" | "client_id" | "state" | 303        | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'client-a'."
-        "Incorrect state"         | "client_id" | "login_verifier" | "redirect_uri" | "response_type" | "scope"     | "scope" | 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
+        reason                     | clientId    | login_verifier   | redirectUri    | responseType    | scope       | state   | statusCode | error
+        "Incorrect client_id"      | "scope"     | "login_verifier" | "redirect_uri" | "response_type" | "scope"     | "state" | 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
+        "Incorrect login_verifier" | "client_id" | "scope"          | "redirect_uri" | "response_type" | "scope"     | "state" | 303        | "The resource owner or authorization server denied the request. The login verifier has already been used, has not been granted, or is invalid."
+        "Incorrect redirect_uri"   | "client_id" | "login_verifier" | "scope"        | "response_type" | "scope"     | "state" | 302        | "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
+        "Incorrect response_type"  | "client_id" | "login_verifier" | "redirect_uri" | "scope"         | "scope"     | "state" | 303        | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'openid'."
+        "Incorrect scope"          | "client_id" | "login_verifier" | "redirect_uri" | "response_type" | "client_id" | "state" | 303        | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'client-a'."
+        "Incorrect state"          | "client_id" | "login_verifier" | "redirect_uri" | "response_type" | "scope"     | "scope" | 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
     }
 
     @Unroll
@@ -185,18 +188,17 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response loginVerifier = Steps.followRedirectWithCookies(flow, taracallback, flow.ssoOidcService.cookies)
         Response initConsent = Steps.followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
 
-        HashMap<String, String> queryParams = (HashMap) Collections.emptyMap()
-        Utils.setParameter(queryParams, "client_id", Utils.getParamValueFromResponseHeader(initConsent, clientId))
-        Utils.setParameter(queryParams, "consent_verifier", Utils.getParamValueFromResponseHeader(initConsent, consent_verifier))
-        Utils.setParameter(queryParams, "redirect_uri", Utils.getParamValueFromResponseHeader(initConsent, redirectUri))
-        Utils.setParameter(queryParams, "response_type", Utils.getParamValueFromResponseHeader(initConsent, responseType))
-        Utils.setParameter(queryParams, "scope", Utils.getParamValueFromResponseHeader(initConsent, scope))
-        Utils.setParameter(queryParams, "state", Utils.getParamValueFromResponseHeader(initConsent, state))
+        Map queryParams = [client_id       : Utils.getParamValueFromResponseHeader(initConsent, clientId),
+                           consent_verifier: Utils.getParamValueFromResponseHeader(initConsent, consent_verifier),
+                           redirect_uri    : Utils.getParamValueFromResponseHeader(initConsent, redirectUri),
+                           response_type   : Utils.getParamValueFromResponseHeader(initConsent, responseType),
+                           scope           : Utils.getParamValueFromResponseHeader(initConsent, scope),
+                           state           : Utils.getParamValueFromResponseHeader(initConsent, state)]
 
-        Response consentVerifier = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.cookies, queryParams, Collections.emptyMap())
+        Response consentVerifier = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.cookies, queryParams)
 
-        assertThat("Correct HTTP status code", consentVerifier.getStatusCode(), is(statusCode))
-        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(consentVerifier,"error_description"), is(error))
+        assertThat("Correct HTTP status code", consentVerifier.statusCode, is(statusCode))
+        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(consentVerifier, "error_description"), is(error))
 
         where:
         reason                       | clientId    | consent_verifier   | redirectUri    | responseType    | scope       | state   | statusCode | error
@@ -214,9 +216,9 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         Response initLogout = Steps.startLogout(flow, createSession.jsonPath().get("id_token"), flow.oidcClientA.fullLogoutRedirectUrl)
 
-        assertThat("Correct HTTP status code", initLogout.getStatusCode(), is(302))
-        assertThat("Correct location", initLogout.getHeader("location").startsWith(flow.sessionService.baseUrl))
-        assertThat("Correct location", initLogout.getHeader("location").endsWith(flow.getLogoutChallenge()))
+        assertThat("Correct HTTP status code", initLogout.statusCode, is(302))
+        assertThat("Correct location", initLogout.header("location").startsWith(flow.sessionService.baseUrl))
+        assertThat("Correct location", initLogout.header("location").endsWith(flow.logoutChallenge))
     }
 
     @Feature("OIDC_LOGOUT_ENDPOINT")
@@ -226,9 +228,9 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response initLogout = Steps.startLogout(flow, createSession.jsonPath().get("id_token"), "https://not.whitelisted.eu")
 
         String errorDescription = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. " +
-                                  "Logout failed because query parameter post_logout_redirect_uri is not a whitelisted as a post_logout_redirect_uri for the client."
+                "Logout failed because query parameter post_logout_redirect_uri is not a whitelisted as a post_logout_redirect_uri for the client."
 
-        assertThat("Correct HTTP status code", initLogout.getStatusCode(), is(302))
+        assertThat("Correct HTTP status code", initLogout.statusCode, is(302))
         assertThat("Correct error", Utils.getParamValueFromResponseHeader(initLogout, "error"), is("invalid_request"))
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(initLogout, "error_description"), is(errorDescription))
     }
@@ -241,15 +243,14 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         Steps.continueWithExistingSession(flow)
 
-        HashMap<String, String> queryParams = new HashMap<>()
-        Utils.setParameter(queryParams, "id_token_hint", idToken)
-        Utils.setParameter(queryParams, "post_logout_redirect_uri", flow.oidcClientB.fullBaseUrl)
-        Response initLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParams, Collections.emptyMap())
+        Map queryParams = [id_token_hint           : idToken,
+                           post_logout_redirect_uri: flow.oidcClientB.fullBaseUrl]
+        Response initLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParams)
 
         String errorDescription = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. " +
                 "Logout failed because query parameter post_logout_redirect_uri is not a whitelisted as a post_logout_redirect_uri for the client."
 
-        assertThat("Correct HTTP status code", initLogout.getStatusCode(), is(302))
+        assertThat("Correct HTTP status code", initLogout.statusCode, is(302))
         assertThat("Correct error", Utils.getParamValueFromResponseHeader(initLogout, "error"), is("invalid_request"))
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(initLogout, "error_description"), is(errorDescription))
     }
@@ -264,12 +265,11 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         Steps.logout(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.sessionService.fullLogoutEndSessionUrl)
 
-        HashMap<String, String> queryParams = new HashMap<>()
-        Utils.setParameter(queryParams, "logout_verifier", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        Map queryParams = [logout_verifier: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"]
 
-        Response logoutVerifier = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl,  queryParams, Collections.emptyMap())
+        Response logoutVerifier = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParams)
 
-        assertThat("Correct HTTP status code", logoutVerifier.getStatusCode(), is(302))
+        assertThat("Correct HTTP status code", logoutVerifier.statusCode, is(302))
         assertThat("Correct error", Utils.getParamValueFromResponseHeader(logoutVerifier, "error"), is("Not Found"))
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(logoutVerifier, "error_description"), is("Unable to locate the requested resource"))
     }
@@ -281,17 +281,16 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 
-        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
-        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
-        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        Map formParams = [loginChallenge: flow.loginChallenge,
+                          _csrf         : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
         Response loginReject = Requests.postRequestWithParams(flow, flow.sessionService.fullLoginRejectUrl, formParams)
         Response loginVerifier = Steps.followRedirect(flow, loginReject)
 
-        assertThat("Correct HTTP status code", loginVerifier.getStatusCode(), is(303))
-        assertThat("Correct redirect URL", loginVerifier.getHeader("location").startsWith(flow.oidcClientB.fullBaseUrl))
-        assertThat("Correct error in URL", loginVerifier.getHeader("location").contains("error=user_cancel"))
-        assertThat("Correct error description in URL", loginVerifier.getHeader("location").contains("error_description=User+canceled+the+authentication+process."))
-        assertThat("URL contains state parameter", loginVerifier.getHeader("location").contains("state"))
+        assertThat("Correct HTTP status code", loginVerifier.statusCode, is(303))
+        assertThat("Correct redirect URL", loginVerifier.header("location").startsWith(flow.oidcClientB.fullBaseUrl))
+        assertThat("Correct error in URL", loginVerifier.header("location").contains("error=user_cancel"))
+        assertThat("Correct error description in URL", loginVerifier.header("location").contains("error_description=User+canceled+the+authentication+process."))
+        assertThat("URL contains state parameter", loginVerifier.header("location").contains("state"))
     }
 
     @Feature("OIDC_ENDPOINT")
@@ -300,13 +299,12 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        Map<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "govsso_login_challenge", govSsoLoginChallenge)
+        Map paramsMap = [govsso_login_challenge: govSsoLoginChallenge]
 
         Response taraOidcAuth = Steps.followRedirectWithAlteredQueryParameters(flow, initLogin, paramsMap)
         Response taraInitLogin = Steps.followRedirect(flow, taraOidcAuth)
 
-        assertThat("Correct HTTP status code", taraInitLogin.getStatusCode(), is(400))
+        assertThat("Correct HTTP status code", taraInitLogin.statusCode, is(400))
         assertThat("Correct error", taraInitLogin.jsonPath().getString("error"), is("Bad Request"))
         assertThat("Correct error message", taraInitLogin.jsonPath().getString("message"), is("Vigane päring. GovSSO päringu volituskood ei ole korrektne."))
 
@@ -322,15 +320,15 @@ class OidcRequestSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcLogout = Steps.startLogout(flow, flow.oidcClientA.expiredJwt, flow.oidcClientA.fullLogoutRedirectUrl)
 
-        assertThat("Correct HTTP status code", oidcLogout.getStatusCode(), is(302))
-        assertThat("Correct redirect location", oidcLogout.getHeader("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl.toString()))
+        assertThat("Correct HTTP status code", oidcLogout.statusCode, is(302))
+        assertThat("Correct redirect location", oidcLogout.header("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl.toString()))
     }
 
     @Feature("OIDC_ENDPOINT")
     def "Update session after OIDC logout request"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.getBody().jsonPath().get("id_token")
+        String idToken = createSession.body.jsonPath().get("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
 
@@ -339,16 +337,16 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
 
-        assertThat("Correct HTTP status code", oidcUpdateSession.getStatusCode(), is(200))
-        assertThat("Correct HTTP status code", logoutVerifier.getStatusCode(), is(302))
-        assertThat("Correct redirect location", logoutVerifier.getHeader("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl.toString()))
+        assertThat("Correct HTTP status code", oidcUpdateSession.statusCode, is(200))
+        assertThat("Correct HTTP status code", logoutVerifier.statusCode, is(302))
+        assertThat("Correct redirect location", logoutVerifier.header("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl))
     }
 
     @Feature("OIDC_ENDPOINT")
     def "Update session after logout init request"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.getBody().jsonPath().get("id_token")
+        String idToken = createSession.body.jsonPath().get("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
@@ -357,17 +355,17 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
 
-        assertThat("Correct HTTP status code", oidcUpdateSession.getStatusCode(), is(200))
-        assertThat("Correct HTTP status code", logoutVerifier.getStatusCode(), is(302))
-        assertThat("Correct redirect location", logoutVerifier.getHeader("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl.toString()))
+        assertThat("Correct HTTP status code", oidcUpdateSession.statusCode, is(200))
+        assertThat("Correct HTTP status code", logoutVerifier.statusCode, is(302))
+        assertThat("Correct redirect location", logoutVerifier.header("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl))
     }
 
     @Feature("OIDC_ENDPOINT")
     def "Update session after OIDC logout verifier request"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.getBody().jsonPath().get("id_token")
-        String refreshToken = createSession.getBody().jsonPath().get("refresh_token")
+        String idToken = createSession.body.jsonPath().get("id_token")
+        String refreshToken = createSession.body.jsonPath().get("refresh_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
@@ -375,10 +373,10 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
-        assertThat("Correct HTTP status code", logoutVerifier.getStatusCode(), is(302))
-        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(400))
-        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("invalid_request"))
-        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("The request is missing a required parameter, includes an invalid parameter value, " +
+        assertThat("Correct HTTP status code", logoutVerifier.statusCode, is(302))
+        assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
+        assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_request"))
+        assertThat("Correct error description", updateResponse.body.jsonPath().getString("error_description"), is("The request is missing a required parameter, includes an invalid parameter value, " +
                 "includes a parameter more than once, or is otherwise malformed. Authentication session not found or expired."))
     }
 
@@ -386,21 +384,20 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Start session update in client-A after initiating reauthentication with client-B due to acr discrepancy"() {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
-        String refreshToken = createSession.getBody().jsonPath().get("refresh_token")
+        String refreshToken = createSession.body.jsonPath().get("refresh_token")
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 
-        HashMap<String, String> formParams = (HashMap) Collections.emptyMap()
-        Utils.setParameter(formParams, "loginChallenge", flow.getLoginChallenge().toString())
-        Utils.setParameter(formParams, "_csrf", flow.sessionService.getCookies().get("__Host-XSRF-TOKEN"))
+        Map formParams = [loginChallenge: flow.loginChallenge,
+                          _csrf         : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
         Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.ssoOidcService.cookies, formParams)
 
         Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
-        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(400))
-        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("invalid_grant"))
-        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("The provided authorization grant " +
+        assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
+        assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
+        assertThat("Correct error description", updateResponse.body.jsonPath().getString("error_description"), is("The provided authorization grant " +
                 "(e.g., authorization code, resource owner credentials) " +
                 "or refresh token is invalid, expired, revoked, " +
                 "does not match the redirection URI used in the authorization request, " +
@@ -417,9 +414,9 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken2, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
-        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(400))
-        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("invalid_grant"))
-        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("The provided authorization grant " +
+        assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
+        assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
+        assertThat("Correct error description", updateResponse.body.jsonPath().getString("error_description"), is("The provided authorization grant " +
                 "(e.g., authorization code, resource owner credentials) " +
                 "or refresh token is invalid, expired, revoked, " +
                 "does not match the redirection URI used in the authorization request, " +
@@ -437,9 +434,9 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken1, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
-        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(401))
-        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("token_inactive"))
-        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("Token is inactive because it is malformed, expired or otherwise invalid. " +
+        assertThat("Correct HTTP status code", updateResponse.statusCode, is(401))
+        assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("token_inactive"))
+        assertThat("Correct error description", updateResponse.body.jsonPath().getString("error_description"), is("Token is inactive because it is malformed, expired or otherwise invalid. " +
                 "Token validation failed."))
     }
 
@@ -450,9 +447,9 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         Response updateResponse = Requests.getSessionUpdateWebToken(flow, "123abc.123abc", flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
 
-        assertThat("Correct HTTP status code", updateResponse.getStatusCode(), is(400))
-        assertThat("Correct error", updateResponse.getBody().jsonPath().get("error") as String, is("invalid_grant"))
-        assertThat("Correct error description", updateResponse.getBody().jsonPath().get("error_description") as String, is("The provided authorization grant (e.g., authorization code, resource owner credentials) " +
+        assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
+        assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
+        assertThat("Correct error description", updateResponse.body.jsonPath().getString("error_description"), is("The provided authorization grant (e.g., authorization code, resource owner credentials) " +
                 "or refresh token is invalid, expired, revoked, " +
                 "does not match the redirection URI used in the authorization request, " +
                 "or was issued to another client."))
@@ -467,7 +464,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
         Response initLogin = Steps.followRedirectWithOrigin(flow, oidcUpdateSession, flow.oidcClientA.fullBaseUrl)
 
-        assertThat("Correct HTTP status code", initLogin.getStatusCode(), is(400))
+        assertThat("Correct HTTP status code", initLogin.statusCode, is(400))
         assertThat("Correct error", initLogin.jsonPath().getString("error"), is("USER_INPUT"))
         assertThat("Correct error message", initLogin.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
@@ -478,12 +475,12 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Response initLogin = Requests.getRequest(oidcAuth.then().extract().response().getHeader("location"))
+        Response initLogin = Requests.getRequest(oidcAuth.then().extract().response().header("location"))
 
-        assertThat("Correct HTTP status code", initLogin.getBody().jsonPath().getString("status"), is("400"))
-        assertThat("Correct path", initLogin.getBody().jsonPath().getString("path"), is("/login/init"))
-        assertThat("Correct error", initLogin.getBody().jsonPath().getString("error"), is("USER_INPUT"))
-        assertThat("Correct message", initLogin.getBody().jsonPath().getString("message"), is("Ebakorrektne päring."))
+        assertThat("Correct HTTP status code", initLogin.body.jsonPath().getString("status"), is("400"))
+        assertThat("Correct path", initLogin.body.jsonPath().getString("path"), is("/login/init"))
+        assertThat("Correct error", initLogin.body.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", initLogin.body.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
     @Unroll
@@ -497,9 +494,9 @@ class OidcRequestSpec extends GovSsoSpecification {
         Utils.setParameter(cookies, "oauth2_authentication_session", "SW5jb3JyZWN0IHNlc3Npb24gY29va2ll")
         Response initLogin = Steps.followRedirectWithCookies(flow, oidcAuth, cookies)
 
-        assertThat("Correct HTTP status code", initLogin.getBody().jsonPath().getString("status"), is("400"))
-        assertThat("Correct path", initLogin.getBody().jsonPath().getString("path"), is("/login/init"))
-        assertThat("Correct error", initLogin.getBody().jsonPath().getString("error"), is("USER_INPUT"))
-        assertThat("Correct message", initLogin.getBody().jsonPath().getString("message"), is("Ebakorrektne päring."))
+        assertThat("Correct HTTP status code", initLogin.body.jsonPath().getString("status"), is("400"))
+        assertThat("Correct path", initLogin.body.jsonPath().getString("path"), is("/login/init"))
+        assertThat("Correct error", initLogin.body.jsonPath().getString("error"), is("USER_INPUT"))
+        assertThat("Correct message", initLogin.body.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 }

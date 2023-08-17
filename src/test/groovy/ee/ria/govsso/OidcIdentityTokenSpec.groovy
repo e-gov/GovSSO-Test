@@ -6,7 +6,12 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.matchesPattern
+import static org.hamcrest.Matchers.hasKey
+import static org.hamcrest.Matchers.not
+
 import static org.hamcrest.MatcherAssert.assertThat
 
 class OidcIdentityTokenSpec extends GovSsoSpecification {
@@ -35,14 +40,12 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token response when scope includes phone"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        paramsMap.put("scope", "openid phone")
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
-        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
-
-        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
         assertThat("Correct token_type value", token.jsonPath().getString("token_type"), is("bearer"))
         assertThat("Correct scope value", token.jsonPath().getString("scope"), is("openid phone"))
@@ -59,54 +62,53 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct JWT ID claim exists", claims.getJWTID().size() > 35)
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
-        assertThat("Correct issuer", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        assertThat("Correct audience", claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
+        assertThat("Correct issuer", claims.issuer, equalTo(flow.openIdServiceConfiguration.get("issuer")))
+        assertThat("Correct audience", claims.audience[0], equalTo(flow.oidcClientA.clientId))
         Date date = new Date()
-        assertThat("Correct authentication time", Math.abs(date.getTime() - claims.getDateClaim("auth_time").getTime()) < 10000L)
-        assertThat("Correct issued at time", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
-        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(900000L))
+        assertThat("Correct authentication time", Math.abs(date.time - claims.getDateClaim("auth_time").time) < 10000L)
+        assertThat("Correct issued at time", Math.abs(date.time - claims.getDateClaim("iat").time) < 10000L)
+        assertThat("Correct expiration time", claims.expirationTime.time - claims.getDateClaim("iat").time, equalTo(900000L))
         assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["idcard"]))
-        assertThat("Correct subject claim", claims.getSubject(), equalTo("EE38001085718"))
-        assertThat("Correct date of birth", claims.getClaim("birthdate"),  equalTo("1980-01-08"))
-        assertThat("Correct given name", claims.getClaim("given_name"),  equalTo("JAAK-KRISTJAN"))
-        assertThat("Correct family name", claims.getClaim("family_name"),  equalTo("JÕEORG"))
+        assertThat("Correct subject claim", claims.subject, equalTo("EE38001085718"))
+        assertThat("Correct date of birth", claims.getClaim("birthdate"), equalTo("1980-01-08"))
+        assertThat("Correct given name", claims.getClaim("given_name"), equalTo("JAAK-KRISTJAN"))
+        assertThat("Correct family name", claims.getClaim("family_name"), equalTo("JÕEORG"))
         assertThat("Correct LoA level", claims.getClaim("acr"), equalTo("high"))
         assertThat("Correct UUID pattern for session ID", claims.getStringClaim("sid"), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
-        assertThat("Claim phone_number does not exist", claims.getClaims(), not(hasKey("phone_number")))
-        assertThat("Claim phone_number_verified does not exist", claims.getClaims(), not(hasKey("phone_number_verified")))
-        assertThat("Correct at_hash claim exists", claims.getStringClaim("at_hash").size()  > 20)
+        assertThat("Claim phone_number does not exist", claims.claims, not(hasKey("phone_number")))
+        assertThat("Claim phone_number_verified does not exist", claims.claims, not(hasKey("phone_number_verified")))
+        assertThat("Correct at_hash claim exists", claims.getStringClaim("at_hash").size() > 20)
     }
 
     @Feature("ID_TOKEN")
     def "Verify ID token mandatory elements when scope includes phone"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        paramsMap.put("scope", "openid phone")
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
-        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
-        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct jti claim exists", claims.getJWTID().size() > 35)
         assertThat("Correct phone_number claim", claims.getClaim("phone_number"), equalTo("+37269100366"))
         assertThat("Correct phone_number_verified claim exists", claims.getClaim("phone_number_verified"), equalTo(true))
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
-        assertThat("Correct issuer", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        assertThat("Correct audience", claims.getAudience().get(0), equalTo(flow.oidcClientA.clientId))
+        assertThat("Correct issuer", claims.issuer, equalTo(flow.openIdServiceConfiguration.get("issuer")))
+        assertThat("Correct audience", claims.audience[0], equalTo(flow.oidcClientA.clientId))
         Date date = new Date()
-        assertThat("Correct authentication time", Math.abs(date.getTime() - claims.getDateClaim("auth_time").getTime()) < 10000L)
-        assertThat("Correct issued at time", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
-        assertThat("Correct expiration time", claims.getDateClaim("exp").getTime() - claims.getDateClaim("iat").getTime(), equalTo(900000L))
+        assertThat("Correct authentication time", Math.abs(date.time - claims.getDateClaim("auth_time").time) < 10000L)
+        assertThat("Correct issued at time", Math.abs(date.time - claims.getDateClaim("iat").time) < 10000L)
+        assertThat("Correct expiration time", claims.expirationTime.time - claims.getDateClaim("iat").time, equalTo(900000L))
         assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["mID"]))
-        assertThat("Correct subject claim", claims.getSubject(), equalTo("EE60001017716"))
-        assertThat("Correct date of birth", claims.getClaim("birthdate"),  equalTo("2000-01-01"))
-        assertThat("Correct given name", claims.getClaim("given_name"),  equalTo("ONE"))
-        assertThat("Correct family name", claims.getClaim("family_name"),  equalTo("TESTNUMBER"))
+        assertThat("Correct subject claim", claims.subject, equalTo("EE60001017716"))
+        assertThat("Correct date of birth", claims.getClaim("birthdate"), equalTo("2000-01-01"))
+        assertThat("Correct given name", claims.getClaim("given_name"), equalTo("ONE"))
+        assertThat("Correct family name", claims.getClaim("family_name"), equalTo("TESTNUMBER"))
         assertThat("Correct LoA level", claims.getClaim("acr"), equalTo("high"))
         assertThat("Correct UUID pattern for session ID", claims.getStringClaim("sid"), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
-        assertThat("Correct at_hash claim exists", claims.getStringClaim("at_hash").size()  > 20)
+        assertThat("Correct at_hash claim exists", claims.getStringClaim("at_hash").size() > 20)
     }
 
     @Feature("ID_TOKEN")
@@ -131,25 +133,24 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct date of birth", claims1.getClaim("birthdate"), is(claims2.getClaim("birthdate")))
         assertThat("Correct family name", claims1.getClaim("family_name"), is(claims2.getClaim("family_name")))
         assertThat("Correct given name", claims1.getClaim("given_name"), is(claims2.getClaim("given_name")))
-        assertThat("Correct issuer", claims1.getClaim("issuer"), is(claims2.getClaim("issuer")))
+        assertThat("Correct issuer", claims1.issuer, is(claims2.issuer))
         assertThat("Correct session ID", claims1.getClaim("sid"), is(claims2.getClaim("sid")))
-        assertThat("Correct audience", claims1.getClaim("aud"), is(claims2.getClaim("aud")))
-        assertThat("Correct subject", claims1.getSubject(), is(claims2.getSubject()))
-        assertThat("Updated expiration time", claims1.getExpirationTime() < (claims2.getExpirationTime()))
-        assertThat("Updated issued at time", claims1.getIssueTime() < (claims2.getIssueTime()))
-        assertThat("Correct token validity period", claims2.getExpirationTime().getTime() - claims2.getIssueTime().getTime() == 900000L)
+        assertThat("Correct audience", claims1.audience, is(claims2.audience))
+        assertThat("Correct subject", claims1.subject, is(claims2.subject))
+        assertThat("Updated expiration time", claims1.expirationTime < (claims2.expirationTime))
+        assertThat("Updated issued at time", claims1.issueTime < (claims2.issueTime))
+        assertThat("Correct token validity period", claims2.expirationTime.time - claims2.issueTime.time == 900000L)
     }
 
     @Feature("ID_TOKEN")
     def "Verify ID token elements after session update, scope includes phone"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        paramsMap.put("scope", "openid phone")
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
-        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
-        Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+        Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
         Response updateSession = Steps.getSessionUpdateResponse(flow)
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get("id_token")).getJWTClaimsSet()
@@ -163,31 +164,31 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     def "Verify ID token elements after continuing session with client-B"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
 
         //Sleep for one second to test that time claims in client-B ID token are unique from Client-A ID token.
         sleep 1000
         Response continueSession = Steps.continueWithExistingSession(flow)
 
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("New token", createSession.jsonPath().get("idToken"), not(continueSession.jsonPath().get("id_token")))
         assertThat("New at_hash", claimsClientA.getClaim("at_hash"), not(claimsClientB.getClaim("at_hash")))
         assertThat("New jti", claimsClientA.getClaim("jti"), not(claimsClientB.getClaim("jti")))
         assertThat("New nonce", claimsClientA.getClaim("nonce"), not(claimsClientB.getClaim("nonce")))
-        assertThat("Correct audience", claimsClientA.getClaim("aud"), not(claimsClientB.getClaim("aud")))
+        assertThat("Correct audience", claimsClientA.audience, not(claimsClientB.audience))
         assertThat("Correct LoA level", claimsClientA.getClaim("acr"), is(claimsClientB.getClaim("acr")))
         assertThat("Correct authentication method", claimsClientA.getClaim("amr"), is(claimsClientB.getClaim("amr")))
         assertThat("Correct authentication time", claimsClientA.getClaim("auth_time"), is(claimsClientB.getClaim("auth_time")))
         assertThat("Correct date of birth", claimsClientA.getClaim("birthdate"), is(claimsClientB.getClaim("birthdate")))
         assertThat("Correct family name", claimsClientA.getClaim("family_name"), is(claimsClientB.getClaim("family_name")))
         assertThat("Correct given name", claimsClientA.getClaim("given_name"), is(claimsClientB.getClaim("given_name")))
-        assertThat("Correct issuer", claimsClientA.getClaim("issuer"), is(claimsClientB.getClaim("issuer")))
+        assertThat("Correct issuer", claimsClientA.issuer, is(claimsClientB.issuer))
         assertThat("Correct session ID", claimsClientA.getClaim("sid"), is(claimsClientB.getClaim("sid")))
-        assertThat("Correct subject", claimsClientA.getSubject(), is(claimsClientB.getSubject()))
-        assertThat("Updated expiration time", claimsClientA.getExpirationTime() < (claimsClientB.getExpirationTime()))
-        assertThat("Updated issued at time", claimsClientA.getIssueTime() < (claimsClientB.getIssueTime()))
-        assertThat("Correct token validity period", claimsClientB.getExpirationTime().getTime() - claimsClientB.getIssueTime().getTime() == 900000L)
+        assertThat("Correct subject", claimsClientA.subject, is(claimsClientB.subject))
+        assertThat("Updated expiration time", claimsClientA.expirationTime < (claimsClientB.expirationTime))
+        assertThat("Updated issued at time", claimsClientA.issueTime < (claimsClientB.issueTime))
+        assertThat("Correct token validity period", claimsClientB.expirationTime.time - claimsClientB.issueTime.time == 900000L)
     }
 
     @Feature("ID_TOKEN")
@@ -195,48 +196,46 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
         Response continueSession = Steps.continueWithExistingSessionWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid phone")
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid phone"))
-        assertThat("Claim phone_number does not exist", claimsClientB.getClaims(), not(hasKey("phone_number")))
-        assertThat("Claim phone_number_verified does not exist", claimsClientB.getClaims(), not(hasKey("phone_number_verified")))
+        assertThat("Claim phone_number does not exist", claimsClientB.claims, not(hasKey("phone_number")))
+        assertThat("Claim phone_number_verified does not exist", claimsClientB.claims, not(hasKey("phone_number_verified")))
     }
 
     @Feature("ID_TOKEN")
     def "Verify ID token elements after continuing session with client-B. Client-A scope includes phone, client-b scope excludes phone"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        paramsMap.put("scope", "openid phone")
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
-        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
-        Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+        Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
         Response continueSession = Steps.continueWithExistingSessionWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid")
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid"))
-        assertThat("Claim phone_number does not exist", claimsClientB.getClaims(), not(hasKey("phone_number")))
-        assertThat("Claim phone_number_verified does not exist", claimsClientB.getClaims(), not(hasKey("phone_number_verified")))
+        assertThat("Claim phone_number does not exist", claimsClientB.claims, not(hasKey("phone_number")))
+        assertThat("Claim phone_number_verified does not exist", claimsClientB.claims, not(hasKey("phone_number_verified")))
     }
 
     @Feature("ID_TOKEN")
     def "Verify ID token elements after continuing session with client-B. Client-A scope includes phone, client-b scope includes phone"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        paramsMap.put("scope", "openid phone")
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
-        Response consentVerifier = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
-        Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+        Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
         Response continueSession = Steps.continueWithExistingSessionWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid phone")
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid phone"))
-        assertThat("Correct phone_number claim", claimsClientB.getClaims().get("phone_number"), is("+37269100366"))
-        assertThat("Correct phone_number_verified claim", claimsClientB.getClaims().get("phone_number_verified"), is(true))
+        assertThat("Correct phone_number claim", claimsClientB.claims.get("phone_number"), is("+37269100366"))
+        assertThat("Correct phone_number_verified claim", claimsClientB.claims.get("phone_number_verified"), is(true))
     }
 }

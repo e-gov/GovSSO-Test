@@ -5,7 +5,6 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
-import static org.hamcrest.Matchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
 class HeadersSpec extends GovSsoSpecification {

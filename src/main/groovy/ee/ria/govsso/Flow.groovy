@@ -71,7 +71,7 @@ class SsoSessionService {
     String livenessUrl
     String infoUrl
     String sessionsUrl
-    HashMap <String, String> cookies
+    HashMap<String, String> cookies
 
     @Lazy baseUrl = "${protocol}://${host}"
     @Lazy fullInitUrl = "${protocol}://${host}${initUrl}"
@@ -135,7 +135,7 @@ class SsoOidcService {
     String logoutUrl
     String jwksUrl
     String configurationUrl
-    HashMap <String, String> cookies
+    HashMap<String, String> cookies
 
     @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${authenticationRequestUrl}"
     @Lazy fullLogoutUrl = "${protocol}://${host}${logoutUrl}"
@@ -154,6 +154,7 @@ class SsoOidcService {
         this.configurationUrl = properties."ssooidcservice.configurationUrl"
         this.cookies = new HashMap<String, String>()
     }
+
     private String portCheck() {
         if (port != null && port.isInteger()) {
             return ":${port}"
@@ -182,6 +183,7 @@ class SsoOidcDatabase {
         this.username = properties."ssooidcdatabase.username"
         this.password = properties."ssooidcdatabase.password"
     }
+
     private String portCheck() {
         if (port != null && port.isInteger()) {
             return ":${port}"
@@ -216,7 +218,7 @@ class TaraService {
     String sessionId
     String login_locale
     String csrf
-    HashMap <String, String> cookies
+    HashMap<String, String> cookies
     String taraloginBaseUrl
 
     @Lazy baseUrl = "${protocol}://${host}"
@@ -256,6 +258,7 @@ class TaraForeignIdpProvider {
     String port
     String protocol
     String responseUrl
+
     @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
     TaraForeignIdpProvider(Properties properties) {
@@ -264,6 +267,7 @@ class TaraForeignIdpProvider {
         this.protocol = properties."idp.protocol"
         this.responseUrl = properties."idp.responseUrl"
     }
+
     private String portCheck() {
         if (port != null && port.isInteger()) {
             return ":${port}"
@@ -288,6 +292,7 @@ class TaraForeignProxyService {
         this.protocol = properties."ca-proxyservice.protocol"
         this.consentUrl = properties."ca-proxyservice.consentUrl"
     }
+
     private String portCheck() {
         if (port != null && port.isInteger()) {
             return ":${port}"
@@ -307,7 +312,7 @@ class SsoOidcClientA {
     String clientId
     String clientSecret
     String expiredJwt
-    HashMap <String, String> cookies
+    HashMap<String, String> cookies
 
     @Lazy fullBaseUrl = "${protocol}://${host}${portCheck()}"
     @Lazy fullLogoutRedirectUrl = "${protocol}://${host}${portCheck()}${logoutRedirectUrl}"
@@ -324,6 +329,7 @@ class SsoOidcClientA {
         this.expiredJwt = properties."ssooidcclienta.expiredJwt"
         this.cookies = new HashMap<String, String>()
     }
+
     private String portCheck() {
         if (port != null && port.isInteger()) {
             return ":${port}"
@@ -342,7 +348,7 @@ class SsoOidcClientB {
     String logoutRedirectUrl
     String clientId
     String clientSecret
-    HashMap <String, String> cookies
+    HashMap<String, String> cookies
 
     @Lazy fullBaseUrl = "${protocol}://${host}${portCheck()}"
     @Lazy fullLogoutRedirectUrl = "${protocol}://${host}${portCheck()}${logoutRedirectUrl}"
@@ -358,6 +364,7 @@ class SsoOidcClientB {
         this.clientSecret = properties."ssooidcclientb.secret"
         this.cookies = new HashMap<String, String>()
     }
+
     private String portCheck() {
         if (port != null && port.isInteger()) {
             return ":${port}"
