@@ -135,7 +135,7 @@ class Steps {
                                                          String clientSecret = flow.oidcClientA.clientSecret,
                                                          String fullResponseUrl = flow.oidcClientA.fullResponseUrl) {
         String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
-        Response token = Requests.getAuthenticationWebToken(flow, authorizationCode, clientId, clientSecret, fullResponseUrl)
+        Response token = Requests.webTokenBasicRequest(flow, authorizationCode, clientId, clientSecret, fullResponseUrl)
         flow.setRefreshToken(token.jsonPath().get("refresh_token"))
         flow.setIdToken(token.jsonPath().get("id_token"))
         SignedJWT signedJWT = SignedJWT.parse(token.body.jsonPath().get("id_token"))

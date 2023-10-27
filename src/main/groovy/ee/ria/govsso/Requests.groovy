@@ -1,6 +1,7 @@
 package ee.ria.govsso
 
 import io.qameta.allure.Step
+import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
 
@@ -282,26 +283,36 @@ class Requests {
     }
 
     @Step("Get token with defaults")
-    static Response getWebTokenWithDefaults(Flow flow, String authorizationCode) {
+    static Response webTokenBasicRequest(Flow flow,
+                                         String authorizationCode,
+                                         String clientId = flow.oidcClientA.clientId,
+                                         String clientSecret = flow.oidcClientA.clientSecret,
+                                         String redirectUrl = flow.oidcClientA.fullResponseUrl) {
         return given()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
-                .formParam("grant_type", "authorization_code")
-                .formParam("code", authorizationCode)
-                .formParam("redirect_uri", flow.oidcClientA.fullResponseUrl)
-                .auth().preemptive().basic(flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
+                .params([grant_type  : "authorization_code",
+                         code        : authorizationCode,
+                         redirect_uri: redirectUrl])
+                .auth().preemptive().basic(clientId, clientSecret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 
-    @Step("Get authentication response")
-    static Response getAuthenticationWebToken(Flow flow, String authorizationCode, String clientId, String clientSecret, String redirectUrl) {
+    @Step("Get token client_secret_post")
+    static Response webTokenPostRequest(Flow flow,
+                                        String authorizationCode,
+                                        String clientId = "client-f",
+                                        String clientSecret = "secretf",
+                                        String redirectUrl = "https://clientf.localhost:11443/login/oauth2/code/govsso") {
         return given()
+                .filter(new AllureRestAssured())
+                .params([grant_type   : "authorization_code",
+                         redirect_uri : redirectUrl,
+                         code         : authorizationCode,
+                         client_id    : clientId,
+                         client_secret: clientSecret])
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
-                .formParam("grant_type", "authorization_code")
-                .formParam("code", authorizationCode)
-                .formParam("redirect_uri", redirectUrl)
-                .auth().preemptive().basic(clientId, clientSecret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 

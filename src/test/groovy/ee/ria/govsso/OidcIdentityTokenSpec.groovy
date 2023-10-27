@@ -1,11 +1,16 @@
 package ee.ria.govsso
 
+import com.google.common.hash.Hashing
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
+import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
+import java.nio.charset.StandardCharsets
+
+import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.matchesPattern
@@ -25,16 +30,80 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     }
 
     @Feature("ID_TOKEN")
-    def "Verify ID token response"() {
-        expect:
+    def "Verify ID token response with client_secret_basic configured client"() {
+        when: "Create session and request ID token with client_secret_basic"
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
 
+        then:
         assertThat("Correct token_type value", createSession.jsonPath().getString("token_type"), is("bearer"))
         assertThat("Correct scope value", createSession.jsonPath().getString("scope"), is("openid"))
         assertThat("Access token element exists", createSession.jsonPath().getString("access_token").size() > 32)
         assertThat("Expires in element exists", createSession.jsonPath().getInt("expires_in") <= 1)
         assertThat("ID token element exists", createSession.jsonPath().getString("id_token").size() > 1000)
         assertThat("Refresh token element exists", createSession.jsonPath().getString("refresh_token").size() == 87)
+    }
+
+    @Feature("ID_TOKEN")
+    def "Verify ID token response with client_secret_post configured client"() {
+    given: "Create session"
+    Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, "client-f", "https://clientf.localhost:11443/login/oauth2/code/govsso")
+    Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+    Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
+    Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
+    String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
+
+    when: "Request ID token with client_secret_post"
+    Response tokenResponse = Requests.webTokenPostRequest(flow, authorizationCode)
+
+    then:
+    assertThat("Correct token_type value", tokenResponse.jsonPath().getString("token_type"), is("bearer"))
+    assertThat("Correct scope value", tokenResponse.jsonPath().getString("scope"), is("openid"))
+    assertThat("Access token element exists", tokenResponse.jsonPath().getString("access_token").size() > 32)
+    assertThat("Expires in element exists", tokenResponse.jsonPath().getInt("expires_in") <= 1)
+    assertThat("ID token element exists", tokenResponse.jsonPath().getString("id_token").size() > 1000)
+    assertThat("Refresh token element exists", tokenResponse.jsonPath().getString("refresh_token").size() == 87)
+    }
+
+    @Feature("ID_TOKEN")
+    def "Client_secret_post token endpoint request should fail when client has client_secret_basic configuration"() {
+        given: "Create session"
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
+        Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
+
+        when: "Request ID token with incorrect token authentication method"
+        Response tokenResponse = Requests.webTokenPostRequest(flow, authorizationCode, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullResponseUrl)
+
+        then:
+        assertThat("Correct HTTP status", tokenResponse.statusCode, is(401))
+        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is("invalid_client"))
+        assertThat("Correct error message", tokenResponse.jsonPath().getString("error_description"), containsString(
+                "The OAuth 2.0 Client supports client authentication method 'client_secret_basic', but method 'client_secret_post' was requested."))
+    }
+
+    @Feature("ID_TOKEN")
+    def "Client_secret_basic token endpoint request should fail when client has client_secret_post configuration"() {
+        given: "Create session"
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, "client-f", "https://clientf.localhost:11443/login/oauth2/code/govsso")
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
+        Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
+
+        when: "Request ID token with incorrect token authentication method"
+        Response tokenResponse = Requests.webTokenBasicRequest(flow,
+                authorizationCode,
+                "client-f",
+                "secretf",
+                "https://clientf.localhost:11443/login/oauth2/code/govsso")
+
+        then:
+        assertThat("Correct HTTP status", tokenResponse.statusCode, is(401))
+        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is("invalid_client"))
+        assertThat("Correct error message", tokenResponse.jsonPath().getString("error_description"), containsString(
+                "The OAuth 2.0 Client supports client authentication method 'client_secret_post', but method 'client_secret_basic' was requested."))
     }
 
     @Feature("ID_TOKEN")
@@ -237,5 +306,16 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid phone"))
         assertThat("Correct phone_number claim", claimsClientB.claims.get("phone_number"), is("+37269100366"))
         assertThat("Correct phone_number_verified claim", claimsClientB.claims.get("phone_number_verified"), is(true))
+    }
+
+    @Step("Follow redirects to client application")
+    static Response followRedirectsToClientApplication(Flow flow, Response authenticationFinishedResponse) {
+        Response initLogin = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.sessionService.cookies)
+        Response loginVerifier = Steps.followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
+        flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
+        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_session", loginVerifier.getCookie("oauth2_authentication_session"))
+        Response initConsent = Steps.followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
+        return Steps.followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
     }
 }

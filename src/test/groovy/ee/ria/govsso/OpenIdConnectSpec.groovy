@@ -44,9 +44,9 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
         String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
         // 1
-        Requests.getWebTokenWithDefaults(flow, authorizationCode)
+        Requests.webTokenBasicRequest(flow, authorizationCode)
         // 2
-        Response token2 = Requests.getWebTokenWithDefaults(flow, authorizationCode)
+        Response token2 = Requests.webTokenBasicRequest(flow, authorizationCode)
         assertThat("Correct HTTP status code", token2.statusCode, is(400))
         assertThat("Correct Content-Type", token2.contentType, startsWith("application/json"))
         assertThat("Correct error message", token2.body.jsonPath().getString("error"), is("invalid_grant"))
@@ -62,7 +62,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
         String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
 
-        Response token = Requests.getWebTokenWithDefaults(flow, authorizationCode + "e")
+        Response token = Requests.webTokenBasicRequest(flow, authorizationCode + "e")
         assertThat("Correct HTTP status code", token.statusCode, is(400))
         assertThat("Correct Content-Type", token.contentType, startsWith("application/json"))
         assertThat("Correct error message", token.body.jsonPath().getString("error"), is("invalid_grant"))
