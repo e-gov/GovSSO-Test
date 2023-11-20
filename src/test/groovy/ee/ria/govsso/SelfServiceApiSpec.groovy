@@ -45,8 +45,9 @@ class SelfServiceApiSpec extends GovSsoSpecification {
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, session.body.jsonPath().get("id_token")).getJWTClaimsSet()
         String sessionId = [claims.getClaim("sid")]
-        Instant authRequestTime = claims.getDateClaim("rat").toInstant()
-        Instant expiresAt = authRequestTime.plus(15, ChronoUnit.MINUTES)
+        Instant requestedAt = claims.getDateClaim("rat").toInstant()
+        Instant authenticatedAt = claims.getDateClaim("auth_time").toInstant()
+        Instant expiresAt = authenticatedAt.plus(15, ChronoUnit.MINUTES)
 
         when: "GET session information"
         Response sessionInfo = Requests.getRequest(flow1.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
@@ -54,13 +55,13 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         then: "GET request is successful and correct response payload is returned"
         assertThat("Correct status code", sessionInfo.statusCode(), is(200))
         assertThat("User has a single session with correct session ID", sessionInfo.jsonPath().get("session_id").toString(), is(sessionId))
-        assertThat("Authenticated_at is present", sessionInfo.jsonPath().get("authenticated_at[0]").toString(), is(authRequestTime.toString()))
+        assertThat("Authenticated_at is present", sessionInfo.jsonPath().get("authenticated_at[0]").toString(), is(requestedAt.toString()))
         assertThat("Ip_address is present", sessionInfo.jsonPath().get("ip_addresses"), allOf(hasSize(1), everyItem(not(emptyString()))))
         assertThat("Correct user_agent", sessionInfo.jsonPath().get("user_agent[0]"), is("Test User-Agent"))
         assertThat("Correct client_names values", sessionInfo.jsonPath().get("services.client_names[0][0]"), allOf(hasEntry("et", "Teenusenimi A"), hasEntry("en", "Service name A"), hasEntry("ru", "Название службы A")))
-        assertThat("Correct services.authenticated_at value", sessionInfo.jsonPath().get("services.authenticated_at[0][0]").toString(), is(authRequestTime.toString()))
+        assertThat("Correct services.authenticated_at value", sessionInfo.jsonPath().get("services.authenticated_at[0][0]").toString(), is(requestedAt.toString()))
         assertThat("Correct services.expires_at value", sessionInfo.jsonPath().get("services.expires_at[0][0]").toString(), is(expiresAt.toString()))
-        assertThat("Correct services.last_updated_at value", sessionInfo.jsonPath().get("services.last_updated_at[0][0]").toString(), is(authRequestTime.toString()))
+        assertThat("Correct services.last_updated_at value", sessionInfo.jsonPath().get("services.last_updated_at[0][0]").toString(), is(authenticatedAt.toString()))
     }
 
     @Feature("SELF_SERVICE_API")
