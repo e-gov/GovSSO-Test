@@ -141,9 +141,9 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
         Response loginVerifier = Steps.followRedirectWithCookies(flow, taracallback, flow.ssoOidcService.cookies)
 
-        assertThat("Correct cookie attributes", oidcAuth.detailedCookie("oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure"), containsString("Max-Age=3600")))
-        assertThat("Correct cookie attributes", loginVerifier.detailedCookie("oauth2_authentication_session").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure")))
-        assertThat("Correct cookie attributes", loginVerifier.detailedCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure"), containsString("Max-Age=3600")))
+        assertThat("Correct cookie attributes", oidcAuth.detailedCookie("__Host-oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure"), containsString("Max-Age=3600")))
+        assertThat("Correct cookie attributes", loginVerifier.detailedCookie("__Host-oauth2_authentication_session").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure")))
+        assertThat("Correct cookie attributes", loginVerifier.detailedCookie("__Host-oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure"), containsString("Max-Age=3600")))
     }
 
     @Unroll
@@ -491,7 +491,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
 
         Map cookies = [:]
-        Utils.setParameter(cookies, "oauth2_authentication_session", "SW5jb3JyZWN0IHNlc3Npb24gY29va2ll")
+        Utils.setParameter(cookies, "__Host-oauth2_authentication_session", "SW5jb3JyZWN0IHNlc3Npb24gY29va2ll")
         Response initLogin = Steps.followRedirectWithCookies(flow, oidcAuth, cookies)
 
         assertThat("Correct HTTP status code", initLogin.body.jsonPath().getString("status"), is("400"))

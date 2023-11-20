@@ -10,7 +10,7 @@ class SqlQueries {
 
     // For consent expiration, requested_at is changed instead of remember_for due to test optimisation. Changing either value results in the same outcome.
     static expireConsent(Sql sql, String consentChallenge) {
-        sql.execute "UPDATE public.hydra_oauth2_consent_request_handled SET requested_at = requested_at - INTERVAL '15 minutes 1 second' WHERE challenge=?", [consentChallenge]
+        sql.execute "UPDATE public.hydra_oauth2_flow SET requested_at = requested_at - INTERVAL '15 minutes 1 second' WHERE consent_challenge_id=?", [consentChallenge]
     }
 
     static inactivateRefreshToken(Sql sql, String consentChallenge) {

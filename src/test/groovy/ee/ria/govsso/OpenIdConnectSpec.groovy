@@ -134,8 +134,8 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         Response initLogin = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.sessionService.cookies)
         Response loginVerifier = Steps.followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
         flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_session", loginVerifier.getCookie("oauth2_authentication_session"))
+        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("__Host-oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
+        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-oauth2_authentication_session", loginVerifier.getCookie("__Host-oauth2_authentication_session"))
         Response initConsent = Steps.followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
         return Steps.followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
     }

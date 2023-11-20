@@ -40,7 +40,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Access token element exists", createSession.jsonPath().getString("access_token").size() > 32)
         assertThat("Expires in element exists", createSession.jsonPath().getInt("expires_in") <= 1)
         assertThat("ID token element exists", createSession.jsonPath().getString("id_token").size() > 1000)
-        assertThat("Refresh token element exists", createSession.jsonPath().getString("refresh_token").size() == 87)
+        assertThat("Refresh token element exists", createSession.jsonPath().getString("refresh_token").size() == 94)
     }
 
     @Feature("ID_TOKEN")
@@ -61,7 +61,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     assertThat("Access token element exists", tokenResponse.jsonPath().getString("access_token").size() > 32)
     assertThat("Expires in element exists", tokenResponse.jsonPath().getInt("expires_in") <= 1)
     assertThat("ID token element exists", tokenResponse.jsonPath().getString("id_token").size() > 1000)
-    assertThat("Refresh token element exists", tokenResponse.jsonPath().getString("refresh_token").size() == 87)
+    assertThat("Refresh token element exists", tokenResponse.jsonPath().getString("refresh_token").size() == 94)
     }
 
     @Feature("ID_TOKEN")
@@ -313,8 +313,8 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response initLogin = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.sessionService.cookies)
         Response loginVerifier = Steps.followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
         flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
-        Utils.setParameter(flow.ssoOidcService.cookies, "oauth2_authentication_session", loginVerifier.getCookie("oauth2_authentication_session"))
+        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("__Host-oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
+        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-oauth2_authentication_session", loginVerifier.getCookie("__Host-oauth2_authentication_session"))
         Response initConsent = Steps.followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
         return Steps.followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
     }
