@@ -18,7 +18,7 @@ class Steps {
     @Step("Initialize authentication sequence in SSO OIDC service with params")
     static Response startAuthenticationInSsoOidcWithParams(Flow flow, Map paramsMap) {
         Response oidcAuth = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.cookies, paramsMap)
-        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), oidcAuth.cookie("__Host-oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
+        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_login_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), oidcAuth.cookie("__Host-ory_hydra_login_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(oidcAuth, "login_challenge"))
         return oidcAuth
     }
@@ -26,7 +26,7 @@ class Steps {
     @Step("Initialize authentication sequence in SSO OIDC service with params and origin headers")
     static Response startAuthenticationInSsoOidcWithParamsAndOrigin(Flow flow, Map paramsMap, String origin) {
         Response oidcAuth = Requests.getRequestWithCookiesParamsAndOrigin(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.cookies, paramsMap, origin)
-        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), oidcAuth.cookie("__Host-oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
+        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_login_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), oidcAuth.cookie("__Host-ory_hydra_login_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(oidcAuth, "login_challenge"))
         return oidcAuth
     }
@@ -175,8 +175,8 @@ class Steps {
         Response initLogin = followRedirectWithCookies(flow, response, flow.sessionService.cookies)
         Response loginVerifier = followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
         flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
-        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.cookie("__Host-oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
-        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-oauth2_authentication_session", loginVerifier.cookie("__Host-oauth2_authentication_session"))
+        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.cookie("__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
+        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_session", loginVerifier.cookie("__Host-ory_hydra_session"))
         Response initConsent = followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
         Response consentVerifier = followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
         return getIdentityTokenResponseWithDefaults(flow, consentVerifier, clientId, clientSecret, fullResponseUrl)
@@ -185,7 +185,7 @@ class Steps {
     @Step("Follow redirects to client application with existing session")
     static Response followRedirectsToClientApplicationWithExistingSession(Flow flow, Response response, String clientId, String clientSecret, String fullResponseUrl) {
         Response loginVerifier = followRedirectWithCookies(flow, response, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.cookie("__Host-oauth2_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
+        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.cookie("__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Response initConsent = followRedirect(flow, loginVerifier)
         Response consentVerifier = followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
         return getIdentityTokenResponseWithDefaults(flow, consentVerifier, clientId, clientSecret, fullResponseUrl)
@@ -289,7 +289,7 @@ class Steps {
                           _csrf         : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
         Response reauthenticate = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies, formParams)
         Response initLogin = followRedirectWithCookies(flow, reauthenticate, flow.ssoOidcService.cookies)
-        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), initLogin.cookie("__Host-oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
+        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_login_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), initLogin.cookie("__Host-ory_hydra_login_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Response followRedirect = followRedirect(flow, initLogin)
         Utils.setParameter(flow.sessionService.cookies, "__Host-AUTH", followRedirect.cookie("__Host-AUTH"))
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, followRedirect)
@@ -302,7 +302,7 @@ class Steps {
                           _csrf         : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
         Response reauthenticate = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.ssoOidcService.cookies, formParams)
         Response oidcAuth2 = followRedirect(flow, reauthenticate)
-        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), oidcAuth2.cookie("__Host-oauth2_authentication_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
+        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_login_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), oidcAuth2.cookie("__Host-ory_hydra_login_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Response initLogin = followRedirectWithCookies(flow, oidcAuth2, flow.ssoOidcService.cookies)
         Utils.setParameter(flow.sessionService.cookies, "__Host-AUTH", initLogin.cookie("__Host-AUTH"))
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)

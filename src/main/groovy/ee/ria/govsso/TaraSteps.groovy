@@ -125,7 +125,7 @@ class TaraSteps {
     static Response startAuthenticationInTara(Flow flow, String url) {
         Response initOIDCServiceSession = Requests.getRequest(url)
         Utils.storeTaraServiceUrlToflow(flow, initOIDCServiceSession.getHeader("location"))
-        Utils.setParameter(flow.taraService.cookies, "__Host-oauth2_authentication_csrf_624229327", initOIDCServiceSession.getCookie("__Host-oauth2_authentication_csrf_624229327"))
+        Utils.setParameter(flow.taraService.cookies, "__Host-ory_hydra_login_csrf_624229327", initOIDCServiceSession.getCookie("__Host-ory_hydra_login_csrf_624229327"))
         Response initLogin = Steps.followRedirect(flow, initOIDCServiceSession)
         flow.taraService.setSessionId(initLogin.getCookie("SESSION"))
         flow.taraService.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
@@ -168,7 +168,7 @@ class TaraSteps {
         pollMidResponse(flow)
         Response acceptResponse = acceptAuthTara(flow, flow.taraService.taraloginBaseUrl + flow.taraService.authAcceptUrl)
         Response oidcServiceResponse = Requests.followRedirectWithCookies(flow, acceptResponse.getHeader("location"), flow.taraService.cookies)
-        Utils.setParameter(flow.taraService.cookies, "__Host-oauth2_consent_csrf_624229327", oidcServiceResponse.getCookie("__Host-oauth2_consent_csrf_624229327"))
+        Utils.setParameter(flow.taraService.cookies, "__Host-ory_hydra_consent_csrf_624229327", oidcServiceResponse.getCookie("__Host-ory_hydra_consent_csrf_624229327"))
         return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
 
@@ -178,7 +178,7 @@ class TaraSteps {
         pollSidResponse(flow)
         Response acceptResponse = acceptAuthTara(flow, flow.taraService.taraloginBaseUrl + flow.taraService.authAcceptUrl)
         Response oidcServiceResponse = Requests.followRedirectWithCookies(flow, acceptResponse.getHeader("location"), flow.taraService.cookies)
-        Utils.setParameter(flow.taraService.cookies, "__Host-oauth2_consent_csrf_624229327", oidcServiceResponse.getCookie("__Host-oauth2_consent_csrf_624229327"))
+        Utils.setParameter(flow.taraService.cookies, "__Host-ory_hydra_consent_csrf_624229327", oidcServiceResponse.getCookie("__Host-ory_hydra_consent_csrf_624229327"))
         return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
 
@@ -216,7 +216,7 @@ class TaraSteps {
         flow.taraService.setCsrf(redirectionResponse.body.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         Response acceptResponse = acceptAuthTara(flow, flow.taraService.taraloginBaseUrl + flow.taraService.authAcceptUrl)
         Response oidcServiceResponse = Requests.followRedirectWithCookies(flow, acceptResponse.getHeader("location"), flow.taraService.cookies)
-        Utils.setParameter(flow.taraService.cookies, "__Host-oauth2_consent_csrf_624229327", oidcServiceResponse.getCookie("__Host-oauth2_consent_csrf_624229327"))
+        Utils.setParameter(flow.taraService.cookies, "__Host-ory_hydra_consent_csrf_624229327", oidcServiceResponse.getCookie("__Host-ory_hydra_consent_csrf_624229327"))
         return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
 
@@ -258,7 +258,7 @@ class TaraSteps {
         postRequestWithJsonBody(flow, flow.taraService.fullWebEidLoginUrl, authToken)
         Response loginResponse = postRequestWithSessionId(flow, flow.taraService.fullAuthAcceptUrl)
         Response oidcLoginVerifier = Steps.followRedirectWithCookies(flow, loginResponse, flow.taraService.cookies)
-        Utils.setParameter(flow.taraService.cookies, "__Host-oauth2_consent_csrf_624229327", oidcLoginVerifier.getCookie("__Host-oauth2_consent_csrf_624229327"))
+        Utils.setParameter(flow.taraService.cookies, "__Host-ory_hydra_consent_csrf_624229327", oidcLoginVerifier.getCookie("__Host-ory_hydra_consent_csrf_624229327"))
         Response consentResponse = Steps.followRedirectWithCookies(flow, oidcLoginVerifier, flow.taraService.cookies)
         Response oidcConsentVerifier = Steps.followRedirectWithCookies(flow, consentResponse, flow.taraService.cookies)
         return oidcConsentVerifier
