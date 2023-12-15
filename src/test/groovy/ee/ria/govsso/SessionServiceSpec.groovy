@@ -253,7 +253,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "SESSION", tarainitLogin.getCookie("SESSION"))
+        Utils.setParameter(cookieMap, "__Host-SESSION", tarainitLogin.getCookie("__Host-SESSION"))
         Response taraReject = Requests.getRequestWithCookiesAndParams(flow, flow.taraService.fullAuthRejectUrl, cookieMap, paramsMap)
 
         Response taraOidcAuth2 = Steps.followRedirect(flow, taraReject)

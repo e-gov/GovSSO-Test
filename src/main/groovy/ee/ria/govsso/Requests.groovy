@@ -108,7 +108,7 @@ class Requests {
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
-                .cookie("SESSION", flow.taraService.sessionId)
+                .cookie("__Host-SESSION", flow.taraService.sessionId)
                 .log().cookies()
                 .redirects().follow(false)
                 .get(location)
