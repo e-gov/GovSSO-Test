@@ -77,7 +77,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         sleep 1000
 
         and: "Update session"
-        Steps.getSessionUpdateResponse(flow1, refreshToken, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret, flow1.oidcClientA.fullBaseUrl)
+        Steps.getSessionUpdateResponse(flow1, refreshToken, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret)
 
         when: "GET updated session information"
         Response sessionInfo2 = Requests.getRequest(flow1.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)

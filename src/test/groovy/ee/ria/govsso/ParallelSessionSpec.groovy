@@ -40,11 +40,11 @@ class ParallelSessionSpec extends GovSsoSpecification {
         String refreshToken2 = session2.jsonPath().get("refresh_token")
         JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow2, idToken2).getJWTClaimsSet()
 
-        Response session1Update = Steps.getSessionUpdateResponse(flow1, refreshToken1, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret, flow1.oidcClientA.fullBaseUrl)
+        Response session1Update = Steps.getSessionUpdateResponse(flow1, refreshToken1, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret)
         String idToken1Update = session1Update.jsonPath().get("id_token")
         JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1Update).getJWTClaimsSet()
 
-        Response session2Update = Steps.getSessionUpdateResponse(flow2, refreshToken2, flow2.oidcClientA.clientId, flow2.oidcClientA.clientSecret, flow2.oidcClientA.fullBaseUrl)
+        Response session2Update = Steps.getSessionUpdateResponse(flow2, refreshToken2, flow2.oidcClientA.clientId, flow2.oidcClientA.clientSecret)
         String idToken2Update = session2Update.jsonPath().get("id_token")
         JWTClaimsSet claims2Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow2, idToken2Update).getJWTClaimsSet()
 
@@ -66,7 +66,7 @@ class ParallelSessionSpec extends GovSsoSpecification {
         String idToken2 = session2.jsonPath().get("id_token")
         Response logout = Steps.logoutSingleClientSession(flow2, idToken2, flow2.oidcClientA.fullLogoutRedirectUrl)
 
-        Response session1Update = Steps.getSessionUpdateResponse(flow1, refreshToken1, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret, flow1.oidcClientA.fullBaseUrl)
+        Response session1Update = Steps.getSessionUpdateResponse(flow1, refreshToken1, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret)
         String idToken1Update = session1Update.body.jsonPath().get("id_token")
         JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1Update).getJWTClaimsSet()
 
@@ -84,7 +84,7 @@ class ParallelSessionSpec extends GovSsoSpecification {
         Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
         String refreshToken2 = session2.jsonPath().get("refresh_token")
 
-        Response UpdateResponse = Steps.getSessionUpdateResponse(flow1, refreshToken2, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret, flow1.oidcClientA.fullBaseUrl)
+        Response UpdateResponse = Steps.getSessionUpdateResponse(flow1, refreshToken2, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret)
 
         assertThat("Correct HTTP status code", UpdateResponse.getStatusCode(), is(400))
         assertThat("Correct error", UpdateResponse.jsonPath().getString("error"), is("USER_INPUT"))

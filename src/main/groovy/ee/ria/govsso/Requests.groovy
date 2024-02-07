@@ -317,13 +317,12 @@ class Requests {
     }
 
     @Step("Get session update response")
-    static Response getSessionUpdateWebToken(Flow flow, String refreshToken, String clientId, String clientSecret, String redirectUrl) {
+    static Response getSessionUpdateWebToken(Flow flow, String refreshToken, String clientId, String clientSecret) {
         return given()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
                 .formParam("grant_type", "refresh_token")
                 .formParam("refresh_token", refreshToken)
-                .formParam("redirect_uri", redirectUrl)
                 .auth().preemptive().basic(clientId, clientSecret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }

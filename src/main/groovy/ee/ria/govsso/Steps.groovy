@@ -149,13 +149,12 @@ class Steps {
         return getSessionUpdateResponse(flow,
                 flow.refreshToken,
                 flow.oidcClientA.clientId,
-                flow.oidcClientA.clientSecret,
-                flow.oidcClientA.fullBaseUrl)
+                flow.oidcClientA.clientSecret)
     }
 
     @Step("Update session")
-    static Response getSessionUpdateResponse(Flow flow, String refreshToken, String clientId, String clientSecret, String redirectUrl) {
-        Response tokenResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, clientId, clientSecret, redirectUrl)
+    static Response getSessionUpdateResponse(Flow flow, String refreshToken, String clientId, String clientSecret) {
+        Response tokenResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, clientId, clientSecret)
         if (tokenResponse.statusCode != 200) {
             return tokenResponse
         } else {

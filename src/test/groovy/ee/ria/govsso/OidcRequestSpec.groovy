@@ -371,7 +371,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
 
         assertThat("Correct HTTP status code", logoutVerifier.statusCode, is(302))
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
@@ -393,7 +393,7 @@ class OidcRequestSpec extends GovSsoSpecification {
                           _csrf         : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
         Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.ssoOidcService.cookies, formParams)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
@@ -412,7 +412,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String refreshToken2 = continueSession.jsonPath().get("refresh_token")
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken2, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken2, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
@@ -432,7 +432,7 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         Steps.getSessionUpdateResponse(flow)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken1, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken1, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(401))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("token_inactive"))
@@ -445,7 +445,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, "123abc.123abc", flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullBaseUrl)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, "123abc.123abc", flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
