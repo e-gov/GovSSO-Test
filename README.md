@@ -14,7 +14,7 @@ Tests for GovSSO (both Ory Hydra OIDC and Estonian specific session service comp
 
 3. Fetch the tests:
 
-`git clone https://github.com/e-gov/GOVSSO-Test`
+`git clone https://github.com/e-gov/GovSSO-Test`
 
 ## Configuring the test
 
@@ -137,7 +137,7 @@ b) For a comprehensive report, Allure is
 required ([instructions for download.](https://docs.qameta.io/allure/#_installing_a_commandline)). To generate the
 report execute:
 
-`allure serve .../GOVSSO-test/allure-results/`
+`allure serve .../GovSSO-Test/allure-results/`
 
 ## To see Allure report after running tests in IntelliJ
 
