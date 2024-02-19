@@ -10,7 +10,7 @@ Tests for GovSSO (both Ory Hydra OIDC and Estonian specific session service comp
 
 1. SUT (GovSSO) must be deployed as accessible service
 
-2. Some tests require deployment of TARA2
+2. Some tests require deployment of TARA
 
 3. Fetch the tests:
 
