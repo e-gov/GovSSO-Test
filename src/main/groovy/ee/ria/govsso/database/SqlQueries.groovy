@@ -16,4 +16,10 @@ class SqlQueries {
     static inactivateRefreshToken(Sql sql, String consentChallenge) {
         sql.execute "UPDATE public.hydra_oauth2_refresh SET active = FALSE WHERE challenge_id=?", [consentChallenge]
     }
+
+    static getConsentRememberFor(Sql sql, String consentChallenge) {
+        Object response = sql.firstRow("SELECT consent_remember_for FROM public.hydra_oauth2_flow WHERE consent_challenge_id=?", [consentChallenge])
+        Integer consentRememberFor = response.consent_remember_for
+        return consentRememberFor
+    }
 }

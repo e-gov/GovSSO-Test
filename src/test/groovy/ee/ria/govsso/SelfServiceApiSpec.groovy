@@ -2,6 +2,9 @@ package ee.ria.govsso
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.govsso.database.DatabaseConnection
+import ee.ria.govsso.database.SqlQueries
+import groovy.sql.Sql
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -27,6 +30,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
 
     Flow flow1 = new Flow(props)
     Flow flow2 = new Flow(props)
+    Sql sql = null
 
     def setup() {
         flow1.cookieFilter = new CookieFilter()
@@ -46,8 +50,11 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, session.body.jsonPath().get("id_token")).getJWTClaimsSet()
         String sessionId = [claims.getClaim("sid")]
         Instant requestedAt = claims.getDateClaim("rat").toInstant()
-        Instant authenticatedAt = claims.getDateClaim("auth_time").toInstant()
-        Instant expiresAt = authenticatedAt.plus(15, ChronoUnit.MINUTES)
+
+        sql = DatabaseConnection.getSql(flow1)
+        Integer consentRememberFor = SqlQueries.getConsentRememberFor(sql, flow1.consentChallenge)
+        Instant expiresAt = requestedAt.plusSeconds(consentRememberFor)
+        Instant lastUpdatedAt = expiresAt.minusSeconds(900)
 
         when: "GET session information"
         Response sessionInfo = Requests.getRequest(flow1.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
@@ -61,7 +68,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         assertThat("Correct client_names values", sessionInfo.jsonPath().get("services.client_names[0][0]"), allOf(hasEntry("et", "Teenusenimi A"), hasEntry("en", "Service name A"), hasEntry("ru", "Название службы A")))
         assertThat("Correct services.authenticated_at value", sessionInfo.jsonPath().get("services.authenticated_at[0][0]").toString(), is(requestedAt.toString()))
         assertThat("Correct services.expires_at value", sessionInfo.jsonPath().get("services.expires_at[0][0]").toString(), is(expiresAt.toString()))
-        assertThat("Correct services.last_updated_at value", sessionInfo.jsonPath().get("services.last_updated_at[0][0]").toString(), is(authenticatedAt.toString()))
+        assertThat("Correct services.last_updated_at value", sessionInfo.jsonPath().get("services.last_updated_at[0][0]").toString(), is(lastUpdatedAt.toString()))
     }
 
     @Feature("SELF_SERVICE_API")
