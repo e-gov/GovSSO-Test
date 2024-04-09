@@ -22,9 +22,17 @@ class OpenIdUtils {
                 .build())
                 .select(jwkSet)
 
-        RSAKey rsaKey = (RSAKey) matches.get(0)
-        JWSVerifier verifier = new RSASSAVerifier(rsaKey)
-        return signedJWT.verify(verifier)
+        for (JWK jwk : matches) {
+            if (jwk instanceof RSAKey) {
+                RSAKey rsaKey = (RSAKey) jwk
+                JWSVerifier verifier = new RSASSAVerifier(rsaKey)
+
+                if (signedJWT.verify(verifier)) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     static Map getAuthorizationParametersWithDefaults(Flow flow) {
