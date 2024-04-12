@@ -129,7 +129,14 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat("Correct JWT ID claim exists", claims.getJWTID().size() > 35)
+
+        Set expectedClaims = [
+                "acr", "amr", "at_hash", "aud", "auth_time",
+                "birthdate", "exp", "family_name", "given_name", "iat",
+                "iss", "jti", "nonce", "rat", "sid", "sub"
+        ]
+        assertThat("JWT has only expected claims", claims.getClaims().keySet(), equalTo(expectedClaims))
+        assertThat("Correct JWT ID claim exists", claims.getJWTID(), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
         assertThat("Correct issuer", claims.issuer, equalTo(flow.openIdServiceConfiguration.get("issuer")))
         assertThat("Correct audience", claims.audience[0], equalTo(flow.oidcClientA.clientId))
@@ -160,7 +167,14 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.jsonPath().get("id_token")).getJWTClaimsSet()
 
-        assertThat("Correct jti claim exists", claims.getJWTID().size() > 35)
+        Set expectedClaims = [
+                "acr", "amr", "at_hash", "aud", "auth_time",
+                "birthdate", "exp", "family_name", "given_name", "iat",
+                "iss", "jti", "nonce", "phone_number", "phone_number_verified",
+                "rat", "sid", "sub"
+        ]
+        assertThat("JWT has only expected claims", claims.getClaims().keySet(), equalTo(expectedClaims))
+        assertThat("Correct jti claim exists", claims.getJWTID(), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertThat("Correct phone_number claim", claims.getClaim("phone_number"), equalTo("+37269100366"))
         assertThat("Correct phone_number_verified claim exists", claims.getClaim("phone_number_verified"), equalTo(true))
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
