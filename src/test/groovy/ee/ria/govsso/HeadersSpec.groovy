@@ -20,7 +20,7 @@ class HeadersSpec extends GovSsoSpecification {
     @Feature("CORS")
     def "Cross-Origin Resource Sharing headers are not applied in login request sequence"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, flow.oidcClientA.fullBaseUrl)
         Response initLogin = Steps.startSessionInSessionServiceWithOrigin(flow, oidcAuth, flow.oidcClientA.fullBaseUrl)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
@@ -136,7 +136,7 @@ class HeadersSpec extends GovSsoSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify response headers for session service requests in login sequence"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)

@@ -49,7 +49,7 @@ class ExpirationSpec extends  GovSsoSpecification {
         SqlQueries.inactivateRefreshToken(sql, flow.consentChallenge)
 
         when: "Authenticate again"
-        Response authenticate = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response authenticate = Steps.startAuthenticationInSsoOidc(flow)
 
         then: "Expected status code is 302 and response location header holds correct redirect URL"
         assertThat(authenticate.statusCode, is(302))

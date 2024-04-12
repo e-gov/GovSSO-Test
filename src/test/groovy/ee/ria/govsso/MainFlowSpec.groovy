@@ -25,7 +25,7 @@ class MainFlowSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication with Mobile-ID"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
@@ -43,7 +43,7 @@ class MainFlowSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authenticate with Smart-ID"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
         Response taraAuthentication = TaraSteps.authenticateWithSidInTARA(flow, "30303039914", initLogin)

@@ -148,7 +148,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_VIEW")
     def "Correct user data displayed in session continuation display with scope: openid phone"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("scope", "openid phone")
         Response oidcAuth1 = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin1 = Steps.startSessionInSessionService(flow, oidcAuth1)
@@ -170,7 +170,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_VIEW")
     def "Correct user data displayed in session continuation display with scope: openid"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("scope", "openid phone")
         Response oidcAuth1 = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin1 = Steps.startSessionInSessionService(flow, oidcAuth1)
@@ -192,7 +192,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_REDIRECT_TO_TARA")
     def "Correct GovSSO client logo and service name displayed in TARA"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraOidcAuth = Steps.followRedirect(flow, initLogin)
         Response taraInitLogin = Steps.followRedirect(flow, taraOidcAuth)

@@ -38,7 +38,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     @Feature("OIDC_TOKEN")
     def "Request a token twice"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
@@ -56,7 +56,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     @Feature("OIDC_TOKEN")
     def "Request with invalid authorization code"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
@@ -115,7 +115,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     @Feature("OIDC_TOKEN")
     def "Request with url encoded nonce"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         flow.setNonce("testȺ田\uD83D\uDE0D&additional=1 %20")
         paramsMap << [nonce: "testȺ田\uD83D\uDE0D&additional=1 %20"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
@@ -123,7 +123,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response token = Steps.getIdentityTokenResponseWithDefaults(flow, consentVerifier)
+        Response token = Steps.getTokenResponseWithDefaults(flow, consentVerifier)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getClaim("nonce"), equalTo(paramsMap.get("nonce")))

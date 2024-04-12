@@ -67,7 +67,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Client_secret_post token endpoint request should fail when client has client_secret_basic configuration"() {
         given: "Create session"
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
@@ -109,7 +109,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token response when scope includes phone"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
@@ -152,7 +152,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token mandatory elements when scope includes phone"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
@@ -214,7 +214,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token elements after session update, scope includes phone"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
@@ -275,7 +275,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token elements after continuing session with client-B. Client-A scope includes phone, client-b scope excludes phone"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
@@ -293,7 +293,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token elements after continuing session with client-B. Client-A scope includes phone, client-b scope includes phone"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)

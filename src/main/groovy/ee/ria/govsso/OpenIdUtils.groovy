@@ -35,30 +35,14 @@ class OpenIdUtils {
         return false
     }
 
-    static Map getAuthorizationParametersWithDefaults(Flow flow) {
-        flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        flow.setClientId(flow.oidcClientA.clientId)
-        Map queryParams = [response_type: "code",
-                           scope        : "openid",
-                           client_id    : flow.oidcClientA.clientId,
-                           redirect_uri : flow.oidcClientA.fullResponseUrl,
-                           state        : flow.state,
-                           nonce        : flow.nonce,
-                           prompt       : "consent",
-                           ui_locales   : "et",
-                           acr_values   : "high"]
-        return queryParams
-    }
-
-    static Map getAuthorizationParameters(Flow flow, String clientId, String fullResponseUrl) {
+    static Map getAuthorizationParametersWithDefaults(Flow flow, String clientId = flow.oidcClientA.clientId, String responseUrl = flow.oidcClientA.fullResponseUrl) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setClientId(clientId)
         Map queryParams = [response_type: "code",
                            scope        : "openid",
                            client_id    : clientId,
-                           redirect_uri : fullResponseUrl,
+                           redirect_uri : responseUrl,
                            state        : flow.state,
                            nonce        : flow.nonce,
                            prompt       : "consent",

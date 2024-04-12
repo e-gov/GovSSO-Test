@@ -33,7 +33,7 @@ class ServiceErrorsSpec extends GovSsoSpecification {
     @Feature("ERROR_CONTENT_JSON")
     def "Session service error response JSON"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("acr_values", "invalid")
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response sessionError = Steps.followRedirect(flow, oidcAuth)

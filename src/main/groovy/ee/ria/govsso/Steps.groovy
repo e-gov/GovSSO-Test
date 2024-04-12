@@ -32,14 +32,8 @@ class Steps {
     }
 
     @Step("Initialize authentication sequence in OIDC service with defaults")
-    static Response startAuthenticationInSsoOidcWithDefaults(Flow flow) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
-        return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-    }
-
-    @Step("Initialize authentication sequence in OIDC service")
-    static Response startAuthenticationInSsoOidc(Flow flow, String clientId, String fullResponseUrl) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, fullResponseUrl)
+    static Response startAuthenticationInSsoOidc(Flow flow, clientId = flow.oidcClientA.clientId, responseUrl = flow.oidcClientA.fullResponseUrl) {
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, responseUrl)
         return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
@@ -129,16 +123,17 @@ class Steps {
     }
 
     @Step("Get identity token response with defaults")
-    static Response getIdentityTokenResponseWithDefaults(Flow flow,
-                                                         Response response,
-                                                         String clientId = flow.oidcClientA.clientId,
-                                                         String clientSecret = flow.oidcClientA.clientSecret,
-                                                         String fullResponseUrl = flow.oidcClientA.fullResponseUrl) {
+    static Response getTokenResponseWithDefaults(Flow flow,
+                                                 Response response,
+                                                 String clientId = flow.oidcClientA.clientId,
+                                                 String clientSecret = flow.oidcClientA.clientSecret,
+                                                 String fullResponseUrl = flow.oidcClientA.fullResponseUrl,
+                                                 String tokenType = "id_token") {
         String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
         Response token = Requests.webTokenBasicRequest(flow, authorizationCode, clientId, clientSecret, fullResponseUrl)
         flow.setRefreshToken(token.jsonPath().get("refresh_token"))
         flow.setIdToken(token.jsonPath().get("id_token"))
-        SignedJWT signedJWT = SignedJWT.parse(token.body.jsonPath().get("id_token"))
+        SignedJWT signedJWT = SignedJWT.parse(token.body.jsonPath().get(tokenType))
         Utils.addJsonAttachment("Header", signedJWT.header.toString())
         Utils.addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
         return token
@@ -153,12 +148,12 @@ class Steps {
     }
 
     @Step("Update session")
-    static Response getSessionUpdateResponse(Flow flow, String refreshToken, String clientId, String clientSecret) {
+    static Response getSessionUpdateResponse(Flow flow, String refreshToken, String clientId, String clientSecret, String tokenType = "id_token") {
         Response tokenResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, clientId, clientSecret)
         if (tokenResponse.statusCode != 200) {
             return tokenResponse
         } else {
-            SignedJWT signedJWT = SignedJWT.parse(tokenResponse.body.jsonPath().get("id_token"))
+            SignedJWT signedJWT = SignedJWT.parse(tokenResponse.body.jsonPath().get(tokenType))
             Utils.addJsonAttachment("Header", signedJWT.header.toString())
             Utils.addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
             return tokenResponse
@@ -170,7 +165,8 @@ class Steps {
                                                        Response response,
                                                        String clientId = flow.oidcClientA.clientId,
                                                        String clientSecret = flow.oidcClientA.clientSecret,
-                                                       String fullResponseUrl = flow.oidcClientA.fullResponseUrl) {
+                                                       String fullResponseUrl = flow.oidcClientA.fullResponseUrl,
+                                                       String tokenType = "id_token") {
         Response initLogin = followRedirectWithCookies(flow, response, flow.sessionService.cookies)
         Response loginVerifier = followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
         flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
@@ -178,7 +174,7 @@ class Steps {
         Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_session", loginVerifier.cookie("__Host-ory_hydra_session"))
         Response initConsent = followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
         Response consentVerifier = followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
-        return getIdentityTokenResponseWithDefaults(flow, consentVerifier, clientId, clientSecret, fullResponseUrl)
+        return getTokenResponseWithDefaults(flow, consentVerifier, clientId, clientSecret, fullResponseUrl, tokenType)
     }
 
     @Step("Follow redirects to client application with existing session")
@@ -187,20 +183,32 @@ class Steps {
         Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.cookie("__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         Response initConsent = followRedirect(flow, loginVerifier)
         Response consentVerifier = followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
-        return getIdentityTokenResponseWithDefaults(flow, consentVerifier, clientId, clientSecret, fullResponseUrl)
+        return getTokenResponseWithDefaults(flow, consentVerifier, clientId, clientSecret, fullResponseUrl)
     }
 
-    @Step("Create initial session in GovSSO with ID-Card in client-A")
+    @Step("Create initial session in GovSSO with ID-Card with client-A")
     static Response authenticateWithIdCardInGovSso(Flow flow) {
-        Response oidcAuth = startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = startAuthenticationInSsoOidc(flow)
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         return followRedirectsToClientApplication(flow, taraAuthentication)
     }
 
-    @Step("Create initial session in GovSSO with ID-Card in client-A with custom ui_locales")
+    @Step("Create initial session in GovSSO with ID-Card with client-A")
+    static Response authenticateWithIdCardInGovSso(Flow flow,
+                                                   String clientId,
+                                                   String clientSecret,
+                                                   String responseUrl,
+                                                   String tokenType = "access_token") {
+        Response oidcAuth = startAuthenticationInSsoOidc(flow, clientId, responseUrl)
+        Response initLogin = startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
+        return followRedirectsToClientApplication(flow, taraAuthentication, clientId, clientSecret, responseUrl, tokenType)
+    }
+
+    @Step("Create initial session in GovSSO with ID-Card with client-A with custom ui_locales")
     static Response authenticateWithIdCardInGovSsoWithUiLocales(Flow flow, String uiLocales) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [ui_locales: uiLocales]
         Response oidcAuth = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
@@ -208,9 +216,9 @@ class Steps {
         return followRedirectsToClientApplication(flow, taraAuthentication)
     }
 
-    @Step("Create initial session in GovSSO with eIDAS in client-A")
+    @Step("Create initial session in GovSSO with eIDAS with client-A")
     static Response authenticateWithEidasInGovSso(Flow flow, String acrValue, String eidasLoa) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [acr_values: acrValue]
         Response oidcAuth = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
@@ -218,9 +226,9 @@ class Steps {
         return followRedirectsToClientApplication(flow, taraAuthentication)
     }
 
-    @Step("Create initial session in GovSSO with eIDAS in client-A with custom ui_locales")
+    @Step("Create initial session in GovSSO with eIDAS with client-A with custom ui_locales")
     static Response authenticateWithEidasInGovSsoWithUiLocales(Flow flow, String acrValue, String eidasLoa, uiLocales) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [ui_locales: uiLocales,
                       acr_values: acrValue]
         Response oidcAuth = startAuthenticationInSsoOidcWithParams(flow, paramsMap)

@@ -28,7 +28,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Start SSO authentication request with correct parameters"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
         assertThat("Correct HTTP status code", oidcAuth.statusCode, is(302))
@@ -54,7 +54,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Start OIDC authentication with invalid parameter: #paramKey"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [(paramKey): paramValue]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
@@ -77,7 +77,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Start SSO authentication with missing parameter: #missingParam"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.remove(missingParam)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
@@ -95,7 +95,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Authentication request with different ui_locales: #label"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [ui_locales: uiLocales]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
@@ -121,7 +121,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Authentication request with unknown parameter"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [my_parameter: "654321"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
@@ -135,7 +135,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("SECURE_COOKIE_HANDLING")
     def "Correct set-cookie parameters in responses"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
@@ -150,7 +150,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Incorrect OIDC login verifier request: #reason"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
@@ -181,7 +181,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Incorrect OIDC consent verifier request: #reason"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
@@ -296,7 +296,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Incorrect govsso_login_challenge passed to TARA: #govSsoLoginChallenge"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
         Map paramsMap = [govsso_login_challenge: govSsoLoginChallenge]

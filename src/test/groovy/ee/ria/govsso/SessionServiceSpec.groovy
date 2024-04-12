@@ -27,7 +27,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_REDIRECT_TO_TARA")
     def "Correct request with query parameters from session service to TARA"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
         assertThat("Correct HTTP status code", initLogin.statusCode, is(302))
@@ -46,7 +46,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication request with valid acr_values parameter: #acrValue:"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("acr_values", acrValue)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
@@ -63,7 +63,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication request with invalid acr_values parameter"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("acr_values", "invalid")
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
@@ -101,7 +101,9 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Verify session cookie attributes"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        paramsMap << [ui_locales: "et"]
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
         assertThat("Correct cookie attributes", initLogin.getDetailedCookie("__Host-AUTH").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("Secure"), containsString("Max-Age=3600"), containsString("SameSite=Lax")))
@@ -113,7 +115,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Verify __Host-AUTH JWT cookie elements"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
         SignedJWT signedJWT = SignedJWT.parse(initLogin.getCookie("__Host-AUTH"))
@@ -127,7 +129,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Correct ui_locales passed on to __Host-LOCALE cookie: #uiLocales"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithDefaults(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("ui_locales", uiLocales)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
@@ -144,7 +146,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct request with query parameters from TARA is returned to session service"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
@@ -159,7 +161,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct redirect URL with incorrect state parameter is returned from TARA"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
@@ -181,7 +183,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct redirect URL with incorrect code parameter is returned from TARA"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
@@ -204,7 +206,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Taracallback request with missing __Host-AUTH cookie"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
@@ -223,7 +225,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Taracallback request with incorrect __Host-AUTH cookie"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
@@ -245,7 +247,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_TARACALLBACK_ENDPOINT")
     def "Correct redirect URL is returned from TARA after 'back to service provider' request"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraOidcAuth1 = Steps.followRedirect(flow, initLogin)
         Response tarainitLogin = Steps.followRedirect(flow, taraOidcAuth1)
@@ -426,7 +428,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
     def "Continue session without existing session"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Steps.followRedirect(flow, oidcAuth)
         Response continueSession = Requests.postRequestWithCookies(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies)
 
@@ -438,7 +440,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
     def "Reauthenticate without existing session"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithDefaults(flow)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Steps.followRedirect(flow, oidcAuth)
         Response reauthenticate = Requests.postRequestWithCookies(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies)
 
