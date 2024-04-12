@@ -35,7 +35,12 @@ class OpenIdUtils {
         return false
     }
 
-    static Map getAuthorizationParametersWithDefaults(Flow flow, String clientId = flow.oidcClientA.clientId, String responseUrl = flow.oidcClientA.fullResponseUrl) {
+    static Boolean isJWT(String jwt) {
+        String[] jwtSplitted = jwt.split("\\.")
+        return jwtSplitted.length == 3
+    }
+
+    static Map getAuthorizationParameters(Flow flow, String clientId = flow.oidcClientA.clientId, String responseUrl = flow.oidcClientA.fullResponseUrl) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setClientId(clientId)

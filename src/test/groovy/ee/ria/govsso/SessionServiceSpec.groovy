@@ -130,7 +130,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Correct ui_locales passed on to __Host-LOCALE cookie: #uiLocales"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        paramsMap.put("ui_locales", uiLocales)
+        paramsMap << [ui_locales: uiLocales]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 

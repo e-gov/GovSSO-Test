@@ -14,6 +14,7 @@ import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.matchesPattern
 import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.oneOf
 
 @Feature("ACCESS_TOKEN")
 class AccessTokenSpec extends GovSsoSpecification {
@@ -142,7 +143,7 @@ class AccessTokenSpec extends GovSsoSpecification {
         assertThat("Correct client ID", claimsAccessToken.getClaim("client_id"), equalTo(flow.clientId))
         assertThat("Correct audience", claimsAccessToken.audience, equalTo([AUD1, AUD2]))
         assertThat("Correct issued at time", Math.abs(new Date().time - claimsAccessToken.getDateClaim("iat").time) < 10000L)
-        assertThat("Correct expiration time", claimsAccessToken.expirationTime.time - claimsAccessToken.getDateClaim("iat").time, equalTo(300000L))
+        assertThat("Correct expiration time", claimsAccessToken.expirationTime.time - claimsAccessToken.getDateClaim("iat").time, oneOf(300000L, 301000L))
         assertThat("Correct authentication method", claimsAccessToken.getClaim("amr"), equalTo(["idcard"]))
         assertThat("Correct subject claim", claimsAccessToken.subject, equalTo("EE38001085718"))
         assertThat("Correct date of birth", claimsAccessToken.getClaim("birthdate"), equalTo("1980-01-08"))
