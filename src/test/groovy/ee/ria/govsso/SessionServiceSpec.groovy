@@ -120,9 +120,9 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         SignedJWT signedJWT = SignedJWT.parse(initLogin.getCookie("__Host-AUTH"))
 
-        assertThat("Cookie contains nonce", signedJWT.getJWTClaimsSet().claims, hasKey("tara_nonce"))
-        assertThat("Cookie contains state", signedJWT.getJWTClaimsSet().claims, hasKey("tara_state"))
-        assertThat("Cookie contains login challenge", signedJWT.getJWTClaimsSet().claims, hasKey("login_challenge"))
+        assertThat("Cookie contains nonce", signedJWT.JWTClaimsSet.claims, hasKey("tara_nonce"))
+        assertThat("Cookie contains state", signedJWT.JWTClaimsSet.claims, hasKey("tara_state"))
+        assertThat("Cookie contains login challenge", signedJWT.JWTClaimsSet.claims, hasKey("login_challenge"))
     }
 
     @Unroll
@@ -454,7 +454,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Create session in client-A with eIDAS substantial acr and initialize authentication sequence in client-B with high acr"() {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("id_token")).JWTClaimsSet
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)

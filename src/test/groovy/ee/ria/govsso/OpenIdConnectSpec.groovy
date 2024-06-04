@@ -125,7 +125,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
 
         Response token = Steps.getTokenResponseWithDefaults(flow, consentVerifier)
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.jsonPath().get("id_token")).JWTClaimsSet
         assertThat(claims.getClaim("nonce"), equalTo(paramsMap.get("nonce")))
     }
 

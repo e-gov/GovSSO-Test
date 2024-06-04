@@ -47,7 +47,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         given: "Create a session"
         Response session = Steps.authenticateWithIdCardInGovSso(flow1)
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, session.body.jsonPath().get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, session.body.jsonPath().get("id_token")).JWTClaimsSet
         String sessionId = [claims.getClaim("sid")]
         Instant requestedAt = claims.getDateClaim("rat").toInstant()
 
@@ -150,11 +150,11 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
 
         String idToken1 = session1.jsonPath().get("id_token").toString()
-        JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1).getJWTClaimsSet()
+        JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1).JWTClaimsSet
         String session1Id = claims1.getClaim("sid")
 
         String idToken2 = session2.jsonPath().get("id_token").toString()
-        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow2, idToken2).getJWTClaimsSet()
+        JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow2, idToken2).JWTClaimsSet
         String session2Id = [claims2.getClaim("sid")]
 
         when: "DELETE specific session and request users' sessions information"
