@@ -36,8 +36,8 @@ class OpenIdUtils {
     }
 
     static Boolean isJWT(String jwt) {
-        String[] jwtSplitted = jwt.split("\\.")
-        return jwtSplitted.length == 3
+        String[] jwtSplit = jwt.split("\\.")
+        return jwtSplit.length == 3
     }
 
     static Map getAuthorizationParameters(Flow flow, String clientId = flow.oidcClientA.clientId, String responseUrl = flow.oidcClientA.fullResponseUrl) {

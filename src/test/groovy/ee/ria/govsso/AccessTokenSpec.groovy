@@ -30,15 +30,16 @@ class AccessTokenSpec extends GovSsoSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
     }
 
-    def "Authentication with access token configured client should return JWT access token"() {
+    def "Authentication with access token configured client should return JWT access token with configured expiration time"() {
         given: "Create session"
-        Response createSession = Steps.authenticateWithIdCardInGovSso(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "access_token")
+        Response tokenResponse = Steps.authenticateWithIdCardInGovSso(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "access_token")
 
         when: "Get access token claims"
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("access_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.body.jsonPath().get("access_token")).getJWTClaimsSet()
 
         then:
         assertThat("Correct audience", claims.getClaim("aud"), equalTo([AUD1, AUD2]))
+        assertThat("Default expiration time", tokenResponse.jsonPath().getInt("expires_in"), oneOf(599, 600))
     }
 
     def "Session update with access token configured client should return JWT access token"() {
@@ -136,26 +137,26 @@ class AccessTokenSpec extends GovSsoSpecification {
                 "exp", "ext", "family_name", "given_name", "iat",
                 "iss", "jti", "scp", "sub"
         ]
-        assertThat("JWT has only expected claims", claimsAccessToken.getClaims().keySet(), equalTo(expectedClaims))
+        assertThat("JWT has only expected claims", claimsAccessToken.getClaims().keySet(), is(expectedClaims))
         assertThat("Jti claim exists", claimsAccessToken.getJWTID(), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertThat("Access token jti claim is unique from ID token jti", claimsAccessToken.getJWTID(), not(is(claimsIDToken.getJWTID())))
-        assertThat("Correct issuer", claimsAccessToken.issuer, equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        assertThat("Correct client ID", claimsAccessToken.getClaim("client_id"), equalTo(flow.clientId))
-        assertThat("Correct audience", claimsAccessToken.audience, equalTo([AUD1, AUD2]))
+        assertThat("Correct issuer", claimsAccessToken.issuer, is(flow.openIdServiceConfiguration.get("issuer")))
+        assertThat("Correct client ID", claimsAccessToken.getClaim("client_id"), is(flow.clientId))
+        assertThat("Correct audience", claimsAccessToken.audience, is([AUD1, AUD2]))
         assertThat("Correct issued at time", Math.abs(new Date().time - claimsAccessToken.getDateClaim("iat").time) < 10000L)
-        assertThat("Correct expiration time", claimsAccessToken.expirationTime.time - claimsAccessToken.getDateClaim("iat").time, oneOf(300000L, 301000L))
-        assertThat("Correct authentication method", claimsAccessToken.getClaim("amr"), equalTo(["idcard"]))
-        assertThat("Correct subject claim", claimsAccessToken.subject, equalTo("EE38001085718"))
-        assertThat("Correct date of birth", claimsAccessToken.getClaim("birthdate"), equalTo("1980-01-08"))
-        assertThat("Correct given name", claimsAccessToken.getClaim("given_name"), equalTo("JAAK-KRISTJAN"))
-        assertThat("Correct family name", claimsAccessToken.getClaim("family_name"), equalTo("JÕEORG"))
-        assertThat("Correct LoA level", claimsAccessToken.getClaim("acr"), equalTo("high"))
+        assertThat("Correct expiration time", claimsAccessToken.expirationTime.time - claimsAccessToken.getDateClaim("iat").time, oneOf(600000L, 601000L))
+        assertThat("Correct authentication method", claimsAccessToken.getClaim("amr"), is(["idcard"]))
+        assertThat("Correct subject claim", claimsAccessToken.subject, is("EE38001085718"))
+        assertThat("Correct date of birth", claimsAccessToken.getClaim("birthdate"), is("1980-01-08"))
+        assertThat("Correct given name", claimsAccessToken.getClaim("given_name"), is("JAAK-KRISTJAN"))
+        assertThat("Correct family name", claimsAccessToken.getClaim("family_name"), is("JÕEORG"))
+        assertThat("Correct LoA level", claimsAccessToken.getClaim("acr"), is("high"))
         assertThat("Correct ext.acr claim", claimsAccessToken.getClaim("ext").getAt("acr"), is(claimsAccessToken.getClaim("acr")))
         assertThat("Correct ext.amr claim", claimsAccessToken.getClaim("ext").getAt("amr"), is(claimsAccessToken.getClaim("amr")))
         assertThat("Correct ext.birthdate claim", claimsAccessToken.getClaim("ext").getAt("birthdate"), is(claimsAccessToken.getClaim("birthdate")))
         assertThat("Correct ext.given_name claim", claimsAccessToken.getClaim("ext").getAt("given_name"), is(claimsAccessToken.getClaim("given_name")))
         assertThat("Correct ext.gamily_name claim", claimsAccessToken.getClaim("ext").getAt("family_name"), is(claimsAccessToken.getClaim("family_name")))
-        assertThat("Correct scp name", claimsAccessToken.getClaim("scp"), equalTo(["openid"]))
+        assertThat("Correct scp name", claimsAccessToken.getClaim("scp"), is(["openid"]))
     }
 
     def "Access token should hold correct values with scope: openid phone"() {
@@ -182,11 +183,12 @@ class AccessTokenSpec extends GovSsoSpecification {
         assertThat("Correct phone_number_verified claim exists", claims.getClaim("phone_number_verified"), equalTo(true))
     }
 
-    def "Access_token for a client with no access token configuration should hold non-JWT value"() {
+    def "Access_token for a client with no access token configuration should hold non-JWT value and default expiration time"() {
         when: "Receive token response"
         Response tokenResponse = Steps.authenticateWithIdCardInGovSso(flow)
 
         then:
         assertThat("Access token is not JWT", isJWT(tokenResponse.jsonPath().getString("access_token")), is(false))
+        assertThat("Default expiration time", tokenResponse.jsonPath().getInt("expires_in"), oneOf(0, 1))
     }
 }
