@@ -17,7 +17,8 @@ class Steps {
 
     @Step("Initialize authentication sequence in SSO OIDC service with params")
     static Response startAuthenticationInSsoOidcWithParams(Flow flow, Map paramsMap) {
-        Response oidcAuth = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.cookies, paramsMap)
+        Map cookies = flow.ssoOidcService.cookies + flow.sessionService.cookies
+        Response oidcAuth = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, cookies, paramsMap)
         Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_login_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), oidcAuth.cookie("__Host-ory_hydra_login_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(oidcAuth, "login_challenge"))
         return oidcAuth
@@ -59,7 +60,7 @@ class Steps {
     static Response startSessionInSessionService(Flow flow, Response response) {
         Response initSession = followRedirectWithCookies(flow, response, flow.ssoOidcService.cookies)
         Utils.setParameter(flow.sessionService.cookies, "__Host-AUTH", initSession.cookie("__Host-AUTH"))
-        Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", initSession.cookie("__Host-XSRF-TOKEN"))
+        //Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", initSession.cookie("__Host-XSRF-TOKEN"))
         return initSession
     }
 
@@ -67,7 +68,7 @@ class Steps {
     static Response startSessionInSessionServiceWithOrigin(Flow flow, Response response, String origin) {
         Response initSession = followRedirectWithCookiesAndOrigin(flow, response, flow.ssoOidcService.cookies, origin)
         Utils.setParameter(flow.sessionService.cookies, "__Host-AUTH", initSession.cookie("__Host-AUTH"))
-        Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", initSession.cookie("__Host-XSRF-TOKEN"))
+        //Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", initSession.cookie("__Host-XSRF-TOKEN"))
         return initSession
     }
 
@@ -167,7 +168,8 @@ class Steps {
                                                        String clientSecret = flow.oidcClientA.clientSecret,
                                                        String fullResponseUrl = flow.oidcClientA.fullResponseUrl,
                                                        String tokenType = "id_token") {
-        Response initLogin = followRedirectWithCookies(flow, response, flow.sessionService.cookies)
+        Map cookies = flow.sessionService.cookies + flow.ssoOidcService.cookies
+        Response initLogin = followRedirectWithCookies(flow, response, cookies)
         Response loginVerifier = followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
         flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
         Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.cookie("__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
@@ -248,7 +250,7 @@ class Steps {
                 return redirectResponse
             } else {
                 Map formParams = [loginChallenge: flow.loginChallenge,
-                                  _csrf         : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
+                                  _csrf         : redirectResponse.body.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
                 Response continueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
                 return followRedirectsToClientApplicationWithExistingSession(flow, continueSession, clientId, clientSecret, responseUrl)
             }
