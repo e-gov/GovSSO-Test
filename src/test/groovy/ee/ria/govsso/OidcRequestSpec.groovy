@@ -138,8 +138,8 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
-        Response loginVerifier = Steps.followRedirectWithCookies(flow, taracallback, flow.ssoOidcService.cookies)
+        Response taracallback = Steps.followRedirect(flow, taraAuthentication)
+        Response loginVerifier = Steps.followRedirect(flow, taracallback)
 
         assertThat("Correct cookie attributes", oidcAuth.detailedCookie("__Host-ory_hydra_login_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()).toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure"), containsString("Max-Age=3600")))
         assertThat("Correct cookie attributes", loginVerifier.detailedCookie("__Host-ory_hydra_session").toString(), allOf(containsString("Path=/"), containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Secure")))
@@ -153,7 +153,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
+        Response taracallback = Steps.followRedirect(flow, taraAuthentication)
 
         Map queryParams = [client_id     : Utils.getParamValueFromResponseHeader(taracallback, clientId),
                            login_verifier: Utils.getParamValueFromResponseHeader(taracallback, login_verifier),
@@ -162,7 +162,7 @@ class OidcRequestSpec extends GovSsoSpecification {
                            scope         : Utils.getParamValueFromResponseHeader(taracallback, scope),
                            state         : Utils.getParamValueFromResponseHeader(taracallback, state)]
 
-        Response loginVerifier = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.cookies, queryParams)
+        Response loginVerifier = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, queryParams)
 
         assertThat("Correct HTTP status code", loginVerifier.statusCode, is(statusCode))
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(loginVerifier, "error_description"), is(error))
@@ -184,9 +184,9 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        Response taracallback = Steps.followRedirectWithCookies(flow, taraAuthentication, flow.sessionService.cookies)
-        Response loginVerifier = Steps.followRedirectWithCookies(flow, taracallback, flow.ssoOidcService.cookies)
-        Response initConsent = Steps.followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
+        Response taracallback = Steps.followRedirect(flow, taraAuthentication)
+        Response loginVerifier = Steps.followRedirect(flow, taracallback)
+        Response initConsent = Steps.followRedirect(flow, loginVerifier)
 
         Map queryParams = [client_id       : Utils.getParamValueFromResponseHeader(initConsent, clientId),
                            consent_verifier: Utils.getParamValueFromResponseHeader(initConsent, consent_verifier),
@@ -195,7 +195,7 @@ class OidcRequestSpec extends GovSsoSpecification {
                            scope           : Utils.getParamValueFromResponseHeader(initConsent, scope),
                            state           : Utils.getParamValueFromResponseHeader(initConsent, state)]
 
-        Response consentVerifier = Requests.getRequestWithCookiesAndParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, flow.ssoOidcService.cookies, queryParams)
+        Response consentVerifier = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, queryParams)
 
         assertThat("Correct HTTP status code", consentVerifier.statusCode, is(statusCode))
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(consentVerifier, "error_description"), is(error))
@@ -263,7 +263,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.jsonPath().get("id_token")
 
-        Steps.logout(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.sessionService.fullLogoutEndSessionUrl)
+        Steps.logout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, flow.sessionService.fullLogoutEndSessionUrl)
 
         Map queryParams = [logout_verifier: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"]
 
@@ -279,10 +279,10 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Steps.followRedirect(flow, oidcAuth)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: flow.loginChallenge,
-                          _csrf         : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
+                          _csrf         : initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
         Response loginReject = Requests.postRequestWithParams(flow, flow.sessionService.fullLoginRejectUrl, formParams)
         Response loginVerifier = Steps.followRedirect(flow, loginReject)
 
@@ -301,7 +301,7 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         Map paramsMap = [govsso_login_challenge: govSsoLoginChallenge]
 
-        Response taraOidcAuth = Steps.followRedirectWithAlteredQueryParameters(flow, initLogin, paramsMap)
+        Response taraOidcAuth = Requests.followRedirectWithParams(flow, initLogin.getHeader("Location"), paramsMap)
         Response taraInitLogin = Steps.followRedirect(flow, taraOidcAuth)
 
         assertThat("Correct HTTP status code", taraInitLogin.statusCode, is(400))
@@ -387,11 +387,11 @@ class OidcRequestSpec extends GovSsoSpecification {
         String refreshToken = createSession.body.jsonPath().get("refresh_token")
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Steps.followRedirect(flow, oidcAuth)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: flow.loginChallenge,
-                          _csrf         : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
-        Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.ssoOidcService.cookies, formParams)
+                          _csrf         : initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
+        Requests.postRequestWithParams(flow, flow.sessionService.fullReauthenticateUrl, formParams)
 
         Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
 

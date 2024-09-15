@@ -18,6 +18,7 @@ class Requests {
                 .filter(flow.cookieFilter)
                 .log().cookies()
                 .redirects().follow(false)
+                .header("User-Agent", "Test User-Agent")
                 .get(location)
     }
 
@@ -32,19 +33,6 @@ class Requests {
                 .redirects().follow(false)
                 .get(location)
 
-    }
-
-    @Step("Follow redirect request with cookies and origin")
-    static Response followRedirectWithCookiesAndOrigin(Flow flow, String location, Map myCookies, String origin) {
-        return given()
-                .urlEncodingEnabled(false)
-                .relaxedHTTPSValidation()
-                .filter(flow.cookieFilter)
-                .cookies(myCookies)
-                .header("Origin", origin)
-                .log().cookies()
-                .redirects().follow(false)
-                .get(location)
     }
 
     @Step("Follow redirect request with additional query params")
@@ -68,7 +56,6 @@ class Requests {
                 .cookies(myCookies)
                 .log().cookies()
                 .redirects().follow(false)
-                .header("User-Agent", "Test User-Agent")
                 .get(location)
     }
 
@@ -128,15 +115,14 @@ class Requests {
     }
 
     @Step("Get request with cookies and params")
-    static Response getRequestWithCookiesParamsAndOrigin(Flow flow, String url
-                                                         , Map cookies
-                                                         , Map queryParams
-                                                         , String origin) {
+    static Response getRequestWithParamsAndOrigin(Flow flow,
+                                                  String url,
+                                                  Map queryParams,
+                                                  String origin) {
         return given()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
-                .cookies(cookies)
                 .queryParams(queryParams)
                 .header("Origin", origin)
                 .log().cookies()
@@ -171,12 +157,11 @@ class Requests {
     }
 
     @Step("Post request with cookies, params and origin header")
-    static Response postRequestWithCookiesParamsAndOrigin(Flow flow, String url, Map cookies, Map formParams, String origin) {
+    static Response postRequestWithParamsAndOrigin(Flow flow, String url, Map formParams, String origin) {
         return given()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
-                .cookies(cookies)
                 .formParams(formParams)
                 .header("Origin", origin)
                 .log().cookies()
@@ -207,12 +192,11 @@ class Requests {
     }
 
     @Step("Post request with cookies")
-    static Response postRequestWithCookies(Flow flow, String url, Map cookies) {
+    static Response postRequest(Flow flow, String url) {
         return given()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
-                .cookies(cookies)
                 .log().cookies()
                 .redirects().follow(false)
                 .post(url)

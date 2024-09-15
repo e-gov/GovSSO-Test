@@ -170,9 +170,8 @@ class MainFlowSpec extends GovSsoSpecification {
         Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Steps.followRedirect(flow, oidcAuth)
 
-        Response reauthenticate = Steps.reauthenticateAfterAcrDiscrepancy(flow)
+        Response reauthenticate = Steps.reauthenticateAfterAcrDiscrepancy(flow, oidcAuth)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, reauthenticate.body.jsonPath().get("id_token")).JWTClaimsSet
         assertThat("Correct acr value in token", claims.getClaim("acr"), is("high"))

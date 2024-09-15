@@ -26,7 +26,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Response initLogin = Steps.followRedirectWithCookies(flow, oidcAuth, flow.ssoOidcService.cookies)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         String buttonContinueSession = initLogin.body.htmlPath().getString("**.find { button -> button.@formaction == '/login/continuesession'}")
         String buttonReauthenticate = initLogin.body.htmlPath().getString("**.find { button -> button.@formaction == '/login/reauthenticate'}")
@@ -74,7 +74,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Response initLogin = Steps.followRedirectWithCookies(flow, oidcAuth, flow.ssoOidcService.cookies)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         initLogin.then().body("html.head.title", equalTo(title))
 
@@ -134,7 +134,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
-        Response initLogin = Steps.followRedirectWithCookies(flow, oidcAuth, flow.ssoOidcService.cookies)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         assertThat("Correct first name", initLogin.body.htmlPath().getString("/personal-info/*}").contains("JAAK-KRISTJAN"))
         assertThat("Correct surname", initLogin.body.htmlPath().getString("/personal-info/*}").contains("JÕEORG"))
@@ -156,7 +156,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
         Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl, "openid phone")
-        Response initLogin2 = Steps.followRedirectWithCookies(flow, oidcAuth2, flow.ssoOidcService.cookies)
+        Response initLogin2 = Steps.followRedirect(flow, oidcAuth2)
 
         assertThat("Correct first name", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("ONE"))
         assertThat("Correct surname", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("TESTNUMBER"))
@@ -178,7 +178,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
         Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl, "openid")
-        Response initLogin2 = Steps.followRedirectWithCookies(flow, oidcAuth2, flow.ssoOidcService.cookies)
+        Response initLogin2 = Steps.followRedirect(flow, oidcAuth2)
 
         assertThat("Correct first name", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("ONE"))
         assertThat("Correct surname", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("TESTNUMBER"))

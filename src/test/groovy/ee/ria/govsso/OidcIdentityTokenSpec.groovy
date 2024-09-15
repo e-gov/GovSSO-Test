@@ -1,14 +1,11 @@
 package ee.ria.govsso
 
-import com.google.common.hash.Hashing
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-
-import java.nio.charset.StandardCharsets
 
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.is
@@ -45,23 +42,23 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
 
     @Feature("ID_TOKEN")
     def "Verify ID token response with client_secret_post configured client"() {
-    given: "Create session"
-    Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, "client-f", "https://clientf.localhost:11443/login/oauth2/code/govsso")
-    Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
-    Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-    Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
-    String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
+        given: "Create session"
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, "client-f", "https://clientf.localhost:11443/login/oauth2/code/govsso")
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
+        Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
 
-    when: "Request ID token with client_secret_post"
-    Response tokenResponse = Requests.webTokenPostRequest(flow, authorizationCode)
+        when: "Request ID token with client_secret_post"
+        Response tokenResponse = Requests.webTokenPostRequest(flow, authorizationCode)
 
-    then:
-    assertThat("Correct token_type value", tokenResponse.jsonPath().getString("token_type"), is("bearer"))
-    assertThat("Correct scope value", tokenResponse.jsonPath().getString("scope"), is("openid"))
-    assertThat("Access token element exists", tokenResponse.jsonPath().getString("access_token").size() > 32)
-    assertThat("Expires in element exists", tokenResponse.jsonPath().getInt("expires_in") <= 1)
-    assertThat("ID token element exists", tokenResponse.jsonPath().getString("id_token").size() > 1000)
-    assertThat("Refresh token element exists", tokenResponse.jsonPath().getString("refresh_token").size() == 94)
+        then:
+        assertThat("Correct token_type value", tokenResponse.jsonPath().getString("token_type"), is("bearer"))
+        assertThat("Correct scope value", tokenResponse.jsonPath().getString("scope"), is("openid"))
+        assertThat("Access token element exists", tokenResponse.jsonPath().getString("access_token").size() > 32)
+        assertThat("Expires in element exists", tokenResponse.jsonPath().getInt("expires_in") <= 1)
+        assertThat("ID token element exists", tokenResponse.jsonPath().getString("id_token").size() > 1000)
+        assertThat("Refresh token element exists", tokenResponse.jsonPath().getString("refresh_token").size() == 94)
     }
 
     @Feature("ID_TOKEN")
@@ -324,12 +321,10 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
 
     @Step("Follow redirects to client application")
     static Response followRedirectsToClientApplication(Flow flow, Response authenticationFinishedResponse) {
-        Response initLogin = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.sessionService.cookies)
-        Response loginVerifier = Steps.followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
+        Response initLogin = Steps.followRedirect(flow, authenticationFinishedResponse)
+        Response loginVerifier = Steps.followRedirect(flow, initLogin)
         flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
-        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
-        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_session", loginVerifier.getCookie("__Host-ory_hydra_session"))
-        Response initConsent = Steps.followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
-        return Steps.followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
+        Response initConsent = Steps.followRedirect(flow, loginVerifier)
+        return Steps.followRedirect(flow, initConsent)
     }
 }

@@ -1,14 +1,11 @@
 package ee.ria.govsso
 
-import com.google.common.hash.Hashing
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import com.nimbusds.jose.jwk.JWKSet
-
-import java.nio.charset.StandardCharsets
 
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.equalTo
@@ -131,12 +128,10 @@ class OpenIdConnectSpec extends GovSsoSpecification {
 
     @Step("Follow redirects to client application")
     static Response followRedirectsToClientApplication(Flow flow, Response authenticationFinishedResponse) {
-        Response initLogin = Steps.followRedirectWithCookies(flow, authenticationFinishedResponse, flow.sessionService.cookies)
-        Response loginVerifier = Steps.followRedirectWithCookies(flow, initLogin, flow.ssoOidcService.cookies)
+        Response initLogin = Steps.followRedirect(flow, authenticationFinishedResponse)
+        Response loginVerifier = Steps.followRedirect(flow, initLogin)
         flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
-        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt(), loginVerifier.getCookie("__Host-ory_hydra_consent_csrf_" + Hashing.murmur3_32().hashString(flow.clientId, StandardCharsets.UTF_8).asInt()))
-        Utils.setParameter(flow.ssoOidcService.cookies, "__Host-ory_hydra_session", loginVerifier.getCookie("__Host-ory_hydra_session"))
-        Response initConsent = Steps.followRedirectWithCookies(flow, loginVerifier, flow.ssoOidcService.cookies)
-        return Steps.followRedirectWithCookies(flow, initConsent, flow.ssoOidcService.cookies)
+        Response initConsent = Steps.followRedirect(flow, loginVerifier)
+        return Steps.followRedirect(flow, initConsent)
     }
 }
