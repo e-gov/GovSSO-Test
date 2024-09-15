@@ -5,6 +5,7 @@ import io.restassured.RestAssured
 import io.restassured.filter.log.RequestLoggingFilter
 import io.restassured.filter.log.ResponseLoggingFilter
 
+import java.nio.file.Path
 import java.nio.file.Paths
 
 class BeforeAll {
@@ -17,7 +18,8 @@ class BeforeAll {
             envFile.withInputStream {
                 envProperties.load(it)
             }
-            Paths.get(envProperties.getProperty("configuration_base_path"), envProperties.getProperty("configuration_path"), "application.properties").withInputStream {
+            Path propertiesPath = Paths.get(envProperties.getProperty("configuration_base_path"), envProperties.getProperty("configuration_path"), "application.properties")
+            propertiesPath.toFile().withInputStream {
                 props.load(it)
             }
         } else { // Read base test properties from classpath
