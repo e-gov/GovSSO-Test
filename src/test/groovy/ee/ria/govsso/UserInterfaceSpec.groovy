@@ -155,7 +155,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin1)
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl, "openid phone")
+        Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid phone")
         Response initLogin2 = Steps.followRedirect(flow, oidcAuth2)
 
         assertThat("Correct first name", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("ONE"))
@@ -177,7 +177,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin1)
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl, "openid")
+        Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid")
         Response initLogin2 = Steps.followRedirect(flow, oidcAuth2)
 
         assertThat("Correct first name", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("ONE"))

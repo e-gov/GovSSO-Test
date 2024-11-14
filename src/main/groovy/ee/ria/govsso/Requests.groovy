@@ -311,6 +311,18 @@ class Requests {
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 
+    @Step("Get session update response with scope")
+    static Response getSessionUpdateWebToken(Flow flow, String scope, String refreshToken, String clientId, String clientSecret) {
+        return given()
+                .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
+                .formParam("scope", scope)
+                .formParam("grant_type", "refresh_token")
+                .formParam("refresh_token", refreshToken)
+                .auth().preemptive().basic(clientId, clientSecret)
+                .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
+    }
+
     @Step("Get token response body")
     static Response getWebTokenResponseBody(Flow flow, Map formParams) {
         return given()

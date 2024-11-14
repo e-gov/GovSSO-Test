@@ -55,10 +55,11 @@ class OpenIdUtils {
         return queryParams
     }
 
-    static Map getAuthorizationParametersWithScope(Flow flow, String clientId, String fullResponseUrl, String scope) {
+    static Map getAuthorizationParametersWithScope(Flow flow, String clientId, String clientSecret, String fullResponseUrl, String scope) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setClientId(clientId)
+        flow.setClientSecret(clientSecret)
         Map queryParams = [response_type: "code",
                            scope        : scope,
                            client_id    : clientId,

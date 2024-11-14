@@ -39,8 +39,8 @@ class Steps {
     }
 
     @Step("Initialize authentication sequence in OIDC service")
-    static Response startAuthenticationInSsoOidcWithScope(Flow flow, String clientId, String fullResponseUrl, String scope) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithScope(flow, clientId, fullResponseUrl, scope)
+    static Response startAuthenticationInSsoOidcWithScope(Flow flow, String clientId, String clientSecret, String fullResponseUrl, String scope) {
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithScope(flow, clientId, clientSecret, fullResponseUrl, scope)
         return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
@@ -139,6 +139,20 @@ class Steps {
         }
     }
 
+    @Step("Update session with scope")
+    static Response getSessionUpdateResponseWithScope(Flow flow, String scope) {
+        Response tokenResponse = Requests.getSessionUpdateWebToken(flow, scope, flow.refreshToken, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret)
+        if (tokenResponse.statusCode != 200) {
+            return tokenResponse
+        } else {
+            SignedJWT signedJWT = SignedJWT.parse(tokenResponse.body.jsonPath().get("id_token"))
+            Utils.addJsonAttachment("Header", signedJWT.header.toString())
+            Utils.addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
+            flow.setRefreshToken(tokenResponse.jsonPath().get("refresh_token"))
+            return tokenResponse
+        }
+    }
+
     @Step("Follow redirects to token request")
     static Response followRedirectsToClientApplication(Flow flow,
                                                        Response response,
@@ -168,6 +182,14 @@ class Steps {
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         return followRedirectsToClientApplication(flow, taraAuthentication)
+    }
+
+    @Step("Create initial session in GovSSO with Client-B with scope")
+    static Response authenticateInGovSsoWithScope(Flow flow, String scope = "openid representee.* representee_list") {
+        Response oidcAuth = startAuthenticationInSsoOidcWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, scope)
+        Response initLogin = startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
+        return followRedirectsToClientApplication(flow, taraAuthentication, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "id_token")
     }
 
     @Step("Create initial session in GovSSO with ID-Card with client-A")
@@ -233,7 +255,7 @@ class Steps {
 
     @Step("Use existing session to authenticate to another client with scope")
     static Response continueWithExistingSessionWithScope(Flow flow, String clientId, String clientSecret, String responseUrl, String scope) {
-        Response oidcAuth = startAuthenticationInSsoOidcWithScope(flow, clientId, responseUrl, scope)
+        Response oidcAuth = startAuthenticationInSsoOidcWithScope(flow, clientId, clientSecret, responseUrl, scope)
         Response initLogin = followRedirect(flow, oidcAuth)
         Map formParams = [loginChallenge: flow.loginChallenge,
                           _csrf         : initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]

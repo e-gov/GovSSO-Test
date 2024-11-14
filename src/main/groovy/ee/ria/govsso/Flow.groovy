@@ -20,6 +20,7 @@ class Flow {
     CookieFilter cookieFilter
 
     String clientId
+    String clientSecret
     String loginChallenge
     String logoutChallenge
     String consentChallenge
