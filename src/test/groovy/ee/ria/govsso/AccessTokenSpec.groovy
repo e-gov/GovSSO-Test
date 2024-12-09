@@ -35,7 +35,7 @@ class AccessTokenSpec extends GovSsoSpecification {
         Response tokenResponse = Steps.authenticateWithIdCardInGovSso(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "access_token")
 
         when: "Get access token claims"
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.body.jsonPath().get("access_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.body.path("access_token")).JWTClaimsSet
 
         then:
         assertThat("Correct audience", claims.getClaim("aud"), equalTo([AUD1, AUD2]))
@@ -48,7 +48,7 @@ class AccessTokenSpec extends GovSsoSpecification {
 
         when: "Update session and get new access token claims"
         Response updateSession = Steps.getSessionUpdateResponse(flow, flow.refreshToken, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, "access_token")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.jsonPath().get("access_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.path("access_token")).JWTClaimsSet
 
         then:
         assertThat("Correct audience", claims.getClaim("aud"), equalTo([AUD1, AUD2]))
@@ -60,7 +60,7 @@ class AccessTokenSpec extends GovSsoSpecification {
 
         when: "Continue session and get new access token claims"
         Response continueSession = Steps.continueWithExistingSession(flow)
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.jsonPath().get("access_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("access_token")).JWTClaimsSet
 
         then:
         assertThat("Correct audience", claims.getClaim("aud"), equalTo([AUD1, AUD2]))
@@ -76,7 +76,7 @@ class AccessTokenSpec extends GovSsoSpecification {
         Response tokenRequest = Steps.followRedirectsToClientApplication(flow, taraAuthentication, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "access_token")
 
         when: "Get access token claims"
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenRequest.body.jsonPath().get("access_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenRequest.body.path("access_token")).JWTClaimsSet
 
         then:
         assertThat("Correct audience", claims.getClaim("aud"), equalTo([audience]))
@@ -99,7 +99,7 @@ class AccessTokenSpec extends GovSsoSpecification {
 
         when: "Update session and get access token claims"
         Response updateSession = Steps.getSessionUpdateResponse(flow, flow.refreshToken, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, "access_token")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.jsonPath().get("access_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.path("access_token")).JWTClaimsSet
 
         then:
         assertThat("Correct audience", claims.getClaim("aud"), equalTo([AUD1]))
@@ -128,8 +128,8 @@ class AccessTokenSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "access_token")
 
         when: "Get access token claims"
-        JWTClaimsSet claimsAccessToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("access_token")).JWTClaimsSet
-        JWTClaimsSet claimsIDToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("id_token")).JWTClaimsSet
+        JWTClaimsSet claimsAccessToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.path("access_token")).JWTClaimsSet
+        JWTClaimsSet claimsIDToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.path("id_token")).JWTClaimsSet
 
         then:
         Set expectedClaims = [
@@ -163,7 +163,7 @@ class AccessTokenSpec extends GovSsoSpecification {
         Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "access_token")
 
         when: "Get access token claims"
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.jsonPath().get("access_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.path("access_token")).JWTClaimsSet
 
         then:
         Set expectedClaims = [

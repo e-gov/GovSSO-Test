@@ -154,7 +154,7 @@ class TaraSteps {
         while (counter < 12) {
             sleep(pollingIntevalMillis)
             response = pollMid(flow)
-            if (response.body.jsonPath().get("status") != "PENDING") {
+            if (response.body.path("status") != "PENDING") {
                 break
             }
             ++counter
@@ -226,7 +226,7 @@ class TaraSteps {
         Response response = null
         while (counter < 20) {
             response = pollSid(flow)
-            if (response.body.jsonPath().get("status") != "PENDING") {
+            if (response.body.path("status") != "PENDING") {
                 break
             }
             ++counter
@@ -253,7 +253,7 @@ class TaraSteps {
     static Response authenticateWithIdCardInTARA(Flow flow, Response response) {
         startAuthenticationInTara(flow, response.getHeader("location"))
         Response initWebEid = postRequestWithSessionId(flow, flow.taraService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.taraService.baseUrl, initWebEid.jsonPath().get("nonce"))
+        String signAuthValue = Utils.signAuthenticationValue(flow, flow.taraService.baseUrl, initWebEid.path("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
         postRequestWithJsonBody(flow, flow.taraService.fullWebEidLoginUrl, authToken)
         Response loginResponse = postRequestWithSessionId(flow, flow.taraService.fullAuthAcceptUrl)

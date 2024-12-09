@@ -455,7 +455,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Create session in client-A with eIDAS substantial acr and initialize authentication sequence in client-B with high acr"() {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("id_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.path("id_token")).JWTClaimsSet
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
@@ -470,7 +470,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
@@ -491,7 +491,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
@@ -512,7 +512,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
@@ -534,7 +534,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
@@ -557,7 +557,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
@@ -581,7 +581,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
@@ -602,7 +602,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
@@ -623,7 +623,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
@@ -644,7 +644,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
@@ -666,7 +666,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
@@ -691,7 +691,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         HashMap<String, String> queryParamsOidc = new HashMap<>()
         Utils.setParameter(queryParamsOidc, "id_token_hint", idToken)
@@ -715,7 +715,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, "")
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
@@ -731,7 +731,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Map queryParams = [:]
         Utils.setParameter(queryParams, "id_token_hint", idToken)

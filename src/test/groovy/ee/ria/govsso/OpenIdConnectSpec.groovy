@@ -26,7 +26,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
     def "Metadata and token key ID matches"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String keyID = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.jsonPath().get("id_token")).header.keyID
+        String keyID = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.path("id_token")).header.keyID
 
         assertThat("Correct HTTP status code", createSession.statusCode, is(200))
         assertThat("Matching key ID", keyID, is(flow.jwkSet.keys[0].getKeyID()))
@@ -77,8 +77,8 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertThat("Correct HTTP status code", token.statusCode, is(statusCode))
         assertThat("Correct Content-Type is returned", token.contentType, startsWith("application/json"))
         assertThat("Correct error message", token.body.jsonPath().getString("error"), is(error))
-        assertThat("Correct error_description prefix", token.body.jsonPath().get("error_description"), startsWith(errorPrefix))
-        assertThat("Correct error_description suffix", token.body.jsonPath().get("error_description"), endsWith(errorSuffix))
+        assertThat("Correct error_description prefix", token.body.path("error_description"), startsWith(errorPrefix))
+        assertThat("Correct error_description suffix", token.body.path("error_description"), endsWith(errorSuffix))
 
         where:
         paramName      || statusCode || error             || errorPrefix                                   || errorSuffix
@@ -99,8 +99,8 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         assertThat("Correct HTTP status code", token.statusCode, is(statusCode))
         assertThat("Correct Content-Type", token.contentType, startsWith("application/json"))
         assertThat("Correct error message", token.body.jsonPath().getString("error"), is(error))
-        assertThat("Correct error_description prefix", token.body.jsonPath().get("error_description"), startsWith(errorPrefix))
-        assertThat("Correct error_description suffix", token.body.jsonPath().get("error_description"), endsWith(errorSuffix))
+        assertThat("Correct error_description prefix", token.body.path("error_description"), startsWith(errorPrefix))
+        assertThat("Correct error_description suffix", token.body.path("error_description"), endsWith(errorSuffix))
 
         where:
         paramName      | paramValue                || statusCode || error             || errorPrefix                                   || errorSuffix
@@ -122,7 +122,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
 
         Response token = Steps.getTokenResponseWithDefaults(flow, consentVerifier)
 
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.jsonPath().get("id_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.path("id_token")).JWTClaimsSet
         assertThat(claims.getClaim("nonce"), equalTo(paramsMap.get("nonce")))
     }
 

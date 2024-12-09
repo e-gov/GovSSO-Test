@@ -110,9 +110,9 @@ class Steps {
                                                  String tokenType = "id_token") {
         String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
         Response token = Requests.webTokenBasicRequest(flow, authorizationCode, clientId, clientSecret, fullResponseUrl)
-        flow.setRefreshToken(token.jsonPath().get("refresh_token"))
-        flow.setIdToken(token.jsonPath().get("id_token"))
-        SignedJWT signedJWT = SignedJWT.parse(token.body.jsonPath().get(tokenType))
+        flow.setRefreshToken(token.path("refresh_token"))
+        flow.setIdToken(token.path("id_token"))
+        SignedJWT signedJWT = SignedJWT.parse(token.body.path(tokenType))
         Utils.addJsonAttachment("Header", signedJWT.header.toString())
         Utils.addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
         return token
@@ -132,7 +132,7 @@ class Steps {
         if (tokenResponse.statusCode != 200) {
             return tokenResponse
         } else {
-            SignedJWT signedJWT = SignedJWT.parse(tokenResponse.body.jsonPath().get(tokenType))
+            SignedJWT signedJWT = SignedJWT.parse(tokenResponse.body.path(tokenType))
             Utils.addJsonAttachment("Header", signedJWT.header.toString())
             Utils.addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
             return tokenResponse
@@ -145,10 +145,10 @@ class Steps {
         if (tokenResponse.statusCode != 200) {
             return tokenResponse
         } else {
-            SignedJWT signedJWT = SignedJWT.parse(tokenResponse.body.jsonPath().get("id_token"))
+            SignedJWT signedJWT = SignedJWT.parse(tokenResponse.body.path("id_token"))
             Utils.addJsonAttachment("Header", signedJWT.header.toString())
             Utils.addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
-            flow.setRefreshToken(tokenResponse.jsonPath().get("refresh_token"))
+            flow.setRefreshToken(tokenResponse.path("refresh_token"))
             return tokenResponse
         }
     }

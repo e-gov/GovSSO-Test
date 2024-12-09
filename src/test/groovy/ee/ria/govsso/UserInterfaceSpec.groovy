@@ -49,7 +49,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
@@ -91,7 +91,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
@@ -112,7 +112,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)

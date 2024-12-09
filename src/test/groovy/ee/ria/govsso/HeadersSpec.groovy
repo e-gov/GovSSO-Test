@@ -77,7 +77,7 @@ class HeadersSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogoutWithOrigin(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.oidcClientB.fullBaseUrl)
         Response initLogout = Steps.followRedirectWithOrigin(flow, oidcLogout, flow.oidcClientA.fullBaseUrl)
@@ -103,7 +103,7 @@ class HeadersSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response oidcLogout = Steps.startLogoutWithOrigin(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirectWithOrigin(flow, oidcLogout, flow.oidcClientA.fullBaseUrl)
@@ -205,7 +205,7 @@ class HeadersSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response logoutEndSession = Steps.logout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, flow.sessionService.fullLogoutEndSessionUrl)
 
@@ -223,7 +223,7 @@ class HeadersSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Response logoutContinueSession = Steps.logout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, flow.sessionService.fullLogoutContinueSessionUrl)
 

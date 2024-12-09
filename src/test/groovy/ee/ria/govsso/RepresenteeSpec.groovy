@@ -30,7 +30,7 @@ class RepresenteeSpec extends GovSsoSpecification {
     def "Requesting representee_list should return the claim in ID token"() {
         when: "Create session"
         Response token = Steps.authenticateInGovSsoWithScope(flow)
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.jsonPath().get("id_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.path("id_token")).JWTClaimsSet
 
         then:
         assertThat("Correct scope in token response", token.jsonPath().getString("scope"), is("openid representee.* representee_list"))
@@ -55,7 +55,7 @@ class RepresenteeSpec extends GovSsoSpecification {
 
         when: "Update session with representee_list scope"
         Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid representee_list")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get("id_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("id_token")).JWTClaimsSet
 
         then:
         assertThat("Correct HTTP status code", updateSession.statusCode, is(200))
@@ -80,7 +80,7 @@ class RepresenteeSpec extends GovSsoSpecification {
 
         when: "Update session with valid representee scope"
         Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid " + scope)
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get("id_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("id_token")).JWTClaimsSet
 
         then:
         assertThat("Correct representee name", claims.getClaim("representee")["name"], is(name))
@@ -104,8 +104,8 @@ class RepresenteeSpec extends GovSsoSpecification {
 
         when: "Update session with invalid representee scope"
         Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid representee.EE12345678901")
-        JWTClaimsSet claimsIdToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get("id_token")).JWTClaimsSet
-        JWTClaimsSet claimsAccessToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get("access_token")).JWTClaimsSet
+        JWTClaimsSet claimsIdToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("id_token")).JWTClaimsSet
+        JWTClaimsSet claimsAccessToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("access_token")).JWTClaimsSet
 
 
         then:
@@ -123,7 +123,7 @@ class RepresenteeSpec extends GovSsoSpecification {
 
         and: "Update session with representee.EE10303030002"
         Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid representee.EE10303030002")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get(token)).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path(token)).JWTClaimsSet
 
         then:
         assertThat("Does not contain name key", claims.getClaims(), not(hasKey("name")))
@@ -148,7 +148,7 @@ class RepresenteeSpec extends GovSsoSpecification {
 
         when: "Update session with representee and representee_list scope"
         Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid representee.EE97007088 representee_list")
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get("id_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("id_token")).JWTClaimsSet
 
         then:
         assertThat("Correct representee name", claims.getClaim("representee")["name"], is("Small Company"))
@@ -174,7 +174,7 @@ class RepresenteeSpec extends GovSsoSpecification {
     def "Requesting representee_list should not return the claim in access token"() {
         when: "Create session"
         Response token = Steps.authenticateInGovSsoWithScope(flow)
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.jsonPath().get("access_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.path("access_token")).JWTClaimsSet
 
         then:
         assertThat("Access token should not have representee_list claim", claims.getClaims(), not(hasKey("representee_list")))
@@ -187,7 +187,7 @@ class RepresenteeSpec extends GovSsoSpecification {
 
         when: "Update session with valid representee scope"
         Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid " + scope)
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.jsonPath().get("access_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("access_token")).JWTClaimsSet
 
         then:
         assertThat("Correct representee name", claims.getClaim("representee")["name"], is(name))

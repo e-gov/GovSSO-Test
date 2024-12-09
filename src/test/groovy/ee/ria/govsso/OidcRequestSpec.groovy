@@ -214,7 +214,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Start logout request with correct parameters"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        Response initLogout = Steps.startLogout(flow, createSession.jsonPath().get("id_token"), flow.oidcClientA.fullLogoutRedirectUrl)
+        Response initLogout = Steps.startLogout(flow, createSession.path("id_token"), flow.oidcClientA.fullLogoutRedirectUrl)
 
         assertThat("Correct HTTP status code", initLogout.statusCode, is(302))
         assertThat("Correct location", initLogout.header("location").startsWith(flow.sessionService.baseUrl))
@@ -225,7 +225,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Start logout request with not registered logout_redirect_uri"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        Response initLogout = Steps.startLogout(flow, createSession.jsonPath().get("id_token"), "https://not.whitelisted.eu")
+        Response initLogout = Steps.startLogout(flow, createSession.path("id_token"), "https://not.whitelisted.eu")
 
         String errorDescription = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. " +
                 "Logout failed because query parameter post_logout_redirect_uri is not a whitelisted as a post_logout_redirect_uri for the client."
@@ -239,7 +239,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Logout request for client-B with id_token_hint from client-A"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.jsonPath().get("id_token")
+        String idToken = createSession.path("id_token")
 
         Steps.continueWithExistingSession(flow)
 
@@ -261,7 +261,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String idToken = continueSession.jsonPath().get("id_token")
+        String idToken = continueSession.path("id_token")
 
         Steps.logout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, flow.sessionService.fullLogoutEndSessionUrl)
 
@@ -328,7 +328,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Update session after OIDC logout request"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.body.jsonPath().get("id_token")
+        String idToken = createSession.body.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
 
@@ -346,7 +346,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Update session after logout init request"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.body.jsonPath().get("id_token")
+        String idToken = createSession.body.path("id_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
@@ -364,8 +364,8 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Update session after OIDC logout verifier request"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String idToken = createSession.body.jsonPath().get("id_token")
-        String refreshToken = createSession.body.jsonPath().get("refresh_token")
+        String idToken = createSession.body.path("id_token")
+        String refreshToken = createSession.body.path("refresh_token")
 
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientA.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
@@ -384,7 +384,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Start session update in client-A after initiating reauthentication with client-B due to acr discrepancy"() {
         expect:
         Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
-        String refreshToken = createSession.body.jsonPath().get("refresh_token")
+        String refreshToken = createSession.body.path("refresh_token")
 
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
@@ -410,7 +410,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         Response continueSession = Steps.continueWithExistingSession(flow)
-        String refreshToken2 = continueSession.jsonPath().get("refresh_token")
+        String refreshToken2 = continueSession.path("refresh_token")
 
         Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken2, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
 
@@ -428,7 +428,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Update session with already used refresh token"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
-        String refreshToken1 = createSession.jsonPath().get("refresh_token")
+        String refreshToken1 = createSession.path("refresh_token")
 
         Steps.getSessionUpdateResponse(flow)
 
@@ -460,7 +460,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
 
-        String idToken = createSession.jsonPath().get("id_token")
+        String idToken = createSession.path("id_token")
         Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, flow.oidcClientA.fullBaseUrl)
         Response initLogin = Steps.followRedirectWithOrigin(flow, oidcUpdateSession, flow.oidcClientA.fullBaseUrl)
 

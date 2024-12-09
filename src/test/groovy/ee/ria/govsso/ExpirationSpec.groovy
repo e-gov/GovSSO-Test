@@ -191,7 +191,7 @@ class ExpirationSpec extends  GovSsoSpecification {
     }
 
     private def expireSession(Flow flow, Response response) {
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, response.body.jsonPath().get("id_token")).JWTClaimsSet
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, response.body.path("id_token")).JWTClaimsSet
         String sessionId = claims.getClaim("sid")
         SqlQueries.expireSession(sql, sessionId)
     }

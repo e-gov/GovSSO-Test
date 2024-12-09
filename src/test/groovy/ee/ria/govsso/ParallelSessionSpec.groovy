@@ -31,21 +31,21 @@ class ParallelSessionSpec extends GovSsoSpecification {
     def "Same user's separate concurrent sessions have separate session ID-s"() {
         expect:
         Response session1 = Steps.authenticateWithIdCardInGovSso(flow1)
-        String idToken1 = session1.jsonPath().get("id_token")
-        String refreshToken1 = session1.jsonPath().get("refresh_token")
+        String idToken1 = session1.path("id_token")
+        String refreshToken1 = session1.path("refresh_token")
         JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1).JWTClaimsSet
 
         Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
-        String idToken2 = session2.jsonPath().get("id_token")
-        String refreshToken2 = session2.jsonPath().get("refresh_token")
+        String idToken2 = session2.path("id_token")
+        String refreshToken2 = session2.path("refresh_token")
         JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow2, idToken2).JWTClaimsSet
 
         Response session1Update = Steps.getSessionUpdateResponse(flow1, refreshToken1, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret)
-        String idToken1Update = session1Update.jsonPath().get("id_token")
+        String idToken1Update = session1Update.path("id_token")
         JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1Update).JWTClaimsSet
 
         Response session2Update = Steps.getSessionUpdateResponse(flow2, refreshToken2, flow2.oidcClientA.clientId, flow2.oidcClientA.clientSecret)
-        String idToken2Update = session2Update.jsonPath().get("id_token")
+        String idToken2Update = session2Update.path("id_token")
         JWTClaimsSet claims2Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow2, idToken2Update).JWTClaimsSet
 
         assertThat("Correct session ID after update", claims1.getClaim("sid"), is(claims1Update.getClaim("sid")))
@@ -58,16 +58,16 @@ class ParallelSessionSpec extends GovSsoSpecification {
     def "Same user's separate concurrent sessions - first session stays active after logout from second session"() {
         expect:
         Response session1 = Steps.authenticateWithIdCardInGovSso(flow1)
-        String idToken1 = session1.jsonPath().get("id_token")
-        String refreshToken1 = session1.jsonPath().get("refresh_token")
+        String idToken1 = session1.path("id_token")
+        String refreshToken1 = session1.path("refresh_token")
         JWTClaimsSet claims1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1).JWTClaimsSet
 
         Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
-        String idToken2 = session2.jsonPath().get("id_token")
+        String idToken2 = session2.path("id_token")
         Response logout = Steps.logoutSingleClientSession(flow2, idToken2, flow2.oidcClientA.fullLogoutRedirectUrl)
 
         Response session1Update = Steps.getSessionUpdateResponse(flow1, refreshToken1, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret)
-        String idToken1Update = session1Update.body.jsonPath().get("id_token")
+        String idToken1Update = session1Update.body.path("id_token")
         JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow1, idToken1Update).JWTClaimsSet
 
         assertThat("Correct logout redirect URL", logout.getHeader("Location"), startsWith(flow2.oidcClientA.fullLogoutRedirectUrl.toString()))
@@ -82,7 +82,7 @@ class ParallelSessionSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow1)
 
         Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
-        String refreshToken2 = session2.jsonPath().get("refresh_token")
+        String refreshToken2 = session2.path("refresh_token")
 
         Response UpdateResponse = Steps.getSessionUpdateResponse(flow1, refreshToken2, flow1.oidcClientA.clientId, flow1.oidcClientA.clientSecret)
 
