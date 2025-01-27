@@ -62,6 +62,28 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     }
 
     @Feature("ID_TOKEN")
+    def "Verify ID token response after session update with client_secret_post configured client"() {
+        given: "Create session"
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, "client-f", "https://clientf.localhost:11443/login/oauth2/code/govsso")
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
+        Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
+        Response tokenResponse = Requests.webTokenPostRequest(flow, authorizationCode)
+
+        when: "Request sesssion update with client_secret_post"
+        Response updateSession = Requests.getSessionUpdateWebTokenWithClientSecretPost(flow, tokenResponse.path("refresh_token"))
+
+        then:
+        assertThat("Correct token_type value", updateSession.jsonPath().getString("token_type"), is("bearer"))
+        assertThat("Correct scope value", updateSession.jsonPath().getString("scope"), is("openid"))
+        assertThat("Access token element exists", updateSession.jsonPath().getString("access_token").size() > 32)
+        assertThat("Expires in element exists", updateSession.jsonPath().getInt("expires_in") <= 1)
+        assertThat("ID token element exists", updateSession.jsonPath().getString("id_token").size() > 1000)
+        assertThat("Refresh token element exists", updateSession.jsonPath().getString("refresh_token").size() == 94)
+    }
+
+    @Feature("ID_TOKEN")
     def "Client_secret_post token endpoint request should fail when client has client_secret_basic configuration"() {
         given: "Create session"
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
