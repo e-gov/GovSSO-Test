@@ -211,6 +211,25 @@ class OidcRequestSpec extends GovSsoSpecification {
     }
 
     @Feature("OIDC_LOGOUT_ENDPOINT")
+    def "Start logout with HTTP #httpRequest request should succeed"() {
+        given:
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
+
+        when:
+        Response initLogout = Steps.startLogout(flow, createSession.path("id_token"), flow.oidcClientA.fullLogoutRedirectUrl, usePost)
+
+        then:
+        assertThat("Correct HTTP status code", initLogout.statusCode, is(302))
+        assertThat("Correct location", initLogout.header("location").startsWith(flow.sessionService.baseUrl))
+        assertThat("Correct location", initLogout.header("location").endsWith(flow.logoutChallenge))
+
+        where:
+        httpRequest | usePost
+        "post"      | true
+        "get"       | false
+    }
+
+    @Feature("OIDC_LOGOUT_ENDPOINT")
     def "Start logout request with correct parameters"() {
         expect:
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
@@ -490,8 +509,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
 
-        Map cookies = [:]
-        Utils.setParameter(cookies, "__Host-ory_hydra_session", "SW5jb3JyZWN0IHNlc3Npb24gY29va2ll")
+        Map cookies = ["__Host-ory_hydra_session": "SW5jb3JyZWN0IHNlc3Npb24gY29va2ll"]
         Response initLogin = Steps.followRedirectWithCookies(flow, oidcAuth, cookies)
 
         assertThat("Correct HTTP status code", initLogin.body.jsonPath().getString("status"), is("400"))

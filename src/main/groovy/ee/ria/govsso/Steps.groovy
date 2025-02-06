@@ -62,11 +62,15 @@ class Steps {
         return initSession
     }
 
-    @Step("Initialize logout sequence in OIDC")
-    static Response startLogout(Flow flow, String idTokenHint, String logoutRedirectUri) {
-        Map queryParams = [id_token_hint           : idTokenHint,
-                           post_logout_redirect_uri: logoutRedirectUri]
-        Response initLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParams)
+    @Step("Initialize logout sequence in OIDC with GET or POST")
+    static Response startLogout(Flow flow, String idTokenHint, String logoutRedirectUri, boolean usePost = false) {
+        Map params = [id_token_hint           : idTokenHint,
+                      post_logout_redirect_uri: logoutRedirectUri]
+
+        Response initLogout = usePost
+                ? Requests.postRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, params)
+                : Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, params)
+
         if (initLogout.statusCode == 302 && initLogout.header("Location") != logoutRedirectUri) {
             flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(initLogout, "logout_challenge"))
         }
