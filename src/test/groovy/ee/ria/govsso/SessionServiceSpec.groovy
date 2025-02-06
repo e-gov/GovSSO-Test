@@ -46,8 +46,8 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication request with valid acr_values parameter: #acrValue:"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        paramsMap.put("acr_values", acrValue)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        paramsMap << [acr_values: acrValue]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
@@ -63,8 +63,8 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication request with invalid acr_values parameter"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        paramsMap.put("acr_values", "invalid")
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        paramsMap << [acr_values: "invalid"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
@@ -77,8 +77,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Incorrect login challenge: #reason"() {
         expect:
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, paramKey, paramValue)
+        Map paramsMap = [paramKey: paramValue]
 
         Response initLogin = Requests.getRequestWithParams(flow, flow.sessionService.fullInitUrl, paramsMap)
 
@@ -101,7 +100,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Verify session cookie attributes"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [ui_locales: "et"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
@@ -129,7 +128,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Correct ui_locales passed on to __Host-LOCALE cookie: #uiLocales"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap << [ui_locales: uiLocales]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
@@ -165,13 +164,11 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "state", "")
-        Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(taraAuthentication, "code"))
+        Map paramsMap = [state: "",
+                         code : Utils.getParamValueFromResponseHeader(taraAuthentication, "code")]
 
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-AUTH", initLogin.getCookie("__Host-AUTH"))
-        Utils.setParameter(cookieMap, "__Host-XSRF-TOKEN", initLogin.getCookie("__Host-XSRF-TOKEN"))
+        Map cookieMap = ["__Host-AUTH"      : initLogin.getCookie("__Host-AUTH"),
+                         "__Host-XSRF-TOKEN": initLogin.getCookie("__Host-XSRF-TOKEN")]
 
         Response taracallback = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap)
 
@@ -187,13 +184,11 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "code", "")
-        Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(taraAuthentication, "state"))
+        Map paramsMap = [code : "",
+                         state: Utils.getParamValueFromResponseHeader(taraAuthentication, "state")]
 
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-AUTH", initLogin.getCookie("__Host-AUTH"))
-        Utils.setParameter(cookieMap, "__Host-XSRF-TOKEN", initLogin.getCookie("__Host-XSRF-TOKEN"))
+        Map cookieMap = ["__Host-AUTH"      : initLogin.getCookie("__Host-AUTH"),
+                         "__Host-XSRF-TOKEN": initLogin.getCookie("__Host-XSRF-TOKEN")]
 
         Response taracallback = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap)
 
@@ -210,9 +205,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(taraAuthentication, "code"))
-        Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(taraAuthentication, "state"))
+        Map paramsMap = [code : Utils.getParamValueFromResponseHeader(taraAuthentication, "code"),
+                         state: Utils.getParamValueFromResponseHeader(taraAuthentication, "state")]
 
         flow.cookieFilter.cookieStore.clear()
         Response taracallback = Requests.getRequestWithParams(flow, flow.sessionService.fullTaraCallbackUrl, paramsMap)
@@ -230,12 +224,10 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
 
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-AUTH", "incorrect")
+        Map cookieMap = ["__Host-AUTH": "incorrect"]
 
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "state", Utils.getParamValueFromResponseHeader(taraAuthentication, "state"))
-        Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(taraAuthentication, "code"))
+        Map paramsMap = [code : Utils.getParamValueFromResponseHeader(taraAuthentication, "code"),
+                         state: Utils.getParamValueFromResponseHeader(taraAuthentication, "state")]
 
         Response taracallback = Requests.getRequestWithCookiesAndParams(flow, flow.sessionService.fullTaraCallbackUrl, cookieMap, paramsMap)
 
@@ -253,10 +245,10 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response taraOidcAuth1 = Steps.followRedirect(flow, initLogin)
         Response tarainitLogin = Steps.followRedirect(flow, taraOidcAuth1)
 
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-SESSION", tarainitLogin.getCookie("__Host-SESSION"))
+        Map paramsMap = [error_code: REJECT_ERROR_CODE]
+
+        Map cookieMap = ["__Host-SESSION": tarainitLogin.getCookie("__Host-SESSION")]
+
         Response taraReject = Requests.getRequestWithCookiesAndParams(flow, flow.taraService.fullAuthRejectUrl, cookieMap, paramsMap)
 
         Response taraOidcAuth2 = Steps.followRedirect(flow, taraReject)
@@ -271,8 +263,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("CONSENT_INIT_ENDPOINT")
     def "Incorrect consent challenge: #reason"() {
         expect:
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, paramKey, paramValue)
+        Map paramsMap = [paramKey: paramValue]
 
         Response initConsent = Requests.getRequestWithParams(flow, flow.sessionService.fullConsentUrl, paramsMap)
 
@@ -297,9 +288,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "loginChallenge", flow.loginChallenge.toString())
-        Utils.setParameter(formParams, "_csrf", "_U0Ef9VRMDVw191GJ14YIZg_DD2LxO5OUzo0GDb8bLRnfsyszHo3T-ZpVgRdtb9yRHMsFvlZIVy6po1jNltWKASaD9ABSa6V")
+        Map formParams = [loginChallenge: flow.loginChallenge,
+                          _csrf         : "_U0Ef9VRMDVw191GJ14YIZg_DD2LxO5OUzo0GDb8bLRnfsyszHo3T-ZpVgRdtb9yRHMsFvlZIVy6po1jNltWKASaD9ABSa6V"]
 
         Response continueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullContinueSessionUrl, formParams)
 
@@ -317,9 +307,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "loginChallenge", flow.loginChallenge.toString())
-        Utils.setParameter(formParams, "_csrf", flow.sessionService.cookies.get("__Host-XSRF-TOKEN"))
+        Map formParams = [loginChallenge: flow.loginChallenge,
+                          _csrf         : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
 
         Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
         Response continueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullContinueSessionUrl, flow.sessionService.cookies, formParams)
@@ -337,9 +326,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "loginChallenge", flow.loginChallenge.toString())
-        Utils.setParameter(formParams, "_csrf", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        Map formParams = [loginChallenge: flow.loginChallenge,
+                          _csrf         : "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"]
 
         Response continueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullContinueSessionUrl, formParams)
 
@@ -356,9 +344,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "loginChallenge", "0a0aaaa00aa00a00000aa0a0000000aa")
-        Utils.setParameter(formParams, "_csrf", initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        Map formParams = [loginChallenge: "0a0aaaa00aa00a00000aa0a0000000aa",
+                          _csrf         : initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
 
         Response continueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullContinueSessionUrl, formParams)
 
@@ -376,9 +363,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "loginChallenge", flow.loginChallenge.toString())
-        Utils.setParameter(formParams, "_csrf", flow.sessionService.cookies.get("__Host-XSRF-TOKEN"))
+        Map formParams = [loginChallenge: flow.loginChallenge,
+                          _csrf         : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
 
         Utils.setParameter(flow.sessionService.cookies, "__Host-XSRF-TOKEN", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
         Response reauthenticateWithExistingSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullReauthenticateUrl, flow.sessionService.cookies, formParams)
@@ -396,9 +382,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "loginChallenge", flow.loginChallenge.toString())
-        Utils.setParameter(formParams, "_csrf", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        Map formParams = [loginChallenge: flow.loginChallenge,
+                          _csrf         : "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"]
 
         Response reauthenticateWithExistingSession = Requests.postRequestWithParams(flow, flow.sessionService.fullReauthenticateUrl, formParams)
 
@@ -415,9 +400,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "loginChallenge", "0a0aaaa00aa00a00000aa0a0000000aa")
-        Utils.setParameter(formParams, "_csrf", initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        Map formParams = [loginChallenge: "0a0aaaa00aa00a00000aa0a0000000aa",
+                          _csrf         : initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
 
         Response reauthenticateWithExistingSession = Requests.postRequestWithParams(flow, flow.sessionService.fullReauthenticateUrl, formParams)
 
@@ -475,8 +459,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "logoutChallenge", flow.logoutChallenge.toString())
+        Map formParams = [logoutChallenge: flow.logoutChallenge]
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutContinueSessionUrl, formParams)
 
@@ -496,8 +479,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "_csrf", initLogout.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        Map formParams = [_csrf: initLogout.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutContinueSessionUrl, formParams)
 
@@ -517,9 +499,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "logoutChallenge", flow.logoutChallenge.toString())
-        Utils.setParameter(formParams, "_csrf", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        Map formParams = [logoutChallenge: flow.logoutChallenge,
+                          _csrf          : "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"]
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutContinueSessionUrl, formParams)
 
@@ -539,9 +520,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "logoutChallenge", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-        Utils.setParameter(formParams, "_csrf", initLogout.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        Map formParams = [logoutChallenge: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                          _csrf          : initLogout.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutContinueSessionUrl, formParams)
 
@@ -562,12 +542,11 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "logoutChallenge", flow.logoutChallenge.toString())
-        Utils.setParameter(formParams, "_csrf", flow.sessionService.cookies.get("__Host-XSRF-TOKEN"))
+        Map formParams = [logoutChallenge: flow.logoutChallenge,
+                          _csrf          : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
 
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-XSRF-TOKEN", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        Map cookieMap = ["__Host-XSRF-TOKEN": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"]
+
         Response logoutContinueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullLogoutContinueSessionUrl, cookieMap, formParams)
 
         assertThat("Correct HTTP status code", logoutContinueSession.statusCode, is(403))
@@ -586,8 +565,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "logoutChallenge", flow.logoutChallenge.toString())
+        Map formParams = [logoutChallenge: flow.logoutChallenge]
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutEndSessionUrl, formParams)
 
@@ -607,8 +585,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "_csrf", initLogout.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        Map formParams = [_csrf: initLogout.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
 
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutEndSessionUrl, formParams)
 
@@ -628,9 +605,9 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "logoutChallenge", flow.logoutChallenge.toString())
-        Utils.setParameter(formParams, "_csrf", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        Map formParams = [logoutChallenge: flow.logoutChallenge,
+                          _csrf          : "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"]
+
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutEndSessionUrl, formParams)
 
         assertThat("Correct HTTP status code", logoutContinueSession.statusCode, is(403))
@@ -649,9 +626,8 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "logoutChallenge", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-        Utils.setParameter(formParams, "_csrf", initLogout.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        Map formParams = [logoutChallenge: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                          _csrf          : initLogout.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
         Response logoutContinueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullLogoutEndSessionUrl, formParams)
 
         assertThat("Correct HTTP status code", logoutContinueSession.statusCode, is(400))
@@ -671,12 +647,10 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullBaseUrl)
         Steps.followRedirect(flow, oidcLogout)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "logoutChallenge", flow.logoutChallenge.toString())
-        Utils.setParameter(formParams, "_csrf", flow.sessionService.cookies.get("__Host-XSRF-TOKEN"))
+        Map formParams = [logoutChallenge: flow.logoutChallenge,
+                          _csrf          : flow.sessionService.cookies.get("__Host-XSRF-TOKEN")]
 
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-XSRF-TOKEN", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        Map cookieMap = ["__Host-XSRF-TOKEN": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"]
 
         Response logoutContinueSession = Requests.postRequestWithCookiesAndParams(flow, flow.sessionService.fullLogoutEndSessionUrl, cookieMap, formParams)
 
@@ -693,16 +667,14 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.path("id_token")
 
-        HashMap<String, String> queryParamsOidc = new HashMap<>()
-        Utils.setParameter(queryParamsOidc, "id_token_hint", idToken)
-        Utils.setParameter(queryParamsOidc, "post_logout_redirect_uri", flow.oidcClientB.fullBaseUrl)
+        Map paramsOidc = [id_token_hint           : idToken,
+                          post_logout_redirect_uri: flow.oidcClientB.fullBaseUrl]
 
-        Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParamsOidc)
+        Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, paramsOidc)
 
-        HashMap<String, String> queryParamsSession = new HashMap<>()
-        Utils.setParameter(queryParamsSession, "logout_challenge", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        Map paramsSession = [logout_challenge: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"]
 
-        Response initLogout = Requests.getRequestWithParams(flow, flow.sessionService.fullLogoutInitUrl, queryParamsSession)
+        Response initLogout = Requests.getRequestWithParams(flow, flow.sessionService.fullLogoutInitUrl, paramsSession)
 
         assertThat("Correct HTTP status code", initLogout.statusCode, is(400))
         assertThat("Correct error", initLogout.jsonPath().getString("error"), is("USER_INPUT"))
@@ -733,8 +705,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.path("id_token")
 
-        Map queryParams = [:]
-        Utils.setParameter(queryParams, "id_token_hint", idToken)
+        Map queryParams = [id_token_hint: idToken]
         Response oidcLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParams)
 
         flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(oidcLogout, "logout_challenge"))
@@ -753,8 +724,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "_csrf", initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        Map formParams = [_csrf: initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
         Response loginReject = Requests.postRequestWithParams(flow, flow.sessionService.fullLoginRejectUrl, formParams)
 
         assertThat("Correct HTTP status code", loginReject.statusCode, is(400))
@@ -769,8 +739,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
         Steps.followRedirect(flow, oidcAuth)
 
-        Map formParams = [:]
-        Utils.setParameter(formParams, "loginChallenge", flow.loginChallenge.toString())
+        Map formParams = [loginChallenge: flow.loginChallenge]
         Response loginReject = Requests.postRequestWithParams(flow, flow.sessionService.fullLoginRejectUrl, formParams)
 
         assertThat("Correct HTTP status code", loginReject.statusCode, is(403))

@@ -10,10 +10,9 @@ class TaraSteps {
 
     @Step("Eidas service provider request")
     static Response eidasServiceProviderRequest(Flow flow, String url, String relayState, String samlRequest, String country = "CA") {
-        HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(formParamsMap, "country", country)
-        Utils.setParameter(formParamsMap, "RelayState", relayState)
-        Utils.setParameter(formParamsMap, "SAMLRequest", samlRequest)
+        Map formParamsMap = [country    : country,
+                             RelayState : relayState,
+                             SAMLRequest: samlRequest]
         return Requests.postRequestWithParams(flow, url, formParamsMap)
     }
 
@@ -21,8 +20,7 @@ class TaraSteps {
     static Response eidasSpecificConnectorRequest(Flow flow, Response response) {
         String specificConnectorUrl = response.body.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action")
         String token = response.body.htmlPath().getString("**.find { input -> input.@name == 'token' }.@value")
-        HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(formParamsMap, "token", token)
+        Map formParamsMap = [token: token]
         Response serviceProviderResponse = Requests.postRequestWithParams(flow, specificConnectorUrl, formParamsMap)
         return serviceProviderResponse
     }
@@ -31,16 +29,14 @@ class TaraSteps {
     static Response eidasColleagueRequest(Flow flow, Response response) {
         String colleagueRequestUrl = response.body.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action")
         String samlRequest = response.body.htmlPath().getString("**.find { input -> input.@id == 'noScriptSAMLRequest' }.@value")
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "SAMLRequest", samlRequest)
+        Map paramsMap = [SAMLRequest: samlRequest]
         Response colleagueResponse = Requests.postRequestWithParams(flow, colleagueRequestUrl, paramsMap)
         return colleagueResponse
     }
 
     @Step("Eidas proxy service request")
     static Response eidasProxyServiceRequest(Flow flow, String endpointUrl, String token) {
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "token", token)
+        Map paramsMap = [token: token]
         Response proxyServiceResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
         return proxyServiceResponse
     }
@@ -49,8 +45,7 @@ class TaraSteps {
     static Response eidasIdpRequest(Flow flow, Response response) {
         String endpointUrl = response.body.htmlPath().getString("**.find { it.@name == 'redirectForm' }.@action")
         String smsspRequest = response.body.htmlPath().getString("**.find { input -> input.@id == 'SMSSPRequest' }.@value")
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "SMSSPRequest", smsspRequest)
+        Map paramsMap = [SMSSPRequest: smsspRequest]
         return Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
     }
 
@@ -59,14 +54,13 @@ class TaraSteps {
         String callbackUrl = response.body.htmlPath().getString("**.find { it.@name == 'callback' }.@value")
         String smsspToken = response.body.htmlPath().get("**.find {it.@name == 'smsspToken'}.@value")
         String smsspTokenRequestJson = response.body.htmlPath().get("**.find {it.@id == 'jSonRequestDecoded'}")
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "smsspToken", smsspToken)
-        Utils.setParameter(paramsMap, "username", idpUsername)
-        Utils.setParameter(paramsMap, "password", idpPassword)
-        Utils.setParameter(paramsMap, "eidasloa", eidasloa)
-        Utils.setParameter(paramsMap, "eidasnameid", "persistent")
-        Utils.setParameter(paramsMap, "callback", callbackUrl)
-        Utils.setParameter(paramsMap, "jSonRequestDecoded", smsspTokenRequestJson)
+        Map paramsMap = [smsspToken        : smsspToken,
+                         username          : idpUsername,
+                         password          : idpPassword,
+                         eidasloa          : eidasloa,
+                         eidasnameid       : "persistent",
+                         callback          : callbackUrl,
+                         jSonRequestDecoded: smsspTokenRequestJson]
         Response authorizationRequest = Requests.postRequestWithParams(flow, flow.foreignIdpProvider.fullResponseUrl, paramsMap)
         return authorizationRequest
     }
@@ -75,16 +69,14 @@ class TaraSteps {
     static Response eidasIdpAuthorizationResponse(Flow flow, Response response) {
         String endpointUrl = response.body.htmlPath().get("**.find {it.@name == 'redirectForm'}.@action")
         String smsspTokenResponse = response.body.htmlPath().get("**.find {it.@id == 'SMSSPResponseNoJS'}.@value")
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "SMSSPResponse", smsspTokenResponse)
+        Map paramsMap = [SMSSPResponse: smsspTokenResponse]
         Response authorizationResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
         return authorizationResponse
     }
 
     @Step("Eidas confirm consent")
     static Response eidasConfirmConsent(Flow flow, String binaryLightToken) {
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "binaryLightToken", binaryLightToken)
+        Map paramsMap = [binaryLightToken: binaryLightToken]
         Response consentResponse = Requests.postRequestWithParams(flow, flow.foreignProxyService.fullConsentUrl, paramsMap)
         return consentResponse
     }
@@ -93,8 +85,7 @@ class TaraSteps {
     static Response eidasColleagueResponse(Flow flow, Response response) {
         String endpointUrl = response.body.htmlPath().get("**.find {it.@name == 'redirectForm'}.@action")
         String samlResponse = response.body.htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "SAMLResponse", samlResponse)
+        Map paramsMap = [SAMLResponse: samlResponse]
         Response colleagueResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
         return colleagueResponse
     }
@@ -103,8 +94,7 @@ class TaraSteps {
     static Response getAuthorizationResponseFromEidas(Flow flow, Response response) {
         String endpointUrl = response.body.htmlPath().get("**.find {it.@name == 'redirectForm'}.@action")
         String lightToken = response.body.htmlPath().get("**.find {it.@id == 'token'}.@value")
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "token", lightToken)
+        Map paramsMap = [token: lightToken]
         Response authorizationResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
         return authorizationResponse
     }
@@ -114,9 +104,8 @@ class TaraSteps {
         String endpointUrl = response.body.htmlPath().get("**.find {it.@method == 'post'}.@action")
         String samlResponse = response.body.htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
         String relayState = response.body.htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "SAMLResponse", samlResponse)
-        Utils.setParameter(paramsMap, "RelayState", relayState)
+        Map paramsMap = [SAMLResponse: samlResponse,
+                         RelayState  : relayState]
         Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
         return redirectionResponse
     }
@@ -184,11 +173,9 @@ class TaraSteps {
 
     @Step("Authenticate with eIDAS")
     static Response authenticateWithEidas(Flow flow, String country, String username, String password, String loa) {
-        LinkedHashMap<String, String> queryParamsMap = (LinkedHashMap) Collections.emptyMap()
-        Utils.setParameter(queryParamsMap, "country", country)
-        Utils.setParameter(queryParamsMap, "_csrf", flow.taraService.csrf)
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookieMap, "__Host-SESSION", flow.taraService.sessionId)
+        Map queryParamsMap = [country: country,
+                              _csrf  : flow.taraService.csrf]
+        Map cookieMap = ["__Host-SESSION": flow.taraService.sessionId]
         Response initEidasAuthenticationSession = Requests.postRequestWithCookiesAndParams(flow, flow.taraService.taraloginBaseUrl + flow.taraService.eidasInitUrl, cookieMap, queryParamsMap)
         flow.setNextEndpoint(initEidasAuthenticationSession.body.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
@@ -307,10 +294,10 @@ class TaraSteps {
                 .relaxedHTTPSValidation()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
-                .formParam("idCode", idCode)
-                .formParam("telephoneNumber", phoneNo)
+                .formParams([idCode         : idCode,
+                             telephoneNumber: phoneNo,
+                             _csrf          : flow.taraService.csrf])
                 .cookie("__Host-SESSION", flow.taraService.sessionId)
-                .formParam("_csrf", flow.taraService.csrf)
                 .log().cookies()
                 .redirects().follow(false)
                 .post(flow.taraService.taraloginBaseUrl + flow.taraService.midInitUrl)
@@ -334,9 +321,9 @@ class TaraSteps {
                 .relaxedHTTPSValidation()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
-                .formParam("idCode", idCode)
+                .formParams([idCode: idCode,
+                             _csrf : flow.taraService.csrf])
                 .cookie("__Host-SESSION", flow.taraService.sessionId)
-                .formParam("_csrf", flow.taraService.csrf)
                 .log().cookies()
                 .redirects().follow(false)
                 .post(flow.taraService.taraloginBaseUrl + flow.taraService.sidInitUrl)
