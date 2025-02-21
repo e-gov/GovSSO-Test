@@ -146,11 +146,11 @@ class AccessTokenSpec extends GovSsoSpecification {
         assertThat("Correct issued at time", Math.abs(new Date().time - claimsAccessToken.getDateClaim("iat").time) < 10000L)
         assertThat("Correct expiration time", claimsAccessToken.expirationTime.time - claimsAccessToken.getDateClaim("iat").time, oneOf(600000L, 601000L))
         assertThat("Correct authentication method", claimsAccessToken.getClaim("amr"), is(["idcard"]))
-        assertThat("Correct subject claim", claimsAccessToken.subject, is("EE38001085718"))
-        assertThat("Correct date of birth", claimsAccessToken.getClaim("birthdate"), is("1980-01-08"))
-        assertThat("Correct given name", claimsAccessToken.getClaim("given_name"), is("JAAK-KRISTJAN"))
-        assertThat("Correct family name", claimsAccessToken.getClaim("family_name"), is("JÕEORG"))
-        assertThat("Correct LoA level", claimsAccessToken.getClaim("acr"), is("high"))
+        assertThat("Correct subject claim", claimsAccessToken.subject, is(claimsIDToken.subject))
+        assertThat("Correct date of birth", claimsAccessToken.getClaim("birthdate"), is(claimsIDToken.getClaim("birthdate")))
+        assertThat("Correct given name", claimsAccessToken.getClaim("given_name"), is(claimsIDToken.getClaim("given_name")))
+        assertThat("Correct family name", claimsAccessToken.getClaim("family_name"), is(claimsIDToken.getClaim("family_name")))
+        assertThat("Correct LoA level", claimsAccessToken.getClaim("acr"), is(claimsIDToken.getClaim("acr")))
     }
 
     def "Access token should hold correct values with scope: openid phone"() {

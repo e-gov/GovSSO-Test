@@ -3,9 +3,11 @@ package ee.ria.govsso
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
+import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
+import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
@@ -15,6 +17,7 @@ import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.hasKey
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.startsWith
 
 class RepresenteeSpec extends GovSsoSpecification {
 
@@ -237,6 +240,94 @@ class RepresenteeSpec extends GovSsoSpecification {
         scope                     | _
         "openid"                  | _
         "openid representee_list" | _
+    }
+
+    @Feature("REPRESENTEE")
+    @Feature("LOGOUT")
+    def "Requesting POST logout with id_token_hint as a form parameter should redirect to session service logout init. Authentication scope #scope"() {
+        given: "Create session"
+        Steps.authenticateInGovSsoWithScope(flow, scope)
+
+        when: "Start logout"
+        Response initLogout = postLogoutRequestWithFormParams(flow)
+
+        then:
+        assertThat("Correct HTTP status code", initLogout.statusCode, is(302) )
+        assertThat("Correct redirect URL", initLogout.header("location"), startsWith(flow.sessionService.fullLogoutInitUrl + "?logout_challenge="))
+
+        where:
+        scope                                   | _
+        "openid"                                | _
+        "openid representee_list"               | _
+        "openid representee_list representee.*" | _
+    }
+
+    @Feature("REPRESENTEE")
+    @Feature("LOGOUT")
+    def "Requesting POST logout with id_token_hint as a query parameter should redirect to OIDC error. Authentication scope #scope"() {
+        given: "Create session"
+        Steps.authenticateInGovSsoWithScope(flow, scope)
+
+        when: "Start logout"
+        Response initLogout = postLogoutRequestWithQueryParams(flow)
+
+        then:
+        assertThat("Correct HTTP status code", initLogout.statusCode, is(302) )
+        assertThat("Correct redirect error URL", initLogout.header("location"), is("/error/oidc?error=invalid_request&" +
+                "error_description=The%20%27id_token_hint%27%20query%20parameter%20is%20not%20allowed%20when%20" +
+                "using%20logout%20request%20with%20http%20POST%20method%2C%20it%20must%20be%20passed%20as%20a%20form%20parameter"))
+
+        where:
+        scope                                   | _
+        "openid"                                | _
+        "openid representee_list"               | _
+        "openid representee_list representee.*" | _
+    }
+
+    @Feature("REPRESENTEE")
+    @Feature("LOGOUT")
+    def "Requesting GET logout with id_token_hint containing representee_list as a query parameter should redirect to OIDC error."() {
+        given: "Create session"
+        Steps.authenticateInGovSsoWithScope(flow)
+
+        when: "Start logout"
+        Map queryParams = [post_logout_redirect_uri: flow.oidcClientB.fullLogoutRedirectUrl,
+                           ui_locales              : "en",
+                           id_token_hint           : flow.idToken]
+        Response initLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParams)
+
+
+        then:
+        assertThat("Correct HTTP status code", initLogout.statusCode, is(302) )
+        assertThat("Correct redirect error URL", initLogout.header("location"), is("/error/oidc?error=invalid_request&" +
+                "error_description=Logout%20request%20must%20use%20POST%20method%20if%20the%20id%20token%20" +
+                "from%20%27id_token_hint%27%20parameter%20contains%20a%20%27representee_list%27%20claim"))
+    }
+
+    @Step("POST logout request with query params")
+    static Response postLogoutRequestWithQueryParams(Flow flow) {
+        return given()
+                .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
+                .filter(flow.cookieFilter)
+                .queryParams([post_logout_redirect_uri: flow.oidcClientB.fullLogoutRedirectUrl,
+                              ui_locales              : "en",
+                              id_token_hint           : flow.idToken])
+                .log().cookies()
+                .post(flow.ssoOidcService.fullLogoutUrl)
+    }
+
+    @Step("POST logout request with form params")
+    static Response postLogoutRequestWithFormParams(Flow flow) {
+        return given()
+                .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
+                .filter(flow.cookieFilter)
+                .formParams([post_logout_redirect_uri: flow.oidcClientB.fullLogoutRedirectUrl,
+                             ui_locales              : "en",
+                             id_token_hint           : flow.idToken])
+                .log().cookies()
+                .post(flow.ssoOidcService.fullLogoutUrl)
     }
 }
 
