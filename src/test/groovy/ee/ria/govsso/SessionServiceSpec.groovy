@@ -6,7 +6,6 @@ import com.nimbusds.jwt.SignedJWT
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Ignore
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.is
@@ -682,7 +681,6 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", initLogout.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Ignore("AUT-2148")
     @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out request with empty post_logout_redirect_uri parameter value"() {
         expect:
@@ -699,7 +697,6 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", initLogout.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
-    @Ignore("AUT-2148")
     @Feature("LOGOUT_INIT_ENDPOINT")
     def "Log out request with missing post_logout_redirect_uri parameter"() {
         expect:
