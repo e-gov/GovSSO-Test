@@ -6,13 +6,11 @@ import com.nimbusds.jwt.SignedJWT
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import spock.lang.Issue
 import spock.lang.Unroll
 
-import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.hasKey
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.*
 
 class SessionServiceSpec extends GovSsoSpecification {
 
@@ -42,35 +40,269 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Query parameters contain acr_values", initLogin.getHeader("location").contains("acr_values"))
     }
 
-    @Unroll
     @Feature("LOGIN_INIT_ENDPOINT")
-    def "Authentication request with valid acr_values parameter: #acrValue:"() {
-        expect:
+    def "Eidas authentication with insufficient Loa '#loa' fails with minimum_acr_value undefined and acr_values #acrValues"() {
+        given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        paramsMap << [acr_values: acrValue]
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response initLogin = Steps.followRedirect(flow, oidcAuth)
+        if (acrValues == "undefined") {
+            paramsMap.remove("acr_values")
+        } else {
+            paramsMap << [acr_values: acrValues]
+        }
 
-        assertThat("Correct HTTP status code", initLogin.statusCode, is(302))
+        when:
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+
+        then:
+        initLogin.then()
+                .statusCode(302)
+                .header("location", containsString("acr_values=$initLoginAcrValues"))
+
+        when:
+        TaraSteps.startAuthenticationInTara(flow, initLogin.getHeader("location"))
+        Response redirectionResponse = TaraSteps.authenticateWithEidasGetRedirectionResponse(flow, "CA", "xavi", "creus", loa)
+
+        then:
+        redirectionResponse.then()
+                .statusCode(400)
+                .body(
+                        "error", is("Bad Request"),
+                        "message", is("Teie poolt valitud välisriigi autentimisvahend on teenuse poolt " +
+                        "nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
 
         where:
-        acrValue      | _
-        "high"        | _
-        "substantial" | _
-        "low"         | _
+        loa | acrValues     || initLoginAcrValues
+        "A" | "undefined"   || "high"
+        "C" | "undefined"   || "high"
+        "A" | "substantial" || "substantial"
+        "A" | "high"        || "high"
+        "C" | "high"        || "high"
+    }
+
+    @Issue("AUT-2268")
+    @Feature("LOGIN_INIT_ENDPOINT")
+    def "Authentication request with undefined acr_values defaults to minimum_acr_value '#minimumAcrValue' and succeeds for eIDAS LoA '#loa'"() {
+        given:
+        String clientId = "client-mock-acr-${minimumAcrValue}"
+        String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost:11443/login/oauth2/code/govsso"
+        String clientSecret = "secret"
+
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, clientResponseUrl)
+        paramsMap.remove("acr_values")
+
+        when:
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+
+        then:
+        initLogin.then()
+                .statusCode(302)
+                .header("location", containsString("acr_values=$minimumAcrValue"))
+
+        when:
+        Response taraAuthentication = TaraSteps.authenticateWithEidasInTARA(flow, "CA", "xavi", "creus", loa, initLogin)
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication, clientId, clientSecret, clientResponseUrl)
+
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.path("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct acr value", claims.getClaim("acr"), is(acrClaim))
+
+        where:
+        loa | minimumAcrValue || acrClaim
+//        "A" | "low"           || "low"  //AUT-2268
+//        "C" | "low"           || "substantial" //AUT-2268
+        "E" | "low"           || "high"
+//        "C" | "substantial"   || "substantial" //AUT-2268
+        "E" | "substantial"   || "high"
+        "E" | "high"          || "high"
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
-    def "Authentication request with invalid acr_values parameter"() {
-        expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        paramsMap << [acr_values: "invalid"]
+    def "Authentication request with acr_values '#acrValues' not matching clients minimum_acr_value '#minimumAcrValue' returns error"() {
+        given:
+        String clientId = "client-mock-acr-${minimumAcrValue}"
+        String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost:11443/login/oauth2/code/govsso"
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, clientResponseUrl)
+        paramsMap << [acr_values: acrValues]
+
+        when:
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        assertThat("Correct HTTP status code", initLogin.statusCode, is(400))
-        assertThat("Correct error", initLogin.jsonPath().getString("error"), is("USER_INPUT"))
-        assertThat("Correct error message", initLogin.jsonPath().getString("message"), is("Ebakorrektne päring."))
+        then:
+        initLogin.then()
+                .statusCode(400)
+                .body(
+                        "error", is("USER_INPUT"),
+                        "message", is("Ebakorrektne päring."))
+
+        where:
+        minimumAcrValue | acrValues
+        "low"           | "substantial"
+        "low"           | "high"
+        "substantial"   | "low"
+        "substantial"   | "high"
+        "high"          | "low"
+        "high"          | "substantial"
+    }
+
+    @Feature("LOGIN_INIT_ENDPOINT")
+    def "Authentication request with #acrValues acr_values and with clients minimum_acr_value undefined defaults to acr '#defaultAcr'"() {
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        if (acrValues == "undefined") {
+            paramsMap.remove("acr_values")
+        } else {
+            paramsMap << [acr_values: acrValues]
+        }
+
+        when:
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
+
+        then:
+        initLogin.then()
+                .statusCode(302)
+                .header("location", containsString("acr_values=$defaultAcr"))
+
+        when:
+        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
+
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.path("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct acr value", claims.getClaim("acr"), is("high"))
+
+        where:
+        acrValues   | defaultAcr
+        "undefined" | "high"
+        null        | "high"
+    }
+
+    @Feature("LOGIN_INIT_ENDPOINT")
+    def "Eidas authentication #loa Loa request with minimum_acr_value undefined and with acr_values parameter '#acrValues'"() {
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        paramsMap << [acr_values: acrValues]
+
+        when:
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
+
+        Response taraAuthentication = TaraSteps.authenticateWithEidasInTARA(flow, "CA", "xavi", "creus", loa, initLogin)
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.path("id_token")).JWTClaimsSet
+
+        then:
+        initLogin.then()
+                .statusCode(302)
+                .header("location", containsString("acr_values=$acrValues"))
+
+        assertThat("Correct claim acr value", claims.getClaim("acr"), is(acrClaim))
+
+        where:
+        acrValues     | loa || acrClaim
+        "low"         | "A" || "low"
+        "low"         | "C" || "substantial"
+        "low"         | "E" || "high"
+        "substantial" | "C" || "substantial"
+        "substantial" | "E" || "high"
+        "high"        | "E" || "high"
+    }
+
+    @Feature("LOGIN_INIT_ENDPOINT")
+    def "Eidas authentication with Loa '#loa' succeeds with both minimum_acr_value and acr_values equal to #minimumAcrValue"() {
+        given:
+        String clientId = "client-mock-acr-$minimumAcrValue"
+        String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost:11443/login/oauth2/code/govsso"
+        String clientSecret = "secret"
+
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, clientResponseUrl)
+        paramsMap << [acr_values: minimumAcrValue]
+
+        when:
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+
+        then:
+        initLogin.then()
+                .statusCode(302)
+                .header("location", containsString("acr_values=$minimumAcrValue"))
+
+        when:
+        Response taraAuthentication = TaraSteps.authenticateWithEidasInTARA(flow, "CA", "xavi", "creus", loa, initLogin)
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication, clientId, clientSecret, clientResponseUrl)
+
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.path("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct acr value", claims.getClaim("acr"), is(acrClaim))
+
+        where:
+        loa | minimumAcrValue || acrClaim
+        "A" | "low"           || "low"
+        "C" | "low"           || "substantial"
+        "E" | "low"           || "high"
+        "C" | "substantial"   || "substantial"
+        "E" | "substantial"   || "high"
+        "E" | "high"          || "high"
+    }
+
+    @Feature("LOGIN_INIT_ENDPOINT")
+    def "Eidas authentication with insufficient Loa '#loa' fails with both minimum_acr_value and acr_values equal to #acrValues"() {
+        given:
+        String clientId = "client-mock-acr-$acrValues"
+        String clientResponseUrl = "https://client.mock.acr.${acrValues}.localhost:11443/login/oauth2/code/govsso"
+
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, clientResponseUrl)
+        paramsMap << [acr_values: acrValues]
+
+        when:
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+
+        TaraSteps.startAuthenticationInTara(flow, initLogin.getHeader("location"))
+        Response redirectionResponse = TaraSteps.authenticateWithEidasGetRedirectionResponse(flow, "CA", "xavi", "creus", loa)
+
+        then:
+        redirectionResponse.then()
+                .statusCode(400)
+                .body(
+                        "error", is("Bad Request"),
+                        "message", is("Teie poolt valitud välisriigi autentimisvahend on teenuse poolt " +
+                        "nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
+
+        where:
+        loa | acrValues
+        "A" | "substantial"
+        "A" | "high"
+        "C" | "high"
+    }
+
+    @Feature("LOGIN_INIT_ENDPOINT")
+    def "Authentication request with incorrect acr_values=#acrValues parameter gives error 400 'Incorrect query'"() {
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        paramsMap << [acr_values: acrValues]
+
+        when:
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
+
+        then:
+        initLogin.then()
+                .statusCode(400)
+                .body(
+                        "error", is("USER_INPUT"),
+                        "message", is("Ebakorrektne päring."))
+
+        where:
+        acrValues | _
+        "null"    | _
+        "invalid" | _
     }
 
     @Unroll

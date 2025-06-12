@@ -207,6 +207,37 @@ class TaraSteps {
         return Requests.getRequestWithSessionId(flow, oidcServiceResponse.getHeader("location"))
     }
 
+    @Step("Authenticate with eIDAS get redirection response")
+    static Response authenticateWithEidasGetRedirectionResponse(Flow flow, String country, String username, String password, String loa) {
+        Map queryParamsMap = [country: country,
+                              _csrf  : flow.taraService.csrf]
+        Map cookieMap = ["__Host-SESSION": flow.taraService.sessionId]
+        Response initEidasAuthenticationSession = Requests.postRequestWithCookiesAndParams(flow, flow.taraService.taraloginBaseUrl + flow.taraService.eidasInitUrl, cookieMap, queryParamsMap)
+        flow.setNextEndpoint(initEidasAuthenticationSession.body.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.body.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.body.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+
+        Response serviceProviderResponse = eidasServiceProviderRequest(flow, flow.nextEndpoint, flow.relayState, flow.requestMessage)
+        Response specificconnectorResponse = eidasSpecificConnectorRequest(flow, serviceProviderResponse)
+        Response colleagueResponse = eidasColleagueRequest(flow, specificconnectorResponse)
+        String endpointUrl = colleagueResponse.body.htmlPath().getString("**.find { it.@id == 'redirectForm' }.@action")
+        String token = colleagueResponse.body.htmlPath().getString("**.find { it.@id == 'token' }.@value")
+        Response eidasProxyResponse = eidasProxyServiceRequest(flow, endpointUrl, token)
+
+        Response initIdpResponse = eidasIdpRequest(flow, eidasProxyResponse)
+        Response authorizationRequest = eidasIdpAuthorizationRequest(flow, initIdpResponse, username, password, loa)
+        Response authorizationResponse = eidasIdpAuthorizationResponse(flow, authorizationRequest)
+
+        String binaryLightToken = authorizationResponse.body.htmlPath().get("**.find {it.@id == 'binaryLightToken'}.@value")
+        Response consentResponse = eidasConfirmConsent(flow, binaryLightToken)
+        String endpointUrl2 = consentResponse.body.htmlPath().getString("**.find { it.@id == 'redirectForm' }.@action")
+        String token2 = consentResponse.body.htmlPath().getString("**.find { it.@id == 'token' }.@value")
+        Response eidasProxyResponse2 = eidasProxyServiceRequest(flow, endpointUrl2, token2)
+        Response colleagueResponse2 = eidasColleagueResponse(flow, eidasProxyResponse2)
+        Response authorizationResponse2 = getAuthorizationResponseFromEidas(flow, colleagueResponse2)
+        return eidasRedirectAuthorizationResponse(flow, authorizationResponse2)
+    }
+
     @Step("Polling Smart-ID authentication response")
     static Response pollSidResponse(Flow flow, long pollingIntevalMillis = 2000L) {
         int counter = 0
