@@ -158,6 +158,8 @@ class Requests {
 
     @Step("Post request with cookies, params and origin header")
     static Response postRequestWithParamsAndOrigin(Flow flow, String url, Map formParams, String origin) {
+        // Rest-Assured filters out form params with null value, but Allure is not able to handle them.
+        formParams.removeAll { key, value -> value == null }
         return given()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
@@ -170,6 +172,8 @@ class Requests {
 
     @Step("Post request with cookies and params")
     static Response postRequestWithCookiesAndParams(Flow flow, String url, Map cookies, Map formParams) {
+        // Rest-Assured filters out form params with null value, but Allure is not able to handle them.
+        formParams.removeAll { key, value -> value == null }
         return given()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
@@ -182,6 +186,8 @@ class Requests {
 
     @Step("Post request with params")
     static Response postRequestWithParams(Flow flow, String url, Map formParams) {
+        // Rest-Assured filters out form params with null value, but Allure is not able to handle them.
+        formParams.removeAll { key, value -> value == null }
         return given()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()

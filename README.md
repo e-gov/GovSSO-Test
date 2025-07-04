@@ -6,14 +6,10 @@ Tests for GovSSO (both Ory Hydra OIDC and Estonian specific session service comp
 
 ## Prerequisites
 
-* Java 11 JDK
-
-1. SUT (GovSSO) must be deployed as accessible service
-
-2. Some tests require deployment of TARA
-
-3. Fetch the tests:
-
+* Java 21 JDK
+* SUT (GovSSO) must be deployed as accessible service
+* Some tests require deployment of TARA
+* Fetch the tests:
 `git clone https://github.com/e-gov/GovSSO-Test`
 
 ## Configuring the test
