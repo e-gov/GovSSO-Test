@@ -118,7 +118,7 @@ class TaraSteps {
         Response initLogin = Steps.followRedirect(flow, initOIDCServiceSession)
         flow.taraService.setSessionId(initLogin.getCookie("__Host-SESSION"))
         flow.taraService.setLogin_locale(initLogin.getCookie("__Host-LOCALE"))
-        if (initLogin.body.prettyPrint().contains("_csrf")) {
+        if (initLogin.body.asString().contains("_csrf")) {
             flow.taraService.setCsrf(initLogin.body.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         }
         return initLogin
@@ -129,7 +129,7 @@ class TaraSteps {
         Response initLogin = Steps.followRedirect(flow, response)
         flow.taraService.setSessionId(initLogin.getCookie("__Host-SESSION"))
         flow.taraService.setLogin_locale(initLogin.getCookie("__Host-LOCALE"))
-        if (initLogin.body.prettyPrint().contains("_csrf")) {
+        if (initLogin.body.asString().contains("_csrf")) {
             flow.taraService.setCsrf(initLogin.body.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         }
         return initLogin
@@ -293,7 +293,6 @@ class TaraSteps {
     @Step("Post request to init Web eID authentication")
     static Response postRequestWithSessionId(Flow flow, String location) {
         return given()
-                .relaxedHTTPSValidation()
                 .urlEncodingEnabled(false)
                 .filter(flow.cookieFilter)
                 .cookie("__Host-SESSION", flow.taraService.sessionId)
@@ -306,7 +305,6 @@ class TaraSteps {
     @Step("Post request with json body")
     static Response postRequestWithJsonBody(Flow flow, String location, JSONObject body) {
         return given()
-                .relaxedHTTPSValidation()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
                 .cookie("__Host-SESSION", flow.taraService.sessionId)
@@ -322,7 +320,6 @@ class TaraSteps {
     @Step("Mobile-ID authentication init request")
     static Response startMidAuthentication(Flow flow, String idCode, String phoneNo) {
         return given()
-                .relaxedHTTPSValidation()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
                 .formParams([idCode         : idCode,
@@ -337,7 +334,6 @@ class TaraSteps {
     @Step("Mobile-ID response poll request")
     static Response pollMid(Flow flow) {
         return given()
-                .relaxedHTTPSValidation()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
                 .cookie("__Host-SESSION", flow.taraService.sessionId)
@@ -349,7 +345,6 @@ class TaraSteps {
     @Step("Smart-ID authentication init request")
     static Response startSidAuthentication(Flow flow, String idCode) {
         return given()
-                .relaxedHTTPSValidation()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
                 .formParams([idCode: idCode,
@@ -363,7 +358,6 @@ class TaraSteps {
     @Step("Smart-ID response poll request")
     static Response pollSid(Flow flow) {
         return given()
-                .relaxedHTTPSValidation()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
                 .cookie("__Host-SESSION", flow.taraService.sessionId)
@@ -376,7 +370,6 @@ class TaraSteps {
     @Step("Accept authentication in TARA login service")
     static Response acceptAuthTara(Flow flow, String location) {
         return given()
-                .relaxedHTTPSValidation()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
                 .cookie("__Host-SESSION", flow.taraService.sessionId)

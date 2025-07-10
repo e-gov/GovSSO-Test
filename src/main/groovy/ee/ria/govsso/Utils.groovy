@@ -2,6 +2,7 @@ package ee.ria.govsso
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.qameta.allure.Allure
+import org.apache.commons.lang3.StringUtils
 import org.json.JSONObject
 import org.spockframework.lang.Wildcard
 import io.restassured.response.Response
@@ -103,5 +104,31 @@ class Utils {
         byte[] signature = ecdsaSign.sign()
         String encodedSignature = Base64.getEncoder().encodeToString(signature)
         return encodedSignature
+    }
+
+    static String portCheck(String port) {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
+
+    static boolean isRunningInDocker() {
+        if (StringUtils.containsIgnoreCase(System.getProperty('os.name'), 'linux')) {
+            def cgroupFile = new File('/proc/1/cgroup')
+            if (cgroupFile.exists() && cgroupFile.text.contains('docker')) {
+                return true
+            }
+            def cgroupV2File = new File('/proc/1/mountinfo')
+            if (cgroupV2File.exists() && cgroupV2File.text.contains('docker')) {
+                return true
+            }
+        }
+        return false
+    }
+
+    static boolean isLocal() {
+        return !isRunningInDocker()
     }
 }

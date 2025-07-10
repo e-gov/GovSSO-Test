@@ -14,7 +14,6 @@ class Requests {
     static Response followRedirect(Flow flow, String location) {
         return given()
                 .urlEncodingEnabled(false)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .log().cookies()
                 .redirects().follow(false)
@@ -26,7 +25,6 @@ class Requests {
     static Response followRedirectWithOrigin(Flow flow, String location, String origin) {
         return given()
                 .urlEncodingEnabled(false)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .header("Origin", origin)
                 .log().cookies()
@@ -39,7 +37,6 @@ class Requests {
     static Response followRedirectWithParams(Flow flow, String location, Map queryParams) {
         return given()
                 .urlEncodingEnabled(false)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .queryParams(queryParams)
                 .log().cookies()
@@ -51,7 +48,6 @@ class Requests {
     static Response followRedirectWithCookies(Flow flow, String location, Map myCookies) {
         return given()
                 .urlEncodingEnabled(false)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .cookies(myCookies)
                 .log().cookies()
@@ -62,7 +58,6 @@ class Requests {
     @Step("Simple get request")
     static Response getRequest(String location) {
         return given()
-                .relaxedHTTPSValidation()
                 .urlEncodingEnabled(false)
                 .log().cookies()
                 .redirects().follow(false)
@@ -72,7 +67,6 @@ class Requests {
     @Step("Simple delete request")
     static Response deleteRequest(String location) {
         return given()
-                .relaxedHTTPSValidation()
                 .urlEncodingEnabled(false)
                 .log().cookies()
                 .redirects().follow(false)
@@ -83,7 +77,6 @@ class Requests {
     static Response requestWithType(String requestType, String location) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .log().cookies()
                 .redirects().follow(false)
                 .request(requestType, location)
@@ -93,7 +86,6 @@ class Requests {
     static Response getRequestWithSessionId(Flow flow, String location) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .cookie("__Host-SESSION", flow.taraService.sessionId)
                 .log().cookies()
@@ -105,7 +97,6 @@ class Requests {
     static Response getRequestWithCookiesAndParams(Flow flow, String url, Map cookies, Map queryParams) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .cookies(cookies)
                 .queryParams(queryParams)
@@ -121,7 +112,6 @@ class Requests {
                                                   String origin) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .queryParams(queryParams)
                 .header("Origin", origin)
@@ -135,7 +125,6 @@ class Requests {
     static Response getRequestWithParams(Flow flow, String url, Map queryParams) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .queryParams(queryParams)
                 .log().cookies()
@@ -147,7 +136,6 @@ class Requests {
     static Response getRequestWithHeadersAndParams(Flow flow, String url, Map headers, Map queryParams) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .queryParams(queryParams)
                 .headers(headers)
@@ -162,7 +150,6 @@ class Requests {
         formParams.removeAll { key, value -> value == null }
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .formParams(formParams)
                 .header("Origin", origin)
@@ -176,7 +163,6 @@ class Requests {
         formParams.removeAll { key, value -> value == null }
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .cookies(cookies)
                 .formParams(formParams)
@@ -190,7 +176,6 @@ class Requests {
         formParams.removeAll { key, value -> value == null }
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .formParams(formParams)
                 .log().cookies()
@@ -201,7 +186,6 @@ class Requests {
     static Response postRequest(Flow flow, String url) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .log().cookies()
                 .redirects().follow(false)
@@ -212,7 +196,6 @@ class Requests {
     static Response getHealth(Flow flow) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .get(flow.sessionService.fullHealthUrl)
                 .then()
                 .statusCode(200)
@@ -223,7 +206,6 @@ class Requests {
     static Response getReadiness(Flow flow) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .get(flow.sessionService.fullReadinessUrl)
                 .then()
                 .statusCode(200)
@@ -234,7 +216,6 @@ class Requests {
     static Response getLiveness(Flow flow) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .get(flow.sessionService.fullLivenessUrl)
                 .then()
                 .statusCode(200)
@@ -245,7 +226,6 @@ class Requests {
     static Response getInfo(Flow flow) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .get(flow.sessionService.fullInfoUrl)
                 .then()
                 .statusCode(200)
@@ -255,7 +235,6 @@ class Requests {
     @Step("Download openid service configuration")
     static JsonPath getOpenidConfiguration(String url) {
         return given()
-                .relaxedHTTPSValidation()
                 .get(url)
                 .then()
                 .statusCode(200)
@@ -265,7 +244,6 @@ class Requests {
     @Step("Download openid service JWKS")
     static InputStream getOpenidJwks(String url) {
         return given()
-                .relaxedHTTPSValidation()
                 .get(url)
                 .then()
                 .statusCode(200)
@@ -280,7 +258,6 @@ class Requests {
                                          String redirectUrl = flow.oidcClientA.fullResponseUrl) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .params([grant_type  : "authorization_code",
                          code        : authorizationCode,
                          redirect_uri: redirectUrl])
@@ -295,14 +272,12 @@ class Requests {
                                         String clientSecret = "secretf",
                                         String redirectUrl = "https://clientf.localhost:11443/login/oauth2/code/govsso") {
         return given()
-                .filter(new AllureRestAssured())
                 .params([grant_type   : "authorization_code",
                          redirect_uri : redirectUrl,
                          code         : authorizationCode,
                          client_id    : clientId,
                          client_secret: clientSecret])
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 
@@ -310,7 +285,6 @@ class Requests {
     static Response getSessionUpdateWebToken(Flow flow, String refreshToken, String clientId, String clientSecret) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .formParam("grant_type", "refresh_token")
                 .formParam("refresh_token", refreshToken)
                 .auth().preemptive().basic(clientId, clientSecret)
@@ -321,7 +295,6 @@ class Requests {
     static Response getSessionUpdateWebTokenWithClientSecretPost(Flow flow, String refreshToken) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .formParams([grant_type   : "refresh_token",
                              refresh_token: refreshToken,
                              client_id    : "client-f",
@@ -333,7 +306,6 @@ class Requests {
     static Response getSessionUpdateWebToken(Flow flow, String scope, String refreshToken, String clientId, String clientSecret) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .formParam("scope", scope)
                 .formParam("grant_type", "refresh_token")
                 .formParam("refresh_token", refreshToken)
@@ -345,7 +317,6 @@ class Requests {
     static Response getWebTokenResponseBody(Flow flow, Map formParams) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .formParams(formParams)
                 .auth().preemptive().basic(flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))

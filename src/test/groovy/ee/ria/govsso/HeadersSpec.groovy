@@ -9,8 +9,6 @@ import static org.hamcrest.MatcherAssert.assertThat
 
 class HeadersSpec extends GovSsoSpecification {
 
-    Flow flow = new Flow(props)
-
     def setup() {
         flow.cookieFilter = new CookieFilter()
         flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)

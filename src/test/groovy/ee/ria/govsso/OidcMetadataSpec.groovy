@@ -9,8 +9,6 @@ import static org.hamcrest.Matchers.is
 
 class OidcMetadataSpec extends GovSsoSpecification {
 
-    Flow flow = new Flow(props)
-
     @Feature("OIDC_DISCOVERY")
     def "Verify discovery path"() {
         expect:

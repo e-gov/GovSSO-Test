@@ -9,8 +9,6 @@ import static org.hamcrest.Matchers.hasItems
 
 class MonitoringSpec extends GovSsoSpecification {
 
-    Flow flow = new Flow(props)
-
     @Feature("MONITORING")
     def "Verify health response elements"() {
         expect:

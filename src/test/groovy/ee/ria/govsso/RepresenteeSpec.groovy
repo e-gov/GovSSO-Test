@@ -21,8 +21,6 @@ import static org.hamcrest.Matchers.startsWith
 
 class RepresenteeSpec extends GovSsoSpecification {
 
-    Flow flow = new Flow(props)
-
     def setup() {
         flow.cookieFilter = new CookieFilter()
         flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
@@ -252,7 +250,7 @@ class RepresenteeSpec extends GovSsoSpecification {
         Response initLogout = postLogoutRequestWithFormParams(flow)
 
         then:
-        assertThat("Correct HTTP status code", initLogout.statusCode, is(302) )
+        assertThat("Correct HTTP status code", initLogout.statusCode, is(302))
         assertThat("Correct redirect URL", initLogout.header("location"), startsWith(flow.sessionService.fullLogoutInitUrl + "?logout_challenge="))
 
         where:
@@ -272,7 +270,7 @@ class RepresenteeSpec extends GovSsoSpecification {
         Response initLogout = postLogoutRequestWithQueryParams(flow)
 
         then:
-        assertThat("Correct HTTP status code", initLogout.statusCode, is(302) )
+        assertThat("Correct HTTP status code", initLogout.statusCode, is(302))
         assertThat("Correct redirect error URL", initLogout.header("location"), is("/error/oidc?error=invalid_request&" +
                 "error_description=The%20%27id_token_hint%27%20query%20parameter%20is%20not%20allowed%20when%20" +
                 "using%20logout%20request%20with%20http%20POST%20method%2C%20it%20must%20be%20passed%20as%20a%20form%20parameter"))
@@ -298,7 +296,7 @@ class RepresenteeSpec extends GovSsoSpecification {
 
 
         then:
-        assertThat("Correct HTTP status code", initLogout.statusCode, is(302) )
+        assertThat("Correct HTTP status code", initLogout.statusCode, is(302))
         assertThat("Correct redirect error URL", initLogout.header("location"), is("/error/oidc?error=invalid_request&" +
                 "error_description=Logout%20request%20must%20use%20POST%20method%20if%20the%20id%20token%20" +
                 "from%20%27id_token_hint%27%20parameter%20contains%20a%20%27representee_list%27%20claim"))
@@ -308,7 +306,6 @@ class RepresenteeSpec extends GovSsoSpecification {
     static Response postLogoutRequestWithQueryParams(Flow flow) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .queryParams([post_logout_redirect_uri: flow.oidcClientB.fullLogoutRedirectUrl,
                               ui_locales              : "en",
@@ -321,7 +318,6 @@ class RepresenteeSpec extends GovSsoSpecification {
     static Response postLogoutRequestWithFormParams(Flow flow) {
         return given()
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .formParams([post_logout_redirect_uri: flow.oidcClientB.fullLogoutRedirectUrl,
                              ui_locales              : "en",

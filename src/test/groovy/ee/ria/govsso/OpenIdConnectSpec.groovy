@@ -14,7 +14,6 @@ import static org.hamcrest.Matchers.endsWith
 import static org.hamcrest.MatcherAssert.assertThat
 
 class OpenIdConnectSpec extends GovSsoSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()

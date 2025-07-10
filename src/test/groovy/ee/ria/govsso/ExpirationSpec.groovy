@@ -10,7 +10,6 @@ import io.qameta.allure.Feature
 import io.qameta.allure.Story
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import org.junit.jupiter.api.AfterEach
 
 import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.Matchers.is
@@ -20,12 +19,11 @@ import static org.hamcrest.MatcherAssert.assertThat
 
 @Epic("DATABASE")
 @Feature("EXPIRATION")
-class ExpirationSpec extends  GovSsoSpecification {
+class ExpirationSpec extends GovSsoSpecification {
 
     static final ERROR_EXPIRED = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. Authentication session not found or expired."
     static final ERROR_INACTIVE = "Token is inactive because it is malformed, expired or otherwise invalid. Token validation failed."
 
-    Flow flow = new Flow(props)
     Sql sql = null
 
     def setup() {
@@ -35,7 +33,6 @@ class ExpirationSpec extends  GovSsoSpecification {
         sql = DatabaseConnection.getSql(flow)
     }
 
-    @AfterEach
     def cleanup() {
         sql.close()
     }

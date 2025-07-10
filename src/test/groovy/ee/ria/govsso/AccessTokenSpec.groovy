@@ -22,8 +22,6 @@ class AccessTokenSpec extends GovSsoSpecification {
     static final AUD1 = "https://test1.test/123"
     static final AUD2 = "https://test2.test/123"
 
-    Flow flow = new Flow(props)
-
     def setup() {
         flow.cookieFilter = new CookieFilter()
         flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)

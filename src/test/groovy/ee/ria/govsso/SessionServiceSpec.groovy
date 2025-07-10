@@ -14,8 +14,6 @@ import static org.hamcrest.Matchers.*
 
 class SessionServiceSpec extends GovSsoSpecification {
 
-    Flow flow = new Flow(props)
-
     def setup() {
         flow.cookieFilter = new CookieFilter()
         flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
