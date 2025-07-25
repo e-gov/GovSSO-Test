@@ -39,9 +39,18 @@ class SessionServiceSpec extends GovSsoSpecification {
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
-    def "Eidas authentication with insufficient Loa '#loa' fails with minimum_acr_value undefined and acr_values #acrValues"() {
+    def "Eidas authentication with insufficient Loa '#loa' fails with minimum_acr_value #minimumAcrValue and acr_values #acrValues"() {
         given:
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Map paramsMap
+
+        if (minimumAcrValue == "undefined") {
+            paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        } else {
+            String clientId = "client-mock-acr-$minimumAcrValue"
+            String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost:11443/login/oauth2/code/govsso"
+            paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, clientResponseUrl)
+        }
+
         if (acrValues == "undefined") {
             paramsMap.remove("acr_values")
         } else {
@@ -70,12 +79,20 @@ class SessionServiceSpec extends GovSsoSpecification {
                         "nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
 
         where:
-        loa | acrValues     || initLoginAcrValues
-        "A" | "undefined"   || "high"
-        "C" | "undefined"   || "high"
-        "A" | "substantial" || "substantial"
-        "A" | "high"        || "high"
-        "C" | "high"        || "high"
+        loa | minimumAcrValue | acrValues     || initLoginAcrValues
+        "A" | "undefined"     | "undefined"   || "high"
+        "C" | "undefined"     | "undefined"   || "high"
+        "A" | "undefined"     | "substantial" || "substantial"
+        "A" | "undefined"     | "high"        || "high"
+        "C" | "undefined"     | "high"        || "high"
+
+        "A" | "substantial"   | "substantial" || "substantial"
+        "A" | "high"          | "high"        || "high"
+        "C" | "high"          | "high"        || "high"
+
+        "A" | "substantial"   | "undefined"   || "substantial"
+        "A" | "high"          | "undefined"   || "high"
+        "C" | "high"          | "undefined"   || "high"
     }
 
     @Issue("AUT-2268")
@@ -172,7 +189,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.path("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct acr value", claims.getClaim("acr"), is("high"))
+        assertThat("Correct acr value", claims.getClaim("acr"), is(defaultAcr))
 
         where:
         acrValues   | defaultAcr
@@ -190,15 +207,17 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
-        Response taraAuthentication = TaraSteps.authenticateWithEidasInTARA(flow, "CA", "xavi", "creus", loa, initLogin)
-        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.path("id_token")).JWTClaimsSet
-
         then:
         initLogin.then()
                 .statusCode(302)
                 .header("location", containsString("acr_values=$acrValues"))
 
+        when:
+        Response taraAuthentication = TaraSteps.authenticateWithEidasInTARA(flow, "CA", "xavi", "creus", loa, initLogin)
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.path("id_token")).JWTClaimsSet
+
+        then:
         assertThat("Correct claim acr value", claims.getClaim("acr"), is(acrClaim))
 
         where:
@@ -247,37 +266,6 @@ class SessionServiceSpec extends GovSsoSpecification {
         "C" | "substantial"   || "substantial"
         "E" | "substantial"   || "high"
         "E" | "high"          || "high"
-    }
-
-    @Feature("LOGIN_INIT_ENDPOINT")
-    def "Eidas authentication with insufficient Loa '#loa' fails with both minimum_acr_value and acr_values equal to #acrValues"() {
-        given:
-        String clientId = "client-mock-acr-$acrValues"
-        String clientResponseUrl = "https://client.mock.acr.${acrValues}.localhost:11443/login/oauth2/code/govsso"
-
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, clientResponseUrl)
-        paramsMap << [acr_values: acrValues]
-
-        when:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
-
-        TaraSteps.startAuthenticationInTara(flow, initLogin.getHeader("location"))
-        Response redirectionResponse = TaraSteps.authenticateWithEidasGetRedirectionResponse(flow, "CA", "xavi", "creus", loa)
-
-        then:
-        redirectionResponse.then()
-                .statusCode(400)
-                .body(
-                        "error", is("Bad Request"),
-                        "message", is("Teie poolt valitud välisriigi autentimisvahend on teenuse poolt " +
-                        "nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
-
-        where:
-        loa | acrValues
-        "A" | "substantial"
-        "A" | "high"
-        "C" | "high"
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
