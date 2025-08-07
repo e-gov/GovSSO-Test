@@ -106,24 +106,66 @@ class UserInterfaceSpec extends GovSsoSpecification {
     //TODO: Improve logoutText assertion
     @Unroll
     @Feature("LOGOUT_INIT_VIEW")
-    def "Correct logout client and active client displayed in logout display with specified ui_locales: #uiLocale"() {
-        expect:
+    def "Logout page displayed in '#uiLocale' when ui_locales: '#uiLocale' defined in init request and not defined in logout '#httpRequest' request"() {
+        given:
         Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
         Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.path("id_token")
+        boolean usePost = httpRequest == "post"
 
-        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
+        when:
+        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, usePost)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        assertThat("Correct logged out client", initLogout.body.htmlPath().getString("/c-tab-login/*}").contains(logoutText))
+        then:
+        initLogout
+                .then().statusCode(200)
+                .body("html.head.title", equalTo(pageText))
+
+        assertThat("Correct logged out client", initLogout.body.htmlPath().getString("/c-tab-login/*}").contains(clientText))
         assertThat("Correct active client", initLogout.body.htmlPath().getString("/c-tab-login/*}").contains(sessionText))
         assertThat("Correct logo", initLogout.body.asString().contains(Utils.getFileAsString("src/test/resources/base64_client_B_logo")))
 
         where:
-        uiLocale | logoutText          | sessionText
-        "et"     | "Teenusenimi B"     | "Olete jätkuvalt sisse logitud järgnevatesse teenustesse:Teenusenimi A"
-        "en"     | "Service name B"    | "You are still logged in to the following services:Service name A"
-        "ru"     | "Название службы B" | "Вы авторизованы в следующих услугах:Название службы A"
+        httpRequest | uiLocale | clientText          | sessionText                                                             | pageText
+        "post"      | "et"     | "Teenusenimi B"     | "Olete jätkuvalt sisse logitud järgnevatesse teenustesse:Teenusenimi A" | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        "post"      | "en"     | "Service name B"    | "You are still logged in to the following services:Service name A"      | "State authentication service - Secure authentication for e-services"
+        "post"      | "ru"     | "Название службы B" | "Вы авторизованы в следующих услугах:Название службы A"                 | "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
+        "get"       | "et"     | "Teenusenimi B"     | "Olete jätkuvalt sisse logitud järgnevatesse teenustesse:Teenusenimi A" | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        "get"       | "en"     | "Service name B"    | "You are still logged in to the following services:Service name A"      | "State authentication service - Secure authentication for e-services"
+        "get"       | "ru"     | "Название службы B" | "Вы авторизованы в следующих услугах:Название службы A"                 | "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
+    }
+
+    @Unroll
+    @Feature("LOGOUT_INIT_VIEW")
+    def "Logout page displayed in '#uiLocale' when ui_locales: '#uiLocale' defined in logout '#httpRequest' request"() {
+        given:
+        Steps.authenticateWithIdCardInGovSso(flow)
+        Response continueSession = Steps.continueWithExistingSession(flow)
+        String idToken = continueSession.path("id_token")
+        boolean usePost = httpRequest == "post"
+
+        when:
+        Response oidcLogout = Steps.startLogoutWithUiLocales(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, uiLocale, usePost)
+        Response initLogout = Steps.followRedirect(flow, oidcLogout)
+
+        then:
+        initLogout
+                .then().statusCode(200)
+                .body("html.head.title", equalTo(pageText))
+
+        assertThat("Correct logged out client", initLogout.body.htmlPath().getString("/c-tab-login/*}").contains(clientText))
+        assertThat("Correct active client", initLogout.body.htmlPath().getString("/c-tab-login/*}").contains(sessionText))
+        assertThat("Correct logo", initLogout.body.asString().contains(Utils.getFileAsString("src/test/resources/base64_client_B_logo")))
+
+        where:
+        httpRequest | uiLocale | clientText          | sessionText                                                             | pageText
+        "post"      | "et"     | "Teenusenimi B"     | "Olete jätkuvalt sisse logitud järgnevatesse teenustesse:Teenusenimi A" | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        "post"      | "en"     | "Service name B"    | "You are still logged in to the following services:Service name A"      | "State authentication service - Secure authentication for e-services"
+        "post"      | "ru"     | "Название службы B" | "Вы авторизованы в следующих услугах:Название службы A"                 | "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
+        "get"       | "et"     | "Teenusenimi B"     | "Olete jätkuvalt sisse logitud järgnevatesse teenustesse:Teenusenimi A" | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        "get"       | "en"     | "Service name B"    | "You are still logged in to the following services:Service name A"      | "State authentication service - Secure authentication for e-services"
+        "get"       | "ru"     | "Название службы B" | "Вы авторизованы в следующих услугах:Название службы A"                 | "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
     }
 
     @Unroll

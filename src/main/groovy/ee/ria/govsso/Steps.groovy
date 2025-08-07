@@ -64,12 +64,22 @@ class Steps {
 
     @Step("Initialize logout sequence in OIDC with GET or POST")
     static Response startLogout(Flow flow, String idTokenHint, String logoutRedirectUri, boolean usePost = false) {
-        Map params = [id_token_hint           : idTokenHint,
-                      post_logout_redirect_uri: logoutRedirectUri]
+        Map params = OpenIdUtils.getLogoutParameters(idTokenHint,logoutRedirectUri)
+        return logoutRequest(flow,params,logoutRedirectUri,usePost)
+    }
+
+    @Step("Initialize logout sequence in OIDC with GET or POST")
+    static Response startLogoutWithUiLocales(Flow flow, String idTokenHint, String logoutRedirectUri, String uiLocales, boolean usePost = false) {
+        Map params = OpenIdUtils.getLogoutParametersWithUiLocales(idTokenHint,logoutRedirectUri,uiLocales)
+        return logoutRequest(flow,params,logoutRedirectUri,usePost)
+    }
+
+    @Step("Logout request in OIDC with GET or POST")
+    static Response logoutRequest(Flow flow, Map logoutParams, String logoutRedirectUri, boolean usePost = false) {
 
         Response initLogout = usePost
-                ? Requests.postRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, params)
-                : Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, params)
+                ? Requests.postRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, logoutParams)
+                : Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, logoutParams)
 
         if (initLogout.statusCode == 302 && initLogout.header("Location") != logoutRedirectUri) {
             flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(initLogout, "logout_challenge"))
@@ -80,8 +90,7 @@ class Steps {
     @Step("Initialize logout sequence in OIDC with origin")
     static Response startLogoutWithOrigin(Flow flow, String idTokenHint, String logoutRedirectUri, String origin) {
         Map headersMap = [Origin: origin]
-        Map queryParams = [id_token_hint           : idTokenHint,
-                           post_logout_redirect_uri: logoutRedirectUri]
+        Map queryParams = OpenIdUtils.getLogoutParameters(idTokenHint,logoutRedirectUri)
         Response initLogout = Requests.getRequestWithHeadersAndParams(flow, flow.ssoOidcService.fullLogoutUrl, headersMap, queryParams)
         flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(initLogout, "logout_challenge"))
         return initLogout

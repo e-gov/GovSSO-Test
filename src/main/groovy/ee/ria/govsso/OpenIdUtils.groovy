@@ -40,6 +40,18 @@ class OpenIdUtils {
         return jwtSplit.length == 3
     }
 
+    static Map getLogoutParameters(String idTokenHint, String logoutRedirectUri) {
+        Map queryParams = [id_token_hint           : idTokenHint,
+                           post_logout_redirect_uri: logoutRedirectUri]
+        return queryParams
+    }
+
+    static Map getLogoutParametersWithUiLocales(String idTokenHint, String logoutRedirectUri,String uiLocales) {
+        Map queryParams = getLogoutParameters(idTokenHint,logoutRedirectUri)
+        queryParams << [ui_locales: uiLocales]
+        return queryParams
+    }
+
     static Map getAuthorizationParameters(Flow flow, String clientId = flow.oidcClientA.clientId, String responseUrl = flow.oidcClientA.fullResponseUrl) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
