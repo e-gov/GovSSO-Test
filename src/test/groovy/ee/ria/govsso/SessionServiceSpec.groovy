@@ -95,7 +95,6 @@ class SessionServiceSpec extends GovSsoSpecification {
         "C" | "high"          | "undefined"   || "high"
     }
 
-    @Issue("AUT-2268")
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication request with undefined acr_values defaults to minimum_acr_value '#minimumAcrValue' and succeeds for eIDAS LoA '#loa'"() {
         given:
@@ -126,10 +125,10 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         where:
         loa | minimumAcrValue || acrClaim
-//        "A" | "low"           || "low"  //AUT-2268
-//        "C" | "low"           || "substantial" //AUT-2268
+        "A" | "low"           || "low"
+        "C" | "low"           || "substantial"
         "E" | "low"           || "high"
-//        "C" | "substantial"   || "substantial" //AUT-2268
+        "C" | "substantial"   || "substantial"
         "E" | "substantial"   || "high"
         "E" | "high"          || "high"
     }
