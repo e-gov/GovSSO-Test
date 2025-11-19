@@ -116,7 +116,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         paramsMap << [nonce: "testȺ田\uD83D\uDE0D&additional=1 %20"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
 
         Response token = Steps.getTokenResponseWithDefaults(flow, consentVerifier)

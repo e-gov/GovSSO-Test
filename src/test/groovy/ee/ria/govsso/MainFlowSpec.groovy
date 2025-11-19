@@ -26,7 +26,7 @@ class MainFlowSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin)
 
         Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
@@ -34,7 +34,7 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct authentication method value", claims.getClaim("amr"), is(["mID"]))
         assertThat("Correct audience value", claims.audience[0], is(flow.oidcClientA.clientId))
         assertThat("Correct subject value", claims.subject, is("EE60001017716"))
-        assertThat("Correct given name value", claims.getClaim("given_name"), is("ONE"))
+        assertThat("Correct given name value", claims.getClaim("given_name"), is("MARY ÄNN"))
     }
 
     @Feature("BUSINESS_LOGIC")

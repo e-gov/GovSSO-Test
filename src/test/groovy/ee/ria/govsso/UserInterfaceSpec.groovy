@@ -192,17 +192,17 @@ class UserInterfaceSpec extends GovSsoSpecification {
         paramsMap.put("scope", "openid phone")
         Response oidcAuth1 = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin1 = Steps.startSessionInSessionService(flow, oidcAuth1)
-        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin1)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin1)
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
         Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid phone")
         Response initLogin2 = Steps.followRedirect(flow, oidcAuth2)
 
-        assertThat("Correct first name", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("ONE"))
-        assertThat("Correct surname", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("TESTNUMBER"))
+        assertThat("Correct first name", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("MARY ÄNN"))
+        assertThat("Correct surname", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("O'CONNEŽ-ŠUSLIK TESTNUMBER"))
         assertThat("Correct personal code", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("EE60001017716"))
         assertThat("Correct date of birth", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("01.01.2000"))
-        assertThat("Correct phone number", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("+37269100366"))
+        assertThat("Correct phone number", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("+37259100366"))
         assertThat("Correct logo", initLogin2.body.asString().contains(Utils.getFileAsString("src/test/resources/base64_client_B_logo")))
     }
 
@@ -214,14 +214,14 @@ class UserInterfaceSpec extends GovSsoSpecification {
         paramsMap.put("scope", "openid phone")
         Response oidcAuth1 = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin1 = Steps.startSessionInSessionService(flow, oidcAuth1)
-        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin1)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin1)
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
         Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid")
         Response initLogin2 = Steps.followRedirect(flow, oidcAuth2)
 
-        assertThat("Correct first name", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("ONE"))
-        assertThat("Correct surname", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("TESTNUMBER"))
+        assertThat("Correct first name", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("MARY ÄNN"))
+        assertThat("Correct surname", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("O'CONNEŽ-ŠUSLIK TESTNUMBER"))
         assertThat("Correct personal code", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("EE60001017716"))
         assertThat("Correct date of birth", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("01.01.2000"))
         assertThat("No phone number field", !initLogin2.body.htmlPath().getString("/personal-info/*}").contains("Telefoninumber"))

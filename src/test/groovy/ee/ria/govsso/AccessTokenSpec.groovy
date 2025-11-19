@@ -157,7 +157,7 @@ class AccessTokenSpec extends GovSsoSpecification {
         paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "69100366", initLogin)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin)
         Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "access_token")
 
         when: "Get access token claims"
@@ -171,7 +171,7 @@ class AccessTokenSpec extends GovSsoSpecification {
                 "sub"
         ]
         assertThat("JWT has only expected claims", claims.claims.keySet(), equalTo(expectedClaims))
-        assertThat("Correct phone_number claim", claims.getClaim("phone_number"), equalTo("+37269100366"))
+        assertThat("Correct phone_number claim", claims.getClaim("phone_number"), equalTo("+37259100366"))
         assertThat("Correct phone_number_verified claim exists", claims.getClaim("phone_number_verified"), equalTo(true))
     }
 
