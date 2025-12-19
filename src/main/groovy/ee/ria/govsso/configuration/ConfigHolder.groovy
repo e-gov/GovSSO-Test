@@ -15,6 +15,8 @@ class ConfigHolder {
     private static final ForeignIdpConf foreignIdp = readConf(ForeignIdpConf, "idp")
     private static final SsoOidcClientConf ssoOidcClientA = readConf(SsoOidcClientConf, "ssooidcclienta")
     private static final SsoOidcClientConf ssoOidcClientB = readConf(SsoOidcClientConf, "ssooidcclientb")
+    private static final SsoAdminServiceConf ssoAdminService = readConf(SsoAdminServiceConf, "ssoadminservice")
+    private static final SsoInproxyServiceConf ssoInproxyService = readConf(SsoInproxyServiceConf, "ssoinproxyservice")
     private static final TestConf testConf = readConf(TestConf, "")
 
     private static <T extends Config> T readConf(Class<T> configClass) {
@@ -47,6 +49,10 @@ class ConfigHolder {
     static SsoOidcClientConf getSsoOidcClientA() { ssoOidcClientA }
 
     static SsoOidcClientConf getSsoOidcClientB() { ssoOidcClientB }
+
+    static SsoAdminServiceConf getSsoAdminServiceConf() { ssoAdminService }
+
+    static SsoInproxyServiceConf getSsoInproxyServiceConf() { ssoInproxyService }
 
     static TestConf getTestConf() { testConf }
 }

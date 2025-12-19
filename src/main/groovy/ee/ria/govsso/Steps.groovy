@@ -1,14 +1,15 @@
 package ee.ria.govsso
 
 import com.nimbusds.jwt.SignedJWT
+import ee.ria.govsso.model.Actuator
 import io.qameta.allure.Step
 import io.restassured.response.Response
+import org.apache.http.HttpStatus
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.anyOf
 import static org.hamcrest.Matchers.containsString
-
 
 class Steps {
 
@@ -334,5 +335,32 @@ class Steps {
         assertThat(response.header("Cache-Control"), equalTo("no-cache, no-store, max-age=0, must-revalidate"))
         assertThat(response.header("X-Content-Type-Options"), equalTo("nosniff"))
         assertThat(response.header("X-XSS-Protection"), equalTo("0"))
+    }
+
+    static Response tryGetActuatorEndpoint(String baseurl, Actuator actuator) {
+        Requests.get(baseurl, actuator.endpoint)
+    }
+
+    @Step("Get Actuator {1}")
+    static Response getActuatorEndpoint(String baseurl, Actuator actuator) {
+        Response response = tryGetActuatorEndpoint(baseurl, actuator)
+        response.then().statusCode(HttpStatus.SC_OK)
+        return response
+    }
+
+    static Response getHealth(String baseUri) {
+        getActuatorEndpoint(baseUri, Actuator.HEALTH)
+    }
+
+    static Response getHealthReadiness(String baseUri) {
+        getActuatorEndpoint(baseUri, Actuator.READINESS)
+    }
+
+    static Response getHealthLiveness(String baseUri) {
+        getActuatorEndpoint(baseUri, Actuator.LIVENESS)
+    }
+
+    static Response getPrometheus(String baseUri) {
+        getActuatorEndpoint(baseUri, Actuator.PROMETHEUS)
     }
 }

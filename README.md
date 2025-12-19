@@ -50,6 +50,9 @@ Description of values:
 | ssooidcservice.authenticationRequestUrl | /oauth2/auth                                      | OIDC flow start endpoint.                              |
 | ssooidcservice.configurationUrl         | /.well-known/openid-configuration                 | OIDC metadata endpoint.                                |
 | ssooidcservice.jwksUrl                  | /.well-known/jwks.json                            | Signing key info endpoint.                             |
+| ssooidcservice.node.protocol            | http                                              | Service node protocol. Used in monitoring tests.       |
+| ssooidcservice.node.host                | oidc-service                                      | Service node URL. Used in monitoring tests.            |
+| ssooidcservice.node.port                | 14080                                             | Service node port. Used in monitoring tests.           |
 | ssooidcdatabase.protocol                | jdbc                                              | Database protocol.                                     |
 | ssooidcdatabase.host                    | oidc-db                                           | Database URL.                                          |
 | ssooidcdatabase.port                    | 5432                                              | Database port.                                         |
@@ -72,10 +75,6 @@ Description of values:
 | sessionservice.logoutEndSessionUrl      | /logout/endsession                                | Service logout with end all sessions endpoint.         |
 | sessionservice.consentUrl               | /consent/init                                     | Service consent selection endpoint.                    |
 | sessionservice.consentConfirmUrl        | /auth/consent/confirm                             | Service consent confirmation endpoint.                 |
-| sessionservice.healthUrl                | /actuator/health                                  | Service health endpoint.                               |
-| sessionservice.readinessUrl             | /actuator/health/readiness                        | Service readiness endpoint.                            |
-| sessionservice.livenessUrl              | /actuator/health/liveness                         | Service liveness endpoint.                             |
-| sessionservice.infoUrl                  | /actuator/info                                    | Service info endpoint.                                 |
 | sessionservice.sessions                 | /admin/sessions                                   | Service sessions endpoint.                             |
 | taraservice.protocol                    | https                                             | Service protocol.                                      |
 | taraservice.host                        | login-service-backend                             | Service URL.                                           |
@@ -118,6 +117,14 @@ Description of values:
 | ssooidcclientb.logoutRedirectUrl        | /logout/url                                       | GovSSO mock client B logout redirect endpoint.         |
 | ssooidcclientb.clientId                 | client-b                                          | GovSSO mock client B ID.                               |
 | ssooidcclientb.secret                   | secretb                                           | GovSSO mock client B secret.                           |
+| ssoadminservice.protocol                | http                                              | Service protocol.                                      |
+| ssoadminservice.host                    | admin-service                                     | Service URL.                                           |
+| ssoadminservice.port                    | 8445                                              | Service port.                                          |
+| ssoadminservice.username                |                                                   | Admin service username.                                |
+| ssoadminservice.password                |                                                   | Admin service password.                                |
+| ssoinproxyservice.protocol              | http                                              | Inproxy service protocol.                              |
+| ssoinproxyservice.host                  | inproxy-service                                   | Inproxy service URL.                                   |
+| ssoinproxyservice.port                  | 8444                                              | Inproxy service port.                                  |
 
 ## Execute tests and generate report
 

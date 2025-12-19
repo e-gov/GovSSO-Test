@@ -16,6 +16,8 @@ class Flow {
     TaraForeignProxyService foreignProxyService
     SsoOidcClient oidcClientA
     SsoOidcClient oidcClientB
+    SsoAdminService adminService
+    SsoInproxyService inproxyService
 
     CookieFilter cookieFilter
 
@@ -45,17 +47,51 @@ class Flow {
         this.foreignProxyService = new TaraForeignProxyService(ConfigHolder.caProxyService)
         this.oidcClientA = new SsoOidcClient(ConfigHolder.ssoOidcClientA)
         this.oidcClientB = new SsoOidcClient(ConfigHolder.ssoOidcClientB)
+        this.adminService = new SsoAdminService(ConfigHolder.ssoAdminServiceConf)
+        this.inproxyService = new SsoInproxyService(ConfigHolder.ssoInproxyServiceConf)
     }
 }
 
 @Canonical
-class SsoSessionService {
-    String host
-    String nodeHost
-    String port
-    String nodePort
+abstract class BaseService {
     String protocol
+    String host
+    String port
+
     String nodeProtocol
+    String nodeHost
+    String nodePort
+
+    @Lazy baseUrl = "${protocol}://${host}"
+    @Lazy fullBaseUrl = "${baseUrl}${Utils.portCheck(port)}"
+    @Lazy fullNodeUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}"
+
+    BaseService(conf) {
+        this.protocol = conf.protocol()
+        this.host = conf.host()
+        this.port = conf.port()
+
+        switch (conf) {
+            case ForeignIdpConf: // fall through
+            case CaProxyServiceConf: // fall through
+            case SsoOidcClientConf: // fall through
+            case SsoOidcDatabaseConf: // fall through
+            case SsoAdminServiceConf: // fall through
+            case SsoInproxyServiceConf:
+                this.nodeProtocol = this.protocol
+                this.nodeHost = this.host
+                this.nodePort = this.port
+                break
+            default:
+                this.nodeProtocol = conf.nodeProtocol()
+                this.nodeHost = conf.nodeHost()
+                this.nodePort = conf.nodePort()
+        }
+    }
+}
+
+@Canonical
+class SsoSessionService extends BaseService {
     String initUrl
     String logoutInitUrl
     String continueSessionUrl
@@ -66,37 +102,23 @@ class SsoSessionService {
     String taraCallbackUrl
     String consentUrl
     String consentConfirmUrl
-    String healthUrl
-    String readinessUrl
-    String livenessUrl
-    String infoUrl
     String sessionsUrl
     HashMap<String, String> cookies
 
-    @Lazy baseUrl = "${protocol}://${host}"
-    @Lazy fullInitUrl = "${protocol}://${host}${initUrl}"
-    @Lazy fullLogoutInitUrl = "${protocol}://${host}${logoutInitUrl}"
-    @Lazy fullContinueSessionUrl = "${protocol}://${host}${continueSessionUrl}"
-    @Lazy fullReauthenticateUrl = "${protocol}://${host}${reauthenticateUrl}"
-    @Lazy fullLogoutContinueSessionUrl = "${protocol}://${host}${logoutContinueSessionUrl}"
-    @Lazy fullLogoutEndSessionUrl = "${protocol}://${host}${logoutEndSessionUrl}"
-    @Lazy fullLoginRejectUrl = "${protocol}://${host}${loginRejectUrl}"
-    @Lazy fullTaraCallbackUrl = "${protocol}://${host}${taraCallbackUrl}"
-    @Lazy fullConsentUrl = "${protocol}://${host}${consentUrl}"
-    @Lazy fullConsentConfirmUrl = "${protocol}://${host}${consentConfirmUrl}"
-    @Lazy fullHealthUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${healthUrl}"
-    @Lazy fullReadinessUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${readinessUrl}"
-    @Lazy fullLivenessUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${livenessUrl}"
-    @Lazy fullInfoUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${infoUrl}"
-    @Lazy baseSessionsUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${sessionsUrl}"
+    @Lazy fullInitUrl = "${baseUrl}${initUrl}"
+    @Lazy fullLogoutInitUrl = "${baseUrl}${logoutInitUrl}"
+    @Lazy fullContinueSessionUrl = "${baseUrl}${continueSessionUrl}"
+    @Lazy fullReauthenticateUrl = "${baseUrl}${reauthenticateUrl}"
+    @Lazy fullLogoutContinueSessionUrl = "${baseUrl}${logoutContinueSessionUrl}"
+    @Lazy fullLogoutEndSessionUrl = "${baseUrl}${logoutEndSessionUrl}"
+    @Lazy fullLoginRejectUrl = "${baseUrl}${loginRejectUrl}"
+    @Lazy fullTaraCallbackUrl = "${baseUrl}${taraCallbackUrl}"
+    @Lazy fullConsentUrl = "${baseUrl}${consentUrl}"
+    @Lazy fullConsentConfirmUrl = "${baseUrl}${consentConfirmUrl}"
+    @Lazy baseSessionsUrl = "${fullNodeUrl}${sessionsUrl}"
 
     SsoSessionService(SessionServiceConf conf) {
-        this.host = conf.host()
-        this.nodeHost = conf.nodeHost()
-        this.port = conf.port()
-        this.nodePort = conf.nodePort()
-        this.protocol = conf.protocol()
-        this.nodeProtocol = conf.nodeProtocol()
+        super(conf)
         this.initUrl = conf.initUrl()
         this.logoutInitUrl = conf.logoutInitUrl()
         this.continueSessionUrl = conf.continueSessionUrl()
@@ -107,21 +129,18 @@ class SsoSessionService {
         this.taraCallbackUrl = conf.taraCallbackUrl()
         this.consentUrl = conf.consentUrl()
         this.consentConfirmUrl = conf.consentConfirmUrl()
-        this.healthUrl = conf.healthUrl()
-        this.readinessUrl = conf.readinessUrl()
-        this.livenessUrl = conf.livenessUrl()
-        this.infoUrl = conf.infoUrl()
         this.sessionsUrl = conf.sessionsUrl()
         this.cookies = new HashMap<String, String>()
+    }
 
+    @Override
+    String toString() {
+        return "Session service"
     }
 }
 
 @Canonical
-class SsoOidcService {
-    String host
-    String port
-    String protocol
+class SsoOidcService extends BaseService {
     String authenticationRequestUrl
     String revocationUrl
     String logoutUrl
@@ -129,16 +148,14 @@ class SsoOidcService {
     String configurationUrl
     HashMap<String, String> cookies
 
-    @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${authenticationRequestUrl}"
-    @Lazy fullLogoutUrl = "${protocol}://${host}${logoutUrl}"
-    @Lazy fullJwksUrl = "${protocol}://${host}${jwksUrl}"
-    @Lazy fullConfigurationUrl = "${protocol}://${host}${configurationUrl}"
-    @Lazy baseUrl = "${protocol}://${host}"
+    @Lazy fullAuthenticationRequestUrl = "${baseUrl}${authenticationRequestUrl}"
+    @Lazy fullLogoutUrl = "${baseUrl}${logoutUrl}"
+    @Lazy fullJwksUrl = "${baseUrl}${jwksUrl}"
+    @Lazy fullConfigurationUrl = "${baseUrl}${configurationUrl}"
+    @Lazy fullNodeUrlPrometheus = "${nodeProtocol}://${nodeHost}${Utils.portCheck("4445")}"
 
     SsoOidcService(SsoOidcServiceConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
-        this.protocol = conf.protocol()
+        super(conf)
         this.authenticationRequestUrl = conf.authenticationRequestUrl()
         this.revocationUrl = conf.revocation()
         this.logoutUrl = conf.logout()
@@ -146,23 +163,23 @@ class SsoOidcService {
         this.configurationUrl = conf.configurationUrl()
         this.cookies = new HashMap<String, String>()
     }
+
+    @Override
+    String toString() {
+        return "OIDC service"
+    }
 }
 
 @Canonical
-class SsoOidcDatabase {
-    String host
-    String port
-    String protocol
+class SsoOidcDatabase extends BaseService{
     String databaseUrl
     String username
     String password
 
-    @Lazy fullSsoOidcDatabaseUrl = "${protocol}://${host}${Utils.portCheck(port)}${databaseUrl}"
+    @Lazy fullSsoOidcDatabaseUrl = "${fullBaseUrl}${databaseUrl}"
 
     SsoOidcDatabase(SsoOidcDatabaseConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
-        this.protocol = conf.protocol()
+        super(conf)
         this.databaseUrl = conf.databaseUrl()
         this.username = conf.username()
         this.password = conf.password()
@@ -170,9 +187,7 @@ class SsoOidcDatabase {
 }
 
 @Canonical
-class TaraService {
-    String host
-    String protocol
+class TaraService extends BaseService {
     String initUrl
     String midInitUrl
     String midPollUrl
@@ -197,15 +212,13 @@ class TaraService {
     HashMap<String, String> cookies
     String taraloginBaseUrl
 
-    @Lazy baseUrl = "${protocol}://${host}"
-    @Lazy fullWebEidInitUrl = "${protocol}://${host}${webEidInitUrl}"
-    @Lazy fullWebEidLoginUrl = "${protocol}://${host}${webEidLoginUrl}"
-    @Lazy fullAuthAcceptUrl = "${protocol}://${host}${authAcceptUrl}"
-    @Lazy fullAuthRejectUrl = "${protocol}://${host}${authRejectUrl}"
+    @Lazy fullWebEidInitUrl = "${baseUrl}${webEidInitUrl}"
+    @Lazy fullWebEidLoginUrl = "${baseUrl}${webEidLoginUrl}"
+    @Lazy fullAuthAcceptUrl = "${baseUrl}${authAcceptUrl}"
+    @Lazy fullAuthRejectUrl = "${baseUrl}${authRejectUrl}"
 
     TaraService(TaraServiceConf conf) {
-        this.host = conf.host()
-        this.protocol = conf.protocol()
+        super(conf)
         this.initUrl = conf.initUrl()
         this.midInitUrl = conf.midInitUrl()
         this.midPollUrl = conf.midPollUrl()
@@ -229,44 +242,31 @@ class TaraService {
 }
 
 @Canonical
-class TaraForeignIdpProvider {
-    String host
-    String port
-    String protocol
+class TaraForeignIdpProvider extends BaseService {
     String responseUrl
 
-    @Lazy fullResponseUrl = "${protocol}://${host}${Utils.portCheck(port)}${responseUrl}"
+    @Lazy fullResponseUrl = "${fullBaseUrl}${responseUrl}"
 
     TaraForeignIdpProvider(ForeignIdpConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
-        this.protocol = conf.protocol()
+        super(conf)
         this.responseUrl = conf.responseUrl()
     }
 }
 
 @Canonical
-class TaraForeignProxyService {
-    String host
-    String port
-    String protocol
+class TaraForeignProxyService extends BaseService {
     String consentUrl
 
-    @Lazy fullConsentUrl = "${protocol}://${host}${Utils.portCheck(port)}${consentUrl}"
+    @Lazy fullConsentUrl = "${fullBaseUrl}${consentUrl}"
 
     TaraForeignProxyService(CaProxyServiceConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
-        this.protocol = conf.protocol()
+        super(conf)
         this.consentUrl = conf.consentUrl()
     }
 }
 
 @Canonical
-class SsoOidcClient {
-    String host
-    String port
-    String protocol
+class SsoOidcClient extends BaseService{
     String responseUrl
     String logoutRedirectUrl
     String clientId
@@ -274,19 +274,46 @@ class SsoOidcClient {
     String expiredJwt
     HashMap<String, String> cookies
 
-    @Lazy fullBaseUrl = "${protocol}://${host}${Utils.portCheck(port)}"
-    @Lazy fullLogoutRedirectUrl = "${protocol}://${host}${Utils.portCheck(port)}${logoutRedirectUrl}"
-    @Lazy fullResponseUrl = "${protocol}://${host}${Utils.portCheck(port)}${responseUrl}"
+    @Lazy fullLogoutRedirectUrl = "${fullBaseUrl}${logoutRedirectUrl}"
+    @Lazy fullResponseUrl = "${fullBaseUrl}${responseUrl}"
 
     SsoOidcClient(SsoOidcClientConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
-        this.protocol = conf.protocol()
+        super(conf)
         this.responseUrl = conf.responseUrl()
         this.logoutRedirectUrl = conf.logoutRedirectUrl()
         this.clientId = conf.clientId()
         this.clientSecret = conf.secret()
         this.expiredJwt = conf.expiredJwt()
         this.cookies = new HashMap<String, String>()
+    }
+}
+
+@Canonical
+class SsoAdminService extends BaseService{
+    String username
+    String password
+
+    SsoAdminService(SsoAdminServiceConf conf) {
+        super(conf)
+        this.username = conf.username()
+        this.password = conf.password()
+    }
+
+    @Override
+    String toString() {
+        return "GovSSO Admin"
+    }
+}
+
+@Canonical
+class SsoInproxyService extends BaseService {
+
+    SsoInproxyService(SsoInproxyServiceConf conf) {
+        super(conf)
+    }
+
+    @Override
+    String toString() {
+        return "Inproxy service"
     }
 }

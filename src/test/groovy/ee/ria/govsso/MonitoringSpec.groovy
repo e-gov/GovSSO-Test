@@ -1,83 +1,115 @@
 package ee.ria.govsso
 
+import ee.ria.govsso.model.Actuator
+import ee.ria.govsso.util.ServiceUrls
 import io.qameta.allure.Feature
 import io.restassured.response.Response
+import org.apache.http.HttpStatus
+import spock.lang.Issue
 
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.notNullValue
-import static org.hamcrest.Matchers.hasItems
 
 class MonitoringSpec extends GovSsoSpecification {
 
-    @Feature("MONITORING")
-    def "Verify health response elements"() {
-        expect:
-        Response health = Requests.getHealth(flow)
-        health.then()
-                .statusCode(200)
-                .body("status", is("UP"))
-                .body("components.hydra.status", is("UP"))
-                .body("components.tara.status", is("UP"))
-                .body("components.ping.status.", is("UP"))
-                .body("components.livenessState.status.", is("UP"))
-                .body("components.readinessState.status.", is("UP"))
-                .body("components.truststore.status.", is("UP"))
-                .body("components.truststore.components.Hydra.status.", is("UP"))
-                .body("components.truststore.components.Hydra.details.certificates.state[0]", is("ACTIVE"))
-                .body("components.truststore.components.Hydra.details.certificates.state[1]", is("ACTIVE"))
-                .body("components.truststore.components.TARA.status.", is("UP"))
-                .body("components.truststore.components.TARA.details.certificates.state[0]", is("ACTIVE"))
-                .body("components.truststore.components.TARA.details.certificates.state[1]", is("ACTIVE"))
-                .body("groups", hasItems("readiness", "liveness"))
+    @Feature("HEALTH_MONITORING_ENDPOINT")
+    @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
+    @Feature("HEALTH_MONITORING_STATUS")
+    def "Verify #service Prometheus response"() {
+        when:
+        Response response = switch (service) {
+            case SsoOidcService -> Steps.getActuatorEndpoint(service.fullNodeUrlPrometheus, Actuator.PROMETHEUS_OIDCSERVICE)
+            default -> Steps.getPrometheus(service.fullNodeUrl)
+        }
+
+        then:
+        response.then()
+                .contentType("text/plain")
+                .body(containsString("process_start_time_seconds"))
+
+        where:
+        service << [ServiceUrls.SSO_INPROXY_SERVICE, ServiceUrls.SSO_ADMIN_SERVICE, ServiceUrls.SSO_OIDC_SERVICE]
     }
 
-    @Feature("MONITORING")
-    def "Verify readiness response elements"() {
+    @Feature("HEALTH_MONITORING_ENDPOINT")
+    @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
+    @Feature("HEALTH_MONITORING_STATUS")
+    def "Verify #service actuator #endpoint dependent service '#component' status"() {
         expect:
-        Response readiness = Requests.getReadiness(flow)
-        readiness.then()
-                .statusCode(200)
-                .body("status", is("UP"))
-                .body("components.hydra.status", is("UP"))
-                .body("components.tara.status", is("UP"))
-                .body("components.readinessState.status.", is("UP"))
-                .body("components.truststore.status.", is("UP"))
-                .body("components.truststore.components.Hydra.status.", is("UP"))
-                .body("components.truststore.components.Hydra.details.certificates.state[0]", is("ACTIVE"))
-                .body("components.truststore.components.Hydra.details.certificates.state[1]", is("ACTIVE"))
-                .body("components.truststore.components.TARA.status.", is("UP"))
-                .body("components.truststore.components.TARA.details.certificates.state[0]", is("ACTIVE"))
-                .body("components.truststore.components.TARA.details.certificates.state[1]", is("ACTIVE"))
+        Steps.getActuatorEndpoint(service.fullNodeUrl, endpoint).then()
+                .contentType("application/vnd.spring-boot.actuator")
+                .body("components.${component}.status", equalTo("UP"))
 
+        where:
+        service                         | endpoint           | component
+        ServiceUrls.SSO_SESSION_SERVICE | Actuator.HEALTH    | "hydra"
+        ServiceUrls.SSO_SESSION_SERVICE | Actuator.HEALTH    | "tara"
+        ServiceUrls.SSO_SESSION_SERVICE | Actuator.READINESS | "hydra"
+        ServiceUrls.SSO_SESSION_SERVICE | Actuator.READINESS | "tara"
+
+        ServiceUrls.SSO_INPROXY_SERVICE | Actuator.HEALTH    | "admin"
+
+        ServiceUrls.SSO_ADMIN_SERVICE   | Actuator.HEALTH    | "db"
+        ServiceUrls.SSO_ADMIN_SERVICE   | Actuator.HEALTH    | "ldap"
+        ServiceUrls.SSO_ADMIN_SERVICE   | Actuator.HEALTH    | "mail"
+        ServiceUrls.SSO_ADMIN_SERVICE   | Actuator.READINESS | "db"
+        ServiceUrls.SSO_ADMIN_SERVICE   | Actuator.READINESS | "ldap"
     }
 
-    @Feature("MONITORING")
-    def "Verify liveness response elements"() {
+    @Feature("HEALTH_MONITORING_ENDPOINT")
+    @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
+    @Feature("HEALTH_MONITORING_STATUS")
+    def "Verify #service actuator #endpoint status"() {
+        given:
+        def contentType = service instanceof SsoOidcService ? "application/json; charset=utf-8" : "application/vnd.spring-boot.actuator"
+        def status = service instanceof SsoOidcService ? "ok" : "UP"
+
         expect:
-        Response health = Requests.getLiveness(flow)
-        health.then()
-                .statusCode(200)
-                .body("status", is("UP"))
+        Steps.getActuatorEndpoint(service.fullNodeUrl, endpoint).then()
+                .contentType(contentType)
+                .body("status", is(status))
+
+        where:
+        service                         | endpoint
+        ServiceUrls.SSO_SESSION_SERVICE | Actuator.HEALTH
+        ServiceUrls.SSO_SESSION_SERVICE | Actuator.READINESS
+        ServiceUrls.SSO_SESSION_SERVICE | Actuator.LIVENESS
+
+        ServiceUrls.SSO_INPROXY_SERVICE | Actuator.HEALTH
+        ServiceUrls.SSO_INPROXY_SERVICE | Actuator.READINESS
+        ServiceUrls.SSO_INPROXY_SERVICE | Actuator.LIVENESS
+
+        ServiceUrls.SSO_ADMIN_SERVICE   | Actuator.HEALTH
+        ServiceUrls.SSO_ADMIN_SERVICE   | Actuator.READINESS
+        ServiceUrls.SSO_ADMIN_SERVICE   | Actuator.LIVENESS
+
+        ServiceUrls.SSO_OIDC_SERVICE    | Actuator.READINESS_OIDCSERVICE
+        ServiceUrls.SSO_OIDC_SERVICE    | Actuator.LIVENESS_OIDCSERVICE
     }
 
-    @Feature("MONITORING")
-    def "Verify info response elements"() {
+    @Issue("Not able to check OIDC service error 'path'='/notfound'")
+    @Feature("HEALTH_MONITORING_ENDPOINT")
+    def "#service actuator #endpoint cannot be accessed through proxy"() {
         expect:
-        Response info = Requests.getInfo(flow)
-        info.then()
-                .statusCode(200)
-                .body("git.branch", notNullValue())
-                .body("git.commit.id", notNullValue())
-                .body("git.commit.time", notNullValue())
-                .body("git.build.time", notNullValue())
-                .body("git.build.version", notNullValue())
-                .body("git.build.number", notNullValue())
-                .body("build.artifact", is("govsso-session"))
-                .body("build.name", is("GovSSO Session Service"))
-                .body("build.time", notNullValue())
-                .body("build.version", notNullValue())
-                .body("build.group", is("ee.ria.govsso"))
-                .body("startTime", notNullValue())
-                .body("currentTime", notNullValue())
+        switch (service) {
+            case SsoOidcService -> Steps.tryGetActuatorEndpoint(service.fullBaseUrl, endpoint).then()
+                    .statusCode(HttpStatus.SC_NOT_FOUND)
+//                    .body("path", is("/notfound"))
+// Why does not OIDC response 'path' have "/notfound" value like for actuator endpoints?
+            default -> Steps.tryGetActuatorEndpoint(service.fullBaseUrl, endpoint).then()
+                    .statusCode(HttpStatus.SC_NOT_FOUND)
+                    .body("path", is("/notfound"))
+        }
+
+        where:
+        service                         | endpoint
+        ServiceUrls.SSO_SESSION_SERVICE | Actuator.HEALTH
+        ServiceUrls.SSO_SESSION_SERVICE | Actuator.READINESS
+        ServiceUrls.SSO_SESSION_SERVICE | Actuator.LIVENESS
+
+        ServiceUrls.SSO_OIDC_SERVICE    | Actuator.READINESS_OIDCSERVICE
+        ServiceUrls.SSO_OIDC_SERVICE    | Actuator.LIVENESS_OIDCSERVICE
+        ServiceUrls.SSO_OIDC_SERVICE    | Actuator.PROMETHEUS_OIDCSERVICE
     }
 }

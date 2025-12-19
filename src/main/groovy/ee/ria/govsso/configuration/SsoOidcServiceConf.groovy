@@ -1,6 +1,7 @@
 package ee.ria.govsso.configuration
 
 import org.aeonbits.owner.Config
+import org.aeonbits.owner.Config.Key
 
 interface SsoOidcServiceConf extends Config {
     String protocol()
@@ -8,6 +9,15 @@ interface SsoOidcServiceConf extends Config {
     String host()
 
     String port()
+
+    @Key("node.protocol")
+    String nodeProtocol()
+
+    @Key("node.host")
+    String nodeHost()
+
+    @Key("node.port")
+    String nodePort()
 
     String revocation()
 

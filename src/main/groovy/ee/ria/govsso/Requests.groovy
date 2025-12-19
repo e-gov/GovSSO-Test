@@ -9,6 +9,13 @@ import static io.restassured.RestAssured.given
 
 class Requests {
 
+    @Step("GET {endpoint}")
+    static Response get(String baseUri, String endpoint) {
+        return given()
+                .urlEncodingEnabled(true)
+                .baseUri(baseUri)
+                .get(endpoint)
+    }
 
     @Step("Follow redirect request")
     static Response followRedirect(Flow flow, String location) {
@@ -190,46 +197,6 @@ class Requests {
                 .log().cookies()
                 .redirects().follow(false)
                 .post(url)
-    }
-
-    @Step("Get health")
-    static Response getHealth(Flow flow) {
-        return given()
-                .urlEncodingEnabled(true)
-                .get(flow.sessionService.fullHealthUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
-    }
-
-    @Step("Get readiness")
-    static Response getReadiness(Flow flow) {
-        return given()
-                .urlEncodingEnabled(true)
-                .get(flow.sessionService.fullReadinessUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
-    }
-
-    @Step("Get liveness")
-    static Response getLiveness(Flow flow) {
-        return given()
-                .urlEncodingEnabled(true)
-                .get(flow.sessionService.fullLivenessUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
-    }
-
-    @Step("Get info")
-    static Response getInfo(Flow flow) {
-        return given()
-                .urlEncodingEnabled(true)
-                .get(flow.sessionService.fullInfoUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
     }
 
     @Step("Download openid service configuration")
