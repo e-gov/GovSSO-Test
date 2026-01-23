@@ -119,7 +119,7 @@ class TaraSteps {
         flow.taraService.setSessionId(initLogin.getCookie("__Host-SESSION"))
         flow.taraService.setLogin_locale(initLogin.getCookie("__Host-LOCALE"))
         if (initLogin.body.asString().contains("_csrf")) {
-            flow.taraService.setCsrf(initLogin.body.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+            flow.taraService.setCsrf(initLogin.body.htmlPath().get("**.find {it.@name == '_csrf'}.@content"))
         }
         return initLogin
     }
@@ -130,7 +130,7 @@ class TaraSteps {
         flow.taraService.setSessionId(initLogin.getCookie("__Host-SESSION"))
         flow.taraService.setLogin_locale(initLogin.getCookie("__Host-LOCALE"))
         if (initLogin.body.asString().contains("_csrf")) {
-            flow.taraService.setCsrf(initLogin.body.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+            flow.taraService.setCsrf(initLogin.body.htmlPath().get("**.find {it.@name == '_csrf'}.@content"))
         }
         return initLogin
     }
@@ -200,7 +200,7 @@ class TaraSteps {
         Response colleagueResponse2 = eidasColleagueResponse(flow, eidasProxyResponse2)
         Response authorizationResponse2 = getAuthorizationResponseFromEidas(flow, colleagueResponse2)
         Response redirectionResponse = eidasRedirectAuthorizationResponse(flow, authorizationResponse2)
-        flow.taraService.setCsrf(redirectionResponse.body.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        flow.taraService.setCsrf(redirectionResponse.body.htmlPath().get("**.find {it.@name == '_csrf'}.@content"))
         Response acceptResponse = acceptAuthTara(flow, flow.taraService.taraloginBaseUrl + flow.taraService.authAcceptUrl)
         Response oidcServiceResponse = Requests.followRedirectWithCookies(flow, acceptResponse.getHeader("location"), flow.taraService.cookies)
         Utils.setParameter(flow.taraService.cookies, "__Host-ory_hydra_consent_csrf_624229327", oidcServiceResponse.getCookie("__Host-ory_hydra_consent_csrf_624229327"))
