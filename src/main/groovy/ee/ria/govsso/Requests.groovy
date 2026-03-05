@@ -1,7 +1,8 @@
 package ee.ria.govsso
 
+import ee.ria.govsso.configuration.ConfigHolder
 import io.qameta.allure.Step
-import io.qameta.allure.restassured.AllureRestAssured
+import io.restassured.http.ContentType
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
 
@@ -320,5 +321,14 @@ class Requests {
                 .formParams(formParams)
                 .auth().preemptive().basic(flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
+    }
+
+    @Step("Submit device link to device-link mock")
+    static Response postDeviceLinkToMock(Map body) {
+        return given()
+                .contentType(ContentType.JSON)
+                .body(body)
+                .urlEncodingEnabled(true)
+                .post(ConfigHolder.testConf.deviceLinkMockUrl())
     }
 }

@@ -15,7 +15,7 @@ class ConfigHolder {
     private static final ForeignIdpConf foreignIdp = readConf(ForeignIdpConf, "idp")
     private static final SsoOidcClientConf ssoOidcClientA = readConf(SsoOidcClientConf, "ssooidcclienta")
     private static final SsoOidcClientConf ssoOidcClientB = readConf(SsoOidcClientConf, "ssooidcclientb")
-    private static final TestConf testConf = readConf(TestConf, "")
+    private static final TestConf testConf = readConf(TestConf, "test")
 
     private static <T extends Config> T readConf(Class<T> configClass) {
         return ConfigFactory.create(configClass, props)

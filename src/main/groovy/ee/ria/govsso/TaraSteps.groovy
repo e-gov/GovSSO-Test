@@ -2,9 +2,12 @@ package ee.ria.govsso
 
 import io.qameta.allure.Step
 import io.restassured.response.Response
+import org.apache.http.HttpStatus
 import org.json.JSONObject
+import spock.util.concurrent.PollingConditions
 
 import static io.restassured.RestAssured.given
+import static org.hamcrest.Matchers.equalTo
 
 class TaraSteps {
 
@@ -162,9 +165,14 @@ class TaraSteps {
     }
 
     @Step("Authenticate with Smart-ID")
-    static Response authenticateWithSid(Flow flow, String idCode) {
-        startSidAuthentication(flow, idCode)
+    static Response authenticateWithSid(Flow flow, String documentNumber) {
+        startSidAuthentication(flow)
+        String deviceLink = getSidQrCodeDeviceLink(flow)
+        initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink)
         pollSidResponse(flow)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body("status", equalTo("COMPLETED"))
         Response acceptResponse = acceptAuthTara(flow, flow.taraService.taraloginBaseUrl + flow.taraService.authAcceptUrl)
         Response oidcServiceResponse = Requests.followRedirectWithCookies(flow, acceptResponse.getHeader("location"), flow.taraService.cookies)
         Utils.setParameter(flow.taraService.cookies, "__Host-ory_hydra_consent_csrf_624229327", oidcServiceResponse.getCookie("__Host-ory_hydra_consent_csrf_624229327"))
@@ -261,9 +269,9 @@ class TaraSteps {
     }
 
     @Step("Authenticate with SID in TARA")
-    static Response authenticateWithSidInTARA(Flow flow, String idCode, Response response) {
+    static Response authenticateWithSidInTARA(Flow flow, String documentNumber, Response response) {
         startAuthenticationInTara(flow, response.getHeader("location"))
-        Response sidAuthResponse = authenticateWithSid(flow, idCode)
+        Response sidAuthResponse = authenticateWithSid(flow, documentNumber)
         return Requests.followRedirectWithCookies(flow, sidAuthResponse.getHeader("location"), flow.taraService.cookies)
     }
 
@@ -343,12 +351,11 @@ class TaraSteps {
     }
 
     @Step("Smart-ID authentication init request")
-    static Response startSidAuthentication(Flow flow, String idCode) {
+    static Response startSidAuthentication(Flow flow) {
         return given()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
-                .formParams([idCode: idCode,
-                             _csrf : flow.taraService.csrf])
+                .formParam("_csrf", flow.taraService.csrf)
                 .cookie("__Host-SESSION", flow.taraService.sessionId)
                 .log().cookies()
                 .redirects().follow(false)
@@ -377,5 +384,38 @@ class TaraSteps {
                 .log().cookies()
                 .redirects().follow(false)
                 .post(location)
+    }
+
+    @Step("Retrieve device-link from QR code polling response")
+    static String getSidQrCodeDeviceLink(Flow flow) {
+        def conditions = new PollingConditions(timeout: 3, delay: 0.1)
+        String deviceLink = null
+
+        conditions.eventually {
+            def response = pollSid(flow)
+            deviceLink = response.jsonPath().getString("deviceLink")
+            assert deviceLink != null
+        }
+
+        return deviceLink
+    }
+
+    @Step("Start authentication flow in SK DEMO device link mock")
+    static Response initSidDeviceLinkMockAuth(Flow flow, String documentNumber, String deviceLink) {
+        String cookie = flow.cookieFilter.cookieStore.cookies
+                .find { it.name == "__Host-SESSION" }
+                ?.value
+                ?.with { "__Host-SESSION=$it" }
+
+        def mockRequest = [
+                documentNumber: documentNumber,
+                deviceLink    : deviceLink,
+                flowType      : "QR",
+                browserCookie : cookie
+        ]
+
+        def response = Requests.postDeviceLinkToMock(mockRequest)
+        response.then().statusCode(HttpStatus.SC_OK)
+        return response
     }
 }

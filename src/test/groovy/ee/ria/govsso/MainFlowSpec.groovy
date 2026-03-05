@@ -44,14 +44,14 @@ class MainFlowSpec extends GovSsoSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
 
-        Response taraAuthentication = TaraSteps.authenticateWithSidInTARA(flow, "40404049996", initLogin)
+        Response taraAuthentication = TaraSteps.authenticateWithSidInTARA(flow, "PNOEE-40404040009-MOCK-Q", initLogin)
 
         Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.path("id_token")).JWTClaimsSet
         assertThat("Correct authentication method value", claims.getClaim("amr"), is(["smartid"]))
         assertThat("Correct audience value", claims.audience[0], is(flow.oidcClientA.clientId))
-        assertThat("Correct subject value", claims.subject, is("EE40404049996"))
+        assertThat("Correct subject value", claims.subject, is("EE40404040009"))
         assertThat("Correct given name value", claims.getClaim("given_name"), is("OK"))
     }
 
