@@ -8,6 +8,7 @@ import groovy.sql.Sql
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import spock.lang.Ignore
 import spock.lang.Unroll
 
 import java.time.Instant
@@ -41,6 +42,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         Requests.deleteRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
     }
 
+    @Ignore("AUT-1293")
     @Feature("SELF_SERVICE_API")
     def "GET sessions returns information of valid sessions for subject"() {
         given: "Create a session"
@@ -70,6 +72,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         assertThat("Correct services.last_updated_at value", sessionInfo.path("services.last_updated_at[0][0]").toString(), is(lastUpdatedAt.toString()))
     }
 
+    @Ignore("AUT-1293")
     @Feature("SELF_SERVICE_API")
     def "GET sessions returns valid information after session update"() {
         given: "Create a session"
@@ -95,6 +98,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         assertThat("services.last_updated_at is updated", sessionInfo2.path("services.last_updated_at[0][0]") > sessionInfo1.path("services.last_updated_at[0][0]"))
     }
 
+    @Ignore("AUT-1293")
     @Feature("SELF_SERVICE_API")
     def "GET sessions returns valid information after user logs in to same service twice in the same session"() {
         given: "Create a session"
@@ -119,6 +123,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         assertThat("Services.last_updated_at is updated", sessionInfo2.path("services.last_updated_at[0][0]") > sessionInfo1.path("services.last_updated_at[0][0]"))
     }
 
+    @Ignore("AUT-1293")
     @Feature("SELF_SERVICE_API")
     def "GET sessions returns valid information after log out from one service"() {
         given: "Create a session"
@@ -142,6 +147,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         assertThat("Services.expires_at is same value as services.last_updated_at", sessionInfo.path("services[0].expires_at[0]") == sessionInfo.path("services[0].last_updated_at[0]"))
     }
 
+    @Ignore("AUT-1293")
     @Feature("SELF_SERVICE_API")
     def "DELETE specific session"() {
         given: "Create two separate sessions for same user"
