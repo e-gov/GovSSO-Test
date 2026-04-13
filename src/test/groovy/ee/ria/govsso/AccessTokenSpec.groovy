@@ -131,8 +131,8 @@ class AccessTokenSpec extends GovSsoSpecification {
 
         then:
         Set expectedClaims = [
-                "acr", "amr", "aud", "birthdate", "client_id",
-                "exp", "family_name", "given_name", "iat",
+                "acr", "amr", "aud", "auth_time", "birthdate", "client_id",
+                "exp", "family_name", "given_name", "iat", "initiator",
                 "iss", "jti", "sub"
         ]
         assertThat("JWT has only expected claims", claimsAccessToken.claims.keySet(), is(expectedClaims))
@@ -165,8 +165,8 @@ class AccessTokenSpec extends GovSsoSpecification {
 
         then:
         Set expectedClaims = [
-                "acr", "amr", "aud", "birthdate", "client_id",
-                "exp", "family_name", "given_name", "iat",
+                "acr", "amr", "aud", "auth_time", "birthdate", "client_id",
+                "exp", "family_name", "given_name", "iat", "initiator",
                 "iss", "jti", "phone_number", "phone_number_verified",
                 "sub"
         ]

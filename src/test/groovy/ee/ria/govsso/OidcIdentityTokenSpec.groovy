@@ -149,7 +149,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
 
         Set expectedClaims = [
                 "acr", "amr", "at_hash", "aud", "auth_time",
-                "birthdate", "exp", "family_name", "given_name", "iat",
+                "birthdate", "exp", "family_name", "given_name", "iat", "initiator",
                 "iss", "jti", "nonce", "rat", "sid", "sub"
         ]
         assertThat("JWT has only expected claims", claims.claims.keySet(), equalTo(expectedClaims))
@@ -186,7 +186,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
 
         Set expectedClaims = [
                 "acr", "amr", "at_hash", "aud", "auth_time",
-                "birthdate", "exp", "family_name", "given_name", "iat",
+                "birthdate", "exp", "family_name", "given_name", "iat", "initiator",
                 "iss", "jti", "nonce", "phone_number", "phone_number_verified",
                 "rat", "sid", "sub"
         ]
