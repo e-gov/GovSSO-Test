@@ -149,6 +149,8 @@ class AccessTokenSpec extends GovSsoSpecification {
         assertThat("Correct given name", claimsAccessToken.getClaim("given_name"), is(claimsIDToken.getClaim("given_name")))
         assertThat("Correct family name", claimsAccessToken.getClaim("family_name"), is(claimsIDToken.getClaim("family_name")))
         assertThat("Correct LoA level", claimsAccessToken.getClaim("acr"), is(claimsIDToken.getClaim("acr")))
+        assertThat("Incorrect authentication time", claimsAccessToken.getClaim("auth_time"), is(claimsIDToken.getClaim("auth_time")))
+        assertThat("Incorrect initiator", claimsAccessToken.getClaim("initiator"), is(claimsIDToken.getClaim("initiator")))
     }
 
     def "Access token should hold correct values with scope: openid phone"() {

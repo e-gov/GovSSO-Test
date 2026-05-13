@@ -171,6 +171,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Claim phone_number does not exist", claims.claims, not(hasKey("phone_number")))
         assertThat("Claim phone_number_verified does not exist", claims.claims, not(hasKey("phone_number_verified")))
         assertThat("Correct at_hash claim exists", claims.getStringClaim("at_hash").size() > 20)
+        assertThat("Incorrect initiator", claims.getStringClaim("initiator"), equalTo("DEFAULT"))
     }
 
     @Feature("ID_TOKEN")
@@ -209,6 +210,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct LoA level", claims.getClaim("acr"), equalTo("high"))
         assertThat("Correct UUID pattern for session ID", claims.getStringClaim("sid"), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertThat("Correct at_hash claim exists", claims.getStringClaim("at_hash").size() > 20)
+        assertThat("Incorrect initiator", claims.getStringClaim("initiator"), equalTo("DEFAULT"))
     }
 
     @Feature("ID_TOKEN")
