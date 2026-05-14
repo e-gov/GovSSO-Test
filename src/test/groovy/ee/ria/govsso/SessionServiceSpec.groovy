@@ -3,11 +3,14 @@ package ee.ria.govsso
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
+import ee.ria.govsso.model.Client
+import ee.ria.govsso.model.LoA
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Issue
 import spock.lang.Unroll
+
+import java.security.InvalidParameterException
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
@@ -43,12 +46,11 @@ class SessionServiceSpec extends GovSsoSpecification {
         given:
         Map paramsMap
 
-        if (minimumAcrValue == "undefined") {
+        if (minimumAcrValue == null) {
             paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         } else {
-            String clientId = "client-mock-acr-$minimumAcrValue"
-            String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost:11443/login/oauth2/code/govsso"
-            paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, clientResponseUrl)
+            Client client = getClientByMinimumAcrValue(minimumAcrValue)
+            paramsMap = OpenIdUtils.getAuthorizationParameters(flow, client)
         }
 
         if (acrValues == "undefined") {
@@ -80,29 +82,27 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         where:
         loa | minimumAcrValue | acrValues     || initLoginAcrValues
-        "A" | "undefined"     | "undefined"   || "high"
-        "C" | "undefined"     | "undefined"   || "high"
-        "A" | "undefined"     | "substantial" || "substantial"
-        "A" | "undefined"     | "high"        || "high"
-        "C" | "undefined"     | "high"        || "high"
+        "A" | null            | "undefined"   || "high"
+        "C" | null            | "undefined"   || "high"
+        "A" | null            | "substantial" || "substantial"
+        "A" | null            | "high"        || "high"
+        "C" | null            | "high"        || "high"
 
-        "A" | "substantial"   | "substantial" || "substantial"
-        "A" | "high"          | "high"        || "high"
-        "C" | "high"          | "high"        || "high"
+        "A" | LoA.SUBSTANTIAL | "substantial" || "substantial"
+        "A" | LoA.HIGH        | "high"        || "high"
+        "C" | LoA.HIGH        | "high"        || "high"
 
-        "A" | "substantial"   | "undefined"   || "substantial"
-        "A" | "high"          | "undefined"   || "high"
-        "C" | "high"          | "undefined"   || "high"
+        "A" | LoA.SUBSTANTIAL | "undefined"   || "substantial"
+        "A" | LoA.HIGH        | "undefined"   || "high"
+        "C" | LoA.HIGH        | "undefined"   || "high"
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication request with undefined acr_values defaults to minimum_acr_value '#minimumAcrValue' and succeeds for eIDAS LoA '#loa'"() {
         given:
-        String clientId = "client-mock-acr-${minimumAcrValue}"
-        String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost:11443/login/oauth2/code/govsso"
-        String clientSecret = "secret"
+        Client client = getClientByMinimumAcrValue(minimumAcrValue)
 
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, clientResponseUrl)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, client)
         paramsMap.remove("acr_values")
 
         when:
@@ -116,7 +116,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         when:
         Response taraAuthentication = TaraSteps.authenticateWithEidasInTARA(flow, "CA", "xavi", "creus", loa, initLogin)
-        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication, clientId, clientSecret, clientResponseUrl)
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication, client)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.path("id_token")).JWTClaimsSet
 
@@ -125,20 +125,19 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         where:
         loa | minimumAcrValue || acrClaim
-        "A" | "low"           || "low"
-        "C" | "low"           || "substantial"
-        "E" | "low"           || "high"
-        "C" | "substantial"   || "substantial"
-        "E" | "substantial"   || "high"
-        "E" | "high"          || "high"
+        "A" | LoA.LOW         || "low"
+        "C" | LoA.LOW         || "substantial"
+        "E" | LoA.LOW         || "high"
+        "C" | LoA.SUBSTANTIAL || "substantial"
+        "E" | LoA.SUBSTANTIAL || "high"
+        "E" | LoA.HIGH        || "high"
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication request with acr_values '#acrValues' not matching clients minimum_acr_value '#minimumAcrValue' returns error"() {
         given:
-        String clientId = "client-mock-acr-${minimumAcrValue}"
-        String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost:11443/login/oauth2/code/govsso"
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, clientResponseUrl)
+        Client client = getClientByMinimumAcrValue(minimumAcrValue)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, client)
         paramsMap << [acr_values: acrValues]
 
         when:
@@ -154,12 +153,12 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         where:
         minimumAcrValue | acrValues
-        "low"           | "substantial"
-        "low"           | "high"
-        "substantial"   | "low"
-        "substantial"   | "high"
-        "high"          | "low"
-        "high"          | "substantial"
+        LoA.LOW         | "substantial"
+        LoA.LOW         | "high"
+        LoA.SUBSTANTIAL | "low"
+        LoA.SUBSTANTIAL | "high"
+        LoA.HIGH        | "low"
+        LoA.HIGH        | "substantial"
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
@@ -232,11 +231,9 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Eidas authentication with Loa '#loa' succeeds with both minimum_acr_value and acr_values equal to #minimumAcrValue"() {
         given:
-        String clientId = "client-mock-acr-$minimumAcrValue"
-        String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost:11443/login/oauth2/code/govsso"
-        String clientSecret = "secret"
+        Client client = getClientByMinimumAcrValue(minimumAcrValue)
 
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, clientResponseUrl)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, client)
         paramsMap << [acr_values: minimumAcrValue]
 
         when:
@@ -250,7 +247,7 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         when:
         Response taraAuthentication = TaraSteps.authenticateWithEidasInTARA(flow, "CA", "xavi", "creus", loa, initLogin)
-        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication, clientId, clientSecret, clientResponseUrl)
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication, client)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.body.path("id_token")).JWTClaimsSet
 
@@ -259,12 +256,12 @@ class SessionServiceSpec extends GovSsoSpecification {
 
         where:
         loa | minimumAcrValue || acrClaim
-        "A" | "low"           || "low"
-        "C" | "low"           || "substantial"
-        "E" | "low"           || "high"
-        "C" | "substantial"   || "substantial"
-        "E" | "substantial"   || "high"
-        "E" | "high"          || "high"
+        "A" | LoA.LOW         || "low"
+        "C" | LoA.LOW         || "substantial"
+        "E" | LoA.LOW         || "high"
+        "C" | LoA.SUBSTANTIAL || "substantial"
+        "E" | LoA.SUBSTANTIAL || "high"
+        "E" | LoA.HIGH        || "high"
     }
 
     @Feature("LOGIN_INIT_ENDPOINT")
@@ -962,5 +959,14 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct HTTP status code", loginReject.statusCode, is(403))
         assertThat("Correct error", loginReject.jsonPath().getString("error"), is("USER_INPUT"))
         assertThat("Correct message", loginReject.jsonPath().getString("message"), is("Ebakorrektne päring."))
+    }
+
+    private static Client getClientByMinimumAcrValue(LoA minimumAcrValue) {
+        return switch (minimumAcrValue) {
+            case LoA.LOW -> ClientStore.mockAcrLow
+            case LoA.SUBSTANTIAL -> ClientStore.mockAcrSubstantial
+            case LoA.HIGH -> ClientStore.mockAcrHigh
+            default -> throw new InvalidParameterException("'$minimumAcrValue' is not a valid minimumAcrValue")
+        }
     }
 }
