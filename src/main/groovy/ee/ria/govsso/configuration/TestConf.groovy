@@ -10,4 +10,6 @@ interface TestConf extends Config {
     String deviceLinkMockUrl()
 
     String adminSetupPath()
+
+    String expiredJwt()
 }

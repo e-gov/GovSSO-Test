@@ -23,7 +23,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     def "Correct buttons with correct form actions exist in session continuation display with specified ui_locales: #uiLocale"() {
         expect:
         Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         String buttonContinueSession = initLogin.body.htmlPath().getString("**.find { button -> button.@formaction == '/login/continuesession'}")
@@ -49,7 +49,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.path("id_token")
 
-        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
+        Response oidcLogout = Steps.startLogout(flow, idToken, ClientStore.clientB.postLogoutRedirectUri)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
         String buttonEndSession = initLogout.body.htmlPath().getString("**.find { button -> button.@formaction == '/logout/endsession'}")
@@ -71,7 +71,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, uiLocale)
 
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         initLogin.then().body("html.head.title", equalTo(title))
@@ -91,7 +91,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.path("id_token")
 
-        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl)
+        Response oidcLogout = Steps.startLogout(flow, idToken, ClientStore.clientB.postLogoutRedirectUri)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
         initLogout.then().body("html.head.title", equalTo(title))
@@ -114,7 +114,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         boolean usePost = httpRequest == "post"
 
         when:
-        Response oidcLogout = Steps.startLogout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, usePost)
+        Response oidcLogout = Steps.startLogout(flow, idToken, ClientStore.clientB.postLogoutRedirectUri, usePost)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
         then:
@@ -146,7 +146,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         boolean usePost = httpRequest == "post"
 
         when:
-        Response oidcLogout = Steps.startLogoutWithUiLocales(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, uiLocale, usePost)
+        Response oidcLogout = Steps.startLogoutWithUiLocales(flow, idToken, ClientStore.clientB.postLogoutRedirectUri, uiLocale, usePost)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
         then:
@@ -173,7 +173,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
     def "Correct user data displayed in session continuation display"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         assertThat("Correct first name", initLogin.body.htmlPath().getString("/personal-info/*}").contains("JAAK-KRISTJAN"))
@@ -195,7 +195,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin1)
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid phone")
+        Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "openid phone")
         Response initLogin2 = Steps.followRedirect(flow, oidcAuth2)
 
         assertThat("Correct first name", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("MARY ÄNN"))
@@ -217,7 +217,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin1)
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid")
+        Response oidcAuth2 = Steps.startAuthenticationInSsoOidcWithScope(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "openid")
         Response initLogin2 = Steps.followRedirect(flow, oidcAuth2)
 
         assertThat("Correct first name", initLogin2.body.htmlPath().getString("/personal-info/*}").contains("MARY ÄNN"))
@@ -246,7 +246,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithEidasInGovSsoWithUiLocales(flow, "substantial", "C", uiLocale)
 
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         String buttonBack = initLogin.body.htmlPath().getString("**.find { button -> button.@formaction == '/login/reject'}")

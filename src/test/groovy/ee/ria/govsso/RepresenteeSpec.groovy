@@ -289,7 +289,7 @@ class RepresenteeSpec extends GovSsoSpecification {
         Steps.authenticateInGovSsoWithScope(flow)
 
         when: "Start logout"
-        Map queryParams = [post_logout_redirect_uri: flow.oidcClientB.fullLogoutRedirectUrl,
+        Map queryParams = [post_logout_redirect_uri: ClientStore.clientB.postLogoutRedirectUri,
                            ui_locales              : "en",
                            id_token_hint           : flow.idToken]
         Response initLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParams)
@@ -307,7 +307,7 @@ class RepresenteeSpec extends GovSsoSpecification {
         return given()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
-                .queryParams([post_logout_redirect_uri: flow.oidcClientB.fullLogoutRedirectUrl,
+                .queryParams([post_logout_redirect_uri: ClientStore.clientB.postLogoutRedirectUri,
                               ui_locales              : "en",
                               id_token_hint           : flow.idToken])
                 .log().cookies()
@@ -319,7 +319,7 @@ class RepresenteeSpec extends GovSsoSpecification {
         return given()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
-                .formParams([post_logout_redirect_uri: flow.oidcClientB.fullLogoutRedirectUrl,
+                .formParams([post_logout_redirect_uri: ClientStore.clientB.postLogoutRedirectUri,
                              ui_locales              : "en",
                              id_token_hint           : flow.idToken])
                 .log().cookies()

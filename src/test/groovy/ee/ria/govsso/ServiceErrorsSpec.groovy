@@ -17,7 +17,7 @@ class ServiceErrorsSpec extends GovSsoSpecification {
     @Feature("ERROR_CONTENT_JSON")
     def "OIDC service error response JSON"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "invalid-client-id", flow.oidcClientA.fullResponseUrl)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "invalid-client-id", ClientStore.clientA.redirectUri)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response oidcError = Steps.followRedirect(flow, oidcAuth)
 

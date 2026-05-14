@@ -86,7 +86,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         sleep 1000
 
         and: "Update session"
-        Steps.getSessionUpdateResponse(flow, refreshToken, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
+        Steps.getSessionUpdateResponse(flow, refreshToken, ClientStore.clientA.clientId, ClientStore.clientA.secret)
 
         when: "GET updated session information"
         Response sessionInfo2 = Requests.getRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
@@ -111,7 +111,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         sleep 1000
 
         and: "Log in to same client"
-        Steps.continueWithExistingSession(flow, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullResponseUrl)
+        Steps.continueWithExistingSession(flow, ClientStore.clientA.clientId, ClientStore.clientA.secret, ClientStore.clientA.redirectUri)
 
         when: "GET updated session information"
         Response sessionInfo2 = Requests.getRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
@@ -130,11 +130,11 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         and: "Continue session"
-        Response continueSession = Steps.continueWithExistingSession(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl)
+        Response continueSession = Steps.continueWithExistingSession(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri)
         String idToken = continueSession.path("id_token")
 
         and: "Logout from one client"
-        Steps.logout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, flow.sessionService.fullLogoutContinueSessionUrl)
+        Steps.logout(flow, idToken, ClientStore.clientB.postLogoutRedirectUri, flow.sessionService.fullLogoutContinueSessionUrl)
 
         //Sleep for 1 second to allow information to update before requesting session information.
         sleep 1000

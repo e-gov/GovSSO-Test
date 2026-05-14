@@ -30,10 +30,6 @@ Description of values:
 
 **sessionservice** - Estonian specific session service parameters.
 
-**ssooidcclienta** - Tests act like connecting OIDC client. This client must be registered in GovSSO service.
-
-**ssooidcclientb** - Tests act like connecting OIDC client. This client must be registered in GovSSO service.
-
 **ca-proxyservice** - Foreign country (CA) proxy service configuration for eIDAS authentication tests.
 
 **idp** - Foreign country (CA) identity provider configuration for eIDAS authentication tests.
@@ -103,21 +99,6 @@ Description of values:
 | idp.host                                | eidas-caproxy                                     | Service URL.                                           |
 | idp.port                                | 8081                                              | Service port.                                          |
 | idp.responseUrl                         | /IdP/Response                                     | Authentication response endpoint.                      |
-| ssooidcclienta.protocol                 | https                                             | GovSSO mock client A protocol.                         |
-| ssooidcclienta.host                     | sso-client-a                                      | GovSSO mock client A host.                             |
-| ssooidcclienta.port                     | 11443                                             | GovSSO mock client A port.                             |
-| ssooidcclienta.responseUrl              | /oauth/response                                   | GovSSO mock client A authentication response endpoint. |
-| ssooidcclienta.logoutRedirectUrl        | /logout/url                                       | GovSSO mock client A logout redirect endpoint.         |
-| ssooidcclienta.clientId                 | client-a                                          | GovSSO mock client A ID.                               |
-| ssooidcclienta.secret                   | secreta                                           | GovSSO mock client A secret.                           |
-| ssooidcclienta.expiredJwt               | eyJhbG...                                         | GovSSO mock client A expired ID token.                 |
-| ssooidcclientb.protocol                 | https                                             | GovSSO mock client B protocol.                         |
-| ssooidcclientb.host                     | sso-client-b                                      | GovSSO mock client B host.                             |
-| ssooidcclientb.port                     | 12443                                             | GovSSO mock client B port.                             |
-| ssooidcclientb.responseUrl              | /oauth/response                                   | GovSSO mock client B authentication response endpoint. |
-| ssooidcclientb.logoutRedirectUrl        | /logout/url                                       | GovSSO mock client B logout redirect endpoint.         |
-| ssooidcclientb.clientId                 | client-b                                          | GovSSO mock client B ID.                               |
-| ssooidcclientb.secret                   | secretb                                           | GovSSO mock client B secret.                           |
 
 ## Execute tests and generate report
 

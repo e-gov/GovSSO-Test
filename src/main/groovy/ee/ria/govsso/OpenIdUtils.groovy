@@ -52,7 +52,7 @@ class OpenIdUtils {
         return queryParams
     }
 
-    static Map getAuthorizationParameters(Flow flow, String clientId = flow.oidcClientA.clientId, String responseUrl = flow.oidcClientA.fullResponseUrl) {
+    static Map getAuthorizationParameters(Flow flow, String clientId = ClientStore.clientA.clientId, String responseUrl = ClientStore.clientA.redirectUri) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setClientId(clientId)
@@ -89,8 +89,8 @@ class OpenIdUtils {
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         Map queryParams = [response_type: "code",
                            scope        : "openid",
-                           client_id    : flow.oidcClientA.clientId,
-                           redirect_uri : flow.oidcClientA.fullResponseUrl,
+                           client_id    : ClientStore.clientA.clientId,
+                           redirect_uri : ClientStore.clientA.redirectUri,
                            state        : flow.state,
                            nonce        : flow.nonce,
                            prompt       : "none",

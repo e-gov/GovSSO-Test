@@ -91,7 +91,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
 
         when: "Request ID token with incorrect token authentication method"
-        Response tokenResponse = Requests.webTokenPostRequest(flow, authorizationCode, flow.oidcClientA.clientId, flow.oidcClientA.clientSecret, flow.oidcClientA.fullResponseUrl)
+        Response tokenResponse = Requests.webTokenPostRequest(flow, authorizationCode, ClientStore.clientA.clientId, ClientStore.clientA.secret, ClientStore.clientA.redirectUri)
 
         then:
         assertThat("Correct HTTP status", tokenResponse.statusCode, is(401))
@@ -156,7 +156,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct JWT ID claim exists", claims.JWTID, matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
         assertThat("Correct issuer", claims.issuer, equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        assertThat("Correct audience", claims.audience[0], equalTo(flow.oidcClientA.clientId))
+        assertThat("Correct audience", claims.audience[0], equalTo(ClientStore.clientA.clientId))
         Date date = new Date()
         assertThat("Correct authentication time", Math.abs(date.time - claims.getDateClaim("auth_time").time) < 10000L)
         assertThat("Correct issued at time", Math.abs(date.time - claims.getDateClaim("iat").time) < 10000L)
@@ -197,7 +197,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct phone_number_verified claim exists", claims.getClaim("phone_number_verified"), equalTo(true))
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
         assertThat("Correct issuer", claims.issuer, equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        assertThat("Correct audience", claims.audience[0], equalTo(flow.oidcClientA.clientId))
+        assertThat("Correct audience", claims.audience[0], equalTo(ClientStore.clientA.clientId))
         Date date = new Date()
         assertThat("Correct authentication time", Math.abs(date.time - claims.getDateClaim("auth_time").time) < 10000L)
         assertThat("Correct issued at time", Math.abs(date.time - claims.getDateClaim("iat").time) < 10000L)
@@ -297,7 +297,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     def "Verify ID token elements after continuing session with client-B. Client-A scope excludes phone, client-b scope includes phone"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid phone")
+        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "openid phone")
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("id_token")).JWTClaimsSet
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid phone"))
@@ -315,7 +315,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin)
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid")
+        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "openid")
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("id_token")).JWTClaimsSet
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid"))
@@ -333,7 +333,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin)
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, flow.oidcClientB.clientId, flow.oidcClientB.clientSecret, flow.oidcClientB.fullResponseUrl, "openid phone")
+        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "openid phone")
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("id_token")).JWTClaimsSet
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid phone"))

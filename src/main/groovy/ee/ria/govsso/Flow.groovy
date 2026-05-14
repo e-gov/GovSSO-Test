@@ -14,8 +14,6 @@ class Flow {
     TaraService taraService
     TaraForeignIdpProvider foreignIdpProvider
     TaraForeignProxyService foreignProxyService
-    SsoOidcClient oidcClientA
-    SsoOidcClient oidcClientB
 
     CookieFilter cookieFilter
 
@@ -43,8 +41,6 @@ class Flow {
         this.taraService = new TaraService(ConfigHolder.taraService)
         this.foreignIdpProvider = new TaraForeignIdpProvider(ConfigHolder.foreignIdp)
         this.foreignProxyService = new TaraForeignProxyService(ConfigHolder.caProxyService)
-        this.oidcClientA = new SsoOidcClient(ConfigHolder.ssoOidcClientA)
-        this.oidcClientB = new SsoOidcClient(ConfigHolder.ssoOidcClientB)
     }
 }
 
@@ -262,31 +258,3 @@ class TaraForeignProxyService {
     }
 }
 
-@Canonical
-class SsoOidcClient {
-    String host
-    String port
-    String protocol
-    String responseUrl
-    String logoutRedirectUrl
-    String clientId
-    String clientSecret
-    String expiredJwt
-    HashMap<String, String> cookies
-
-    @Lazy fullBaseUrl = "${protocol}://${host}${Utils.portCheck(port)}"
-    @Lazy fullLogoutRedirectUrl = "${protocol}://${host}${Utils.portCheck(port)}${logoutRedirectUrl}"
-    @Lazy fullResponseUrl = "${protocol}://${host}${Utils.portCheck(port)}${responseUrl}"
-
-    SsoOidcClient(SsoOidcClientConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
-        this.protocol = conf.protocol()
-        this.responseUrl = conf.responseUrl()
-        this.logoutRedirectUrl = conf.logoutRedirectUrl()
-        this.clientId = conf.clientId()
-        this.clientSecret = conf.secret()
-        this.expiredJwt = conf.expiredJwt()
-        this.cookies = new HashMap<String, String>()
-    }
-}

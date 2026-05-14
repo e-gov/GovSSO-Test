@@ -19,13 +19,13 @@ class HeadersSpec extends GovSsoSpecification {
     def "Cross-Origin Resource Sharing headers are not applied in login request sequence"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, flow.oidcClientA.fullBaseUrl)
-        Response initLogin = Steps.startSessionInSessionServiceWithOrigin(flow, oidcAuth, flow.oidcClientA.fullBaseUrl)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, ClientStore.clientA.fullBaseUrl)
+        Response initLogin = Steps.startSessionInSessionServiceWithOrigin(flow, oidcAuth, ClientStore.clientA.fullBaseUrl)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        Response taracallback = Steps.followRedirectWithOrigin(flow, taraAuthentication, flow.oidcClientA.fullBaseUrl)
-        Response loginVerifier = Steps.followRedirectWithOrigin(flow, taracallback, flow.oidcClientA.fullBaseUrl)
-        Response initConsent = Steps.followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientA.fullBaseUrl)
-        Response consentVerifier = Steps.followRedirectWithOrigin(flow, initConsent, flow.oidcClientA.fullBaseUrl)
+        Response taracallback = Steps.followRedirectWithOrigin(flow, taraAuthentication, ClientStore.clientA.fullBaseUrl)
+        Response loginVerifier = Steps.followRedirectWithOrigin(flow, taracallback, ClientStore.clientA.fullBaseUrl)
+        Response initConsent = Steps.followRedirectWithOrigin(flow, loginVerifier, ClientStore.clientA.fullBaseUrl)
+        Response consentVerifier = Steps.followRedirectWithOrigin(flow, initConsent, ClientStore.clientA.fullBaseUrl)
 
         assertThat("Access-Control-Allow-Credentials header is not present in login request sequence", !oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
         assertThat("Access-Control-Allow-Origin header is not present in login request sequence", !oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
@@ -44,16 +44,16 @@ class HeadersSpec extends GovSsoSpecification {
     def "Cross-Origin Resource Sharing headers are not applied in session continuation request sequence"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithOrigin(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl, flow.oidcClientB.fullBaseUrl)
-        Response initLogin = Steps.followRedirectWithOrigin(flow, oidcAuth, flow.oidcClientB.fullBaseUrl)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithOrigin(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri, ClientStore.clientB.fullBaseUrl)
+        Response initLogin = Steps.followRedirectWithOrigin(flow, oidcAuth, ClientStore.clientB.fullBaseUrl)
 
         Map formParams = [loginChallenge: flow.loginChallenge,
                           _csrf         : initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
-        Response continueSession = Requests.postRequestWithParamsAndOrigin(flow, flow.sessionService.fullContinueSessionUrl, formParams, flow.oidcClientB.fullBaseUrl)
+        Response continueSession = Requests.postRequestWithParamsAndOrigin(flow, flow.sessionService.fullContinueSessionUrl, formParams, ClientStore.clientB.fullBaseUrl)
 
-        Response loginVerifier = Steps.followRedirectWithOrigin(flow, continueSession, flow.oidcClientA.fullBaseUrl)
-        Response initConsent = Steps.followRedirectWithOrigin(flow, loginVerifier, flow.oidcClientB.fullBaseUrl)
-        Response consentVerifier = Steps.followRedirectWithOrigin(flow, initConsent, flow.oidcClientA.fullBaseUrl)
+        Response loginVerifier = Steps.followRedirectWithOrigin(flow, continueSession, ClientStore.clientA.fullBaseUrl)
+        Response initConsent = Steps.followRedirectWithOrigin(flow, loginVerifier, ClientStore.clientB.fullBaseUrl)
+        Response consentVerifier = Steps.followRedirectWithOrigin(flow, initConsent, ClientStore.clientA.fullBaseUrl)
 
         assertThat("Access-Control-Allow-Credentials header is not present in session continuation request sequence", !oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
         assertThat("Access-Control-Allow-Origin header is not present in session continuation request sequence", !oidcAuth.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
@@ -76,12 +76,12 @@ class HeadersSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.path("id_token")
 
-        Response oidcLogout = Steps.startLogoutWithOrigin(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.oidcClientB.fullBaseUrl)
-        Response initLogout = Steps.followRedirectWithOrigin(flow, oidcLogout, flow.oidcClientA.fullBaseUrl)
+        Response oidcLogout = Steps.startLogoutWithOrigin(flow, idToken, ClientStore.clientB.fullBaseUrl, ClientStore.clientB.fullBaseUrl)
+        Response initLogout = Steps.followRedirectWithOrigin(flow, oidcLogout, ClientStore.clientA.fullBaseUrl)
 
         Map formParams = [logoutChallenge: flow.logoutChallenge,
                           _csrf          : flow.sessionService.getCookies().get("__Host-XSRF-TOKEN")]
-        Response logoutContinueSession = Requests.postRequestWithParamsAndOrigin(flow, flow.sessionService.fullLogoutContinueSessionUrl, formParams, flow.oidcClientB.fullBaseUrl)
+        Response logoutContinueSession = Requests.postRequestWithParamsAndOrigin(flow, flow.sessionService.fullLogoutContinueSessionUrl, formParams, ClientStore.clientB.fullBaseUrl)
 
         assertThat("Access-Control-Allow-Credentials header is not present in logout with session continuation request sequence", !oidcLogout.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
         assertThat("Access-Control-Allow-Origin header is not present in logout with session continuation request sequence", !oidcLogout.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
@@ -101,12 +101,12 @@ class HeadersSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.path("id_token")
 
-        Response oidcLogout = Steps.startLogoutWithOrigin(flow, idToken, flow.oidcClientB.fullBaseUrl, flow.oidcClientB.fullBaseUrl)
-        Steps.followRedirectWithOrigin(flow, oidcLogout, flow.oidcClientA.fullBaseUrl)
+        Response oidcLogout = Steps.startLogoutWithOrigin(flow, idToken, ClientStore.clientB.fullBaseUrl, ClientStore.clientB.fullBaseUrl)
+        Steps.followRedirectWithOrigin(flow, oidcLogout, ClientStore.clientA.fullBaseUrl)
 
         Map formParams = [logoutChallenge: flow.logoutChallenge,
                           _csrf          : flow.sessionService.getCookies().get("__Host-XSRF-TOKEN")]
-        Response logoutEndSession = Requests.postRequestWithParamsAndOrigin(flow, flow.sessionService.fullLogoutEndSessionUrl, formParams, flow.oidcClientB.fullBaseUrl)
+        Response logoutEndSession = Requests.postRequestWithParamsAndOrigin(flow, flow.sessionService.fullLogoutEndSessionUrl, formParams, ClientStore.clientB.fullBaseUrl)
 
         assertThat("Access-Control-Allow-Credentials header is not present in logout with end session request sequence", !logoutEndSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
         assertThat("Access-Control-Allow-Origin header is not present in logout with end session request sequence", !logoutEndSession.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
@@ -115,9 +115,9 @@ class HeadersSpec extends GovSsoSpecification {
     @Feature("CORS")
     def "Cross-Origin Resource Sharing headers are not applied in error request"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "invalid-client-id", flow.oidcClientA.fullResponseUrl)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "invalid-client-id", ClientStore.clientA.redirectUri)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response oidcError = Steps.followRedirectWithOrigin(flow, oidcAuth, flow.oidcClientA.fullBaseUrl)
+        Response oidcError = Steps.followRedirectWithOrigin(flow, oidcAuth, ClientStore.clientA.fullBaseUrl)
 
         assertThat("Access-Control-Allow-Credentials header is not present in oidc error request", !oidcError.getHeaders().hasHeaderWithName("Access-Control-Allow-Credentials"))
         assertThat("Access-Control-Allow-Origin header is not present in oidc error request", !oidcError.getHeaders().hasHeaderWithName("Access-Control-Allow-Origin"))
@@ -153,7 +153,7 @@ class HeadersSpec extends GovSsoSpecification {
     def "Verify response headers for session service requests in session continuation sequence"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: Utils.getParamValueFromResponseHeader(oidcAuth, "login_challenge"),
@@ -178,7 +178,7 @@ class HeadersSpec extends GovSsoSpecification {
     def "Verify response headers for session service requests in reauthentication sequence"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, flow.oidcClientB.clientId, flow.oidcClientB.fullResponseUrl)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
         Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: Utils.getParamValueFromResponseHeader(oidcAuth, "login_challenge"),
@@ -202,7 +202,7 @@ class HeadersSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.path("id_token")
 
-        Response logoutEndSession = Steps.logout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, flow.sessionService.fullLogoutEndSessionUrl)
+        Response logoutEndSession = Steps.logout(flow, idToken, ClientStore.clientB.postLogoutRedirectUri, flow.sessionService.fullLogoutEndSessionUrl)
 
         Steps.verifyResponseHeaders(logoutEndSession)
     }
@@ -220,7 +220,7 @@ class HeadersSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String idToken = continueSession.path("id_token")
 
-        Response logoutContinueSession = Steps.logout(flow, idToken, flow.oidcClientB.fullLogoutRedirectUrl, flow.sessionService.fullLogoutContinueSessionUrl)
+        Response logoutContinueSession = Steps.logout(flow, idToken, ClientStore.clientB.postLogoutRedirectUri, flow.sessionService.fullLogoutContinueSessionUrl)
 
         Steps.verifyResponseHeaders(logoutContinueSession)
     }

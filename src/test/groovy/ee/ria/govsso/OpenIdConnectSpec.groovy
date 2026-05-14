@@ -69,7 +69,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         expect:
         Map formParams = [grant_type  : "code",
                           code        : "1234567",
-                          redirect_uri: flow.oidcClientA.fullResponseUrl]
+                          redirect_uri: ClientStore.clientA.redirectUri]
         formParams.remove(paramName)
         Response token = Requests.getWebTokenResponseBody(flow, formParams)
 
@@ -91,7 +91,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
         expect:
         Map formParams = [grant_type  : "code",
                           code        : "1234567",
-                          redirect_uri: flow.oidcClientA.fullResponseUrl]
+                          redirect_uri: ClientStore.clientA.redirectUri]
         formParams << [(paramName): paramValue]
         Response token = Requests.getWebTokenResponseBody(flow, formParams)
 

@@ -152,7 +152,7 @@ class ExpirationSpec extends GovSsoSpecification {
 
         then: "Expected status code is 302 and response location header holds correct logout redirect URL"
         assertThat(logout.statusCode, is(302))
-        assertThat(logout.header("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl))
+        assertThat(logout.header("Location"), startsWith(ClientStore.clientA.postLogoutRedirectUri))
     }
 
     @Story("CONSENT_EXPIRATION")
@@ -168,7 +168,7 @@ class ExpirationSpec extends GovSsoSpecification {
 
         then: "Expected status code is 302 and response location header holds correct logout redirect URL"
         assertThat(logout.statusCode, is(302))
-        assertThat(logout.header("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl))
+        assertThat(logout.header("Location"), startsWith(ClientStore.clientA.postLogoutRedirectUri))
     }
 
     @Story("REFRESH_TOKEN_INACTIVE")
@@ -184,7 +184,7 @@ class ExpirationSpec extends GovSsoSpecification {
 
         then: "Expected status code is 302 and response location header holds correct logout redirect URL"
         assertThat(logout.statusCode, is(302))
-        assertThat(logout.header("Location"), startsWith(flow.oidcClientA.fullLogoutRedirectUrl))
+        assertThat(logout.header("Location"), startsWith(ClientStore.clientA.postLogoutRedirectUri))
     }
 
     private def expireSession(Flow flow, Response response) {

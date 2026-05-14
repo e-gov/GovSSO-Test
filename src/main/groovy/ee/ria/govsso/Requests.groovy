@@ -254,9 +254,9 @@ class Requests {
     @Step("Get token with defaults")
     static Response webTokenBasicRequest(Flow flow,
                                          String authorizationCode,
-                                         String clientId = flow.oidcClientA.clientId,
-                                         String clientSecret = flow.oidcClientA.clientSecret,
-                                         String redirectUrl = flow.oidcClientA.fullResponseUrl) {
+                                         String clientId = ClientStore.clientA.clientId,
+                                         String clientSecret = ClientStore.clientA.secret,
+                                         String redirectUrl = ClientStore.clientA.redirectUri) {
         return given()
                 .urlEncodingEnabled(true)
                 .params([grant_type  : "authorization_code",
@@ -319,7 +319,7 @@ class Requests {
         return given()
                 .urlEncodingEnabled(true)
                 .formParams(formParams)
-                .auth().preemptive().basic(flow.oidcClientA.clientId, flow.oidcClientA.clientSecret)
+                .auth().preemptive().basic(ClientStore.clientA.clientId, ClientStore.clientA.secret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 
