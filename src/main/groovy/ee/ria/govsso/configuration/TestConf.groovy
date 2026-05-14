@@ -8,4 +8,6 @@ interface TestConf extends Config {
     Boolean restAssuredConsoleLogging()
 
     String deviceLinkMockUrl()
+
+    String adminSetupPath()
 }
