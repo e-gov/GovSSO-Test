@@ -502,7 +502,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")
     def "Continue session request without existing session"() {
         expect:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: flow.loginChallenge,
@@ -521,7 +521,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: flow.loginChallenge,
@@ -540,7 +540,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: flow.loginChallenge,
@@ -558,7 +558,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: "0a0aaaa00aa00a00000aa0a0000000aa",
@@ -577,7 +577,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: flow.loginChallenge,
@@ -596,7 +596,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: flow.loginChallenge,
@@ -614,7 +614,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: "0a0aaaa00aa00a00000aa0a0000000aa",
@@ -658,7 +658,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.path("id_token")).JWTClaimsSet
 
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         assertThat("Correct HTTP status code", initLogin.statusCode, is(200))
@@ -938,7 +938,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Login reject request with missing loginChallenge form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [_csrf: initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
@@ -953,7 +953,7 @@ class SessionServiceSpec extends GovSsoSpecification {
     def "Login reject request with missing _csrf form parameter"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: flow.loginChallenge]

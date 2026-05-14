@@ -86,7 +86,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         sleep 1000
 
         and: "Update session"
-        Steps.getSessionUpdateResponse(flow, refreshToken, ClientStore.clientA.clientId, ClientStore.clientA.secret)
+        Steps.getSessionUpdateResponse(flow, refreshToken, ClientStore.clientA)
 
         when: "GET updated session information"
         Response sessionInfo2 = Requests.getRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
@@ -111,7 +111,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         sleep 1000
 
         and: "Log in to same client"
-        Steps.continueWithExistingSession(flow, ClientStore.clientA.clientId, ClientStore.clientA.secret, ClientStore.clientA.redirectUri)
+        Steps.continueWithExistingSession(flow, ClientStore.clientA)
 
         when: "GET updated session information"
         Response sessionInfo2 = Requests.getRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
@@ -130,7 +130,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow)
 
         and: "Continue session"
-        Response continueSession = Steps.continueWithExistingSession(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri)
+        Response continueSession = Steps.continueWithExistingSession(flow, ClientStore.clientB)
         String idToken = continueSession.path("id_token")
 
         and: "Logout from one client"

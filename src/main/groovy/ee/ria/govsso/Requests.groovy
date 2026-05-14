@@ -1,6 +1,7 @@
 package ee.ria.govsso
 
 import ee.ria.govsso.configuration.ConfigHolder
+import ee.ria.govsso.model.Client
 import io.qameta.allure.Step
 import io.restassured.http.ContentType
 import io.restassured.path.json.JsonPath
@@ -254,15 +255,13 @@ class Requests {
     @Step("Get token with defaults")
     static Response webTokenBasicRequest(Flow flow,
                                          String authorizationCode,
-                                         String clientId = ClientStore.clientA.clientId,
-                                         String clientSecret = ClientStore.clientA.secret,
-                                         String redirectUrl = ClientStore.clientA.redirectUri) {
+                                         Client client = ClientStore.clientA) {
         return given()
                 .urlEncodingEnabled(true)
                 .params([grant_type  : "authorization_code",
                          code        : authorizationCode,
-                         redirect_uri: redirectUrl])
-                .auth().preemptive().basic(clientId, clientSecret)
+                         redirect_uri: client.redirectUri])
+                .auth().preemptive().basic(client.clientId, client.secret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 
@@ -283,12 +282,12 @@ class Requests {
     }
 
     @Step("Get session update response")
-    static Response getSessionUpdateWebToken(Flow flow, String refreshToken, String clientId, String clientSecret) {
+    static Response getSessionUpdateWebToken(Flow flow, String refreshToken, Client client) {
         return given()
                 .urlEncodingEnabled(true)
                 .formParam("grant_type", "refresh_token")
                 .formParam("refresh_token", refreshToken)
-                .auth().preemptive().basic(clientId, clientSecret)
+                .auth().preemptive().basic(client.clientId, client.secret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 
@@ -304,22 +303,22 @@ class Requests {
     }
 
     @Step("Get session update response with scope")
-    static Response getSessionUpdateWebToken(Flow flow, String scope, String refreshToken, String clientId, String clientSecret) {
+    static Response getSessionUpdateWebToken(Flow flow, String scope, String refreshToken, Client client) {
         return given()
                 .urlEncodingEnabled(true)
                 .formParam("scope", scope)
                 .formParam("grant_type", "refresh_token")
                 .formParam("refresh_token", refreshToken)
-                .auth().preemptive().basic(clientId, clientSecret)
+                .auth().preemptive().basic(client.clientId, client.secret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 
     @Step("Get token response body")
-    static Response getWebTokenResponseBody(Flow flow, Map formParams) {
+    static Response getWebTokenResponseBody(Flow flow, Map formParams, Client client = ClientStore.clientA) {
         return given()
                 .urlEncodingEnabled(true)
                 .formParams(formParams)
-                .auth().preemptive().basic(ClientStore.clientA.clientId, ClientStore.clientA.secret)
+                .auth().preemptive().basic(client.clientId, client.secret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 

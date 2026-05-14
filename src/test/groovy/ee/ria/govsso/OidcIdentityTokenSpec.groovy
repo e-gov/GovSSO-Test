@@ -297,7 +297,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     def "Verify ID token elements after continuing session with client-B. Client-A scope excludes phone, client-b scope includes phone"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "openid phone")
+        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, ClientStore.clientB, "openid phone")
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("id_token")).JWTClaimsSet
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid phone"))
@@ -315,7 +315,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin)
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "openid")
+        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, ClientStore.clientB, "openid")
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("id_token")).JWTClaimsSet
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid"))
@@ -333,7 +333,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin)
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "openid phone")
+        Response continueSession = Steps.continueWithExistingSessionWithScope(flow, ClientStore.clientB, "openid phone")
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("id_token")).JWTClaimsSet
 
         assertThat("Correct scope", continueSession.jsonPath().getString("scope"), is("openid phone"))

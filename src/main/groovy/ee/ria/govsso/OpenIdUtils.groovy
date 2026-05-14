@@ -5,6 +5,7 @@ import com.nimbusds.jose.JWSVerifier
 import com.nimbusds.jose.crypto.RSASSAVerifier
 import com.nimbusds.jose.jwk.*
 import com.nimbusds.jwt.SignedJWT
+import ee.ria.govsso.model.Client
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.lang3.RandomStringUtils
 
@@ -52,14 +53,14 @@ class OpenIdUtils {
         return queryParams
     }
 
-    static Map getAuthorizationParameters(Flow flow, String clientId = ClientStore.clientA.clientId, String responseUrl = ClientStore.clientA.redirectUri) {
+    static Map getAuthorizationParameters(Flow flow, Client client = ClientStore.clientA) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        flow.setClientId(clientId)
+        flow.setClientId(client.clientId)
         Map queryParams = [response_type: "code",
                            scope        : "openid",
-                           client_id    : clientId,
-                           redirect_uri : responseUrl,
+                           client_id    : client.clientId,
+                           redirect_uri : client.redirectUri,
                            state        : flow.state,
                            nonce        : flow.nonce,
                            prompt       : "consent",
@@ -67,15 +68,15 @@ class OpenIdUtils {
         return queryParams
     }
 
-    static Map getAuthorizationParametersWithScope(Flow flow, String clientId, String clientSecret, String fullResponseUrl, String scope) {
+    static Map getAuthorizationParametersWithScope(Flow flow, Client client, String scope) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        flow.setClientId(clientId)
-        flow.setClientSecret(clientSecret)
+        flow.setClientId(client.clientId)
+        flow.setClientSecret(client.secret)
         Map queryParams = [response_type: "code",
                            scope        : scope,
-                           client_id    : clientId,
-                           redirect_uri : fullResponseUrl,
+                           client_id    : client.clientId,
+                           redirect_uri : client.redirectUri,
                            state        : flow.state,
                            nonce        : flow.nonce,
                            prompt       : "consent",
@@ -84,13 +85,13 @@ class OpenIdUtils {
         return queryParams
     }
 
-    static Map getSessionUpdateParametersWithDefaults(Flow flow, String idTokenHint) {
+    static Map getSessionUpdateParametersWithDefaults(Flow flow, String idTokenHint, Client client = ClientStore.clientA) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         Map queryParams = [response_type: "code",
                            scope        : "openid",
-                           client_id    : ClientStore.clientA.clientId,
-                           redirect_uri : ClientStore.clientA.redirectUri,
+                           client_id    : client.clientId,
+                           redirect_uri : client.redirectUri,
                            state        : flow.state,
                            nonce        : flow.nonce,
                            prompt       : "none",

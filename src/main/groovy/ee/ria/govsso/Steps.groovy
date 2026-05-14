@@ -1,6 +1,7 @@
 package ee.ria.govsso
 
 import com.nimbusds.jwt.SignedJWT
+import ee.ria.govsso.model.Client
 import io.qameta.allure.Step
 import io.restassured.response.Response
 
@@ -27,20 +28,20 @@ class Steps {
     }
 
     @Step("Initialize authentication sequence in OIDC service with defaults")
-    static Response startAuthenticationInSsoOidc(Flow flow, clientId = ClientStore.clientA.clientId, responseUrl = ClientStore.clientA.redirectUri) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, responseUrl)
+    static Response startAuthenticationInSsoOidc(Flow flow, Client client = ClientStore.clientA) {
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, client)
         return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
     @Step("Initialize authentication sequence in OIDC service with origin")
-    static Response startAuthenticationInSsoOidcWithOrigin(Flow flow, String clientId, String fullResponseUrl, String origin) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, clientId, fullResponseUrl)
+    static Response startAuthenticationInSsoOidcWithOrigin(Flow flow, Client client, String origin) {
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, client)
         return startAuthenticationInSsoOidcWithParamsAndOrigin(flow, paramsMap, origin)
     }
 
     @Step("Initialize authentication sequence in OIDC service")
-    static Response startAuthenticationInSsoOidcWithScope(Flow flow, String clientId, String clientSecret, String fullResponseUrl, String scope) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithScope(flow, clientId, clientSecret, fullResponseUrl, scope)
+    static Response startAuthenticationInSsoOidcWithScope(Flow flow, Client client, String scope) {
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithScope(flow, client, scope)
         return startAuthenticationInSsoOidcWithParams(flow, paramsMap)
     }
 
@@ -117,12 +118,10 @@ class Steps {
     @Step("Get identity token response with defaults")
     static Response getTokenResponseWithDefaults(Flow flow,
                                                  Response response,
-                                                 String clientId = ClientStore.clientA.clientId,
-                                                 String clientSecret = ClientStore.clientA.secret,
-                                                 String fullResponseUrl = ClientStore.clientA.redirectUri,
+                                                 Client client = ClientStore.clientA,
                                                  String tokenType = "id_token") {
         String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
-        Response token = Requests.webTokenBasicRequest(flow, authorizationCode, clientId, clientSecret, fullResponseUrl)
+        Response token = Requests.webTokenBasicRequest(flow, authorizationCode, client)
         flow.setRefreshToken(token.path("refresh_token"))
         flow.setIdToken(token.path("id_token"))
         SignedJWT signedJWT = SignedJWT.parse(token.body.path(tokenType))
@@ -133,15 +132,12 @@ class Steps {
 
     @Step("Update session with defaults")
     static Response getSessionUpdateResponse(Flow flow) {
-        return getSessionUpdateResponse(flow,
-                flow.refreshToken,
-                ClientStore.clientA.clientId,
-                ClientStore.clientA.secret)
+        return getSessionUpdateResponse(flow, flow.refreshToken, ClientStore.clientA)
     }
 
     @Step("Update session")
-    static Response getSessionUpdateResponse(Flow flow, String refreshToken, String clientId, String clientSecret, String tokenType = "id_token") {
-        Response tokenResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, clientId, clientSecret)
+    static Response getSessionUpdateResponse(Flow flow, String refreshToken, Client client, String tokenType = "id_token") {
+        Response tokenResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, client)
         if (tokenResponse.statusCode != 200) {
             return tokenResponse
         } else {
@@ -154,7 +150,7 @@ class Steps {
 
     @Step("Update session with scope")
     static Response getSessionUpdateResponseWithScope(Flow flow, String scope) {
-        Response tokenResponse = Requests.getSessionUpdateWebToken(flow, scope, flow.refreshToken, ClientStore.clientB.clientId, ClientStore.clientB.secret)
+        Response tokenResponse = Requests.getSessionUpdateWebToken(flow, scope, flow.refreshToken, ClientStore.clientB)
         if (tokenResponse.statusCode != 200) {
             return tokenResponse
         } else {
@@ -169,24 +165,22 @@ class Steps {
     @Step("Follow redirects to token request")
     static Response followRedirectsToClientApplication(Flow flow,
                                                        Response response,
-                                                       String clientId = ClientStore.clientA.clientId,
-                                                       String clientSecret = ClientStore.clientA.secret,
-                                                       String fullResponseUrl = ClientStore.clientA.redirectUri,
+                                                       Client client = ClientStore.clientA,
                                                        String tokenType = "id_token") {
         Response initLogin = followRedirect(flow, response)
         Response loginVerifier = followRedirect(flow, initLogin)
         flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
         Response initConsent = followRedirect(flow, loginVerifier)
         Response consentVerifier = followRedirect(flow, initConsent)
-        return getTokenResponseWithDefaults(flow, consentVerifier, clientId, clientSecret, fullResponseUrl, tokenType)
+        return getTokenResponseWithDefaults(flow, consentVerifier, client, tokenType)
     }
 
     @Step("Follow redirects to client application with existing session")
-    static Response followRedirectsToClientApplicationWithExistingSession(Flow flow, Response response, String clientId, String clientSecret, String fullResponseUrl) {
+    static Response followRedirectsToClientApplicationWithExistingSession(Flow flow, Response response, Client client) {
         Response loginVerifier = followRedirect(flow, response)
         Response initConsent = followRedirect(flow, loginVerifier)
         Response consentVerifier = followRedirect(flow, initConsent)
-        return getTokenResponseWithDefaults(flow, consentVerifier, clientId, clientSecret, fullResponseUrl)
+        return getTokenResponseWithDefaults(flow, consentVerifier, client)
     }
 
     @Step("Create initial session in GovSSO with ID-Card with client-A")
@@ -199,22 +193,20 @@ class Steps {
 
     @Step("Create initial session in GovSSO with Client-B with scope")
     static Response authenticateInGovSsoWithScope(Flow flow, String scope = "openid representee.* representee_list") {
-        Response oidcAuth = startAuthenticationInSsoOidcWithScope(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, scope)
+        Response oidcAuth = startAuthenticationInSsoOidcWithScope(flow, ClientStore.clientB, scope)
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        return followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "id_token")
+        return followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB, "id_token")
     }
 
     @Step("Create initial session in GovSSO with ID-Card with client-A")
     static Response authenticateWithIdCardInGovSso(Flow flow,
-                                                   String clientId,
-                                                   String clientSecret,
-                                                   String responseUrl,
+                                                   Client client,
                                                    String tokenType = "access_token") {
-        Response oidcAuth = startAuthenticationInSsoOidc(flow, clientId, responseUrl)
+        Response oidcAuth = startAuthenticationInSsoOidc(flow, client)
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        return followRedirectsToClientApplication(flow, taraAuthentication, clientId, clientSecret, responseUrl, tokenType)
+        return followRedirectsToClientApplication(flow, taraAuthentication, client, tokenType)
     }
 
     @Step("Create initial session in GovSSO with ID-Card with client-A with custom ui_locales")
@@ -249,10 +241,10 @@ class Steps {
     }
 
     @Step("Use existing session to authenticate to another client")
-    static Response continueWithExistingSession(Flow flow, String clientId = ClientStore.clientB.clientId, String clientSecret = ClientStore.clientB.secret, String responseUrl = ClientStore.clientB.redirectUri) {
-        Response oidcAuth = startAuthenticationInSsoOidc(flow, clientId, responseUrl)
-        if (clientId != ClientStore.clientB.clientId && clientId != ClientStore.clientA.clientId) {
-            return followRedirectsToClientApplication(flow, oidcAuth, clientId, clientSecret, responseUrl)
+    static Response continueWithExistingSession(Flow flow, Client client = ClientStore.clientB) {
+        Response oidcAuth = startAuthenticationInSsoOidc(flow, client)
+        if (client != ClientStore.clientB && client != ClientStore.clientA) {
+            return followRedirectsToClientApplication(flow, oidcAuth, client)
         } else {
             Response redirectResponse = followRedirect(flow, oidcAuth)
             if (redirectResponse.statusCode != 200) {
@@ -261,19 +253,19 @@ class Steps {
                 Map formParams = [loginChallenge: flow.loginChallenge,
                                   _csrf         : redirectResponse.body.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
                 Response continueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullContinueSessionUrl, formParams)
-                return followRedirectsToClientApplicationWithExistingSession(flow, continueSession, clientId, clientSecret, responseUrl)
+                return followRedirectsToClientApplicationWithExistingSession(flow, continueSession, client)
             }
         }
     }
 
     @Step("Use existing session to authenticate to another client with scope")
-    static Response continueWithExistingSessionWithScope(Flow flow, String clientId, String clientSecret, String responseUrl, String scope) {
-        Response oidcAuth = startAuthenticationInSsoOidcWithScope(flow, clientId, clientSecret, responseUrl, scope)
+    static Response continueWithExistingSessionWithScope(Flow flow, Client client, String scope) {
+        Response oidcAuth = startAuthenticationInSsoOidcWithScope(flow, client, scope)
         Response initLogin = followRedirect(flow, oidcAuth)
         Map formParams = [loginChallenge: flow.loginChallenge,
                           _csrf         : initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
         Response continueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullContinueSessionUrl, formParams)
-        return followRedirectsToClientApplicationWithExistingSession(flow, continueSession, clientId, clientSecret, responseUrl)
+        return followRedirectsToClientApplicationWithExistingSession(flow, continueSession, client)
     }
 
     @Step("Initialize logout with session in several GSSO clients and follow redirects")
@@ -300,8 +292,8 @@ class Steps {
     }
 
     @Step("Initialize reauthentication sequence and follow redirects to client application")
-    static Response reauthenticate(Flow flow, String clientId, String clientSecret, String fullResponseUrl) {
-        Response oidcAuth = startAuthenticationInSsoOidc(flow, clientId, fullResponseUrl)
+    static Response reauthenticate(Flow flow, Client client) {
+        Response oidcAuth = startAuthenticationInSsoOidc(flow, client)
         Response initLogin1 = followRedirect(flow, oidcAuth)
         Map formParams = [loginChallenge: flow.loginChallenge,
                           _csrf         : initLogin1.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
@@ -309,7 +301,7 @@ class Steps {
         Response initLogin2 = followRedirect(flow, reauthenticate)
         Response followRedirect = followRedirect(flow, initLogin2)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, followRedirect)
-        return followRedirectsToClientApplication(flow, taraAuthentication, clientId, clientSecret, fullResponseUrl)
+        return followRedirectsToClientApplication(flow, taraAuthentication, client)
     }
 
     @Step("Initialize reauthentication sequence and follow redirects to client application after acr discrepancy")
@@ -321,7 +313,7 @@ class Steps {
         Response oidcAuth2 = followRedirect(flow, reauthenticate)
         Response initLogin2 = followRedirect(flow, oidcAuth2)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin2)
-        return followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri)
+        return followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB)
     }
 
     @Step("Verify session service response headers")

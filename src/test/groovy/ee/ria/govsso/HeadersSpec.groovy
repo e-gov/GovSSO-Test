@@ -1,6 +1,7 @@
 package ee.ria.govsso
 
 import com.nimbusds.jose.jwk.JWKSet
+import ee.ria.govsso.model.Client
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -44,7 +45,7 @@ class HeadersSpec extends GovSsoSpecification {
     def "Cross-Origin Resource Sharing headers are not applied in session continuation request sequence"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithOrigin(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri, ClientStore.clientB.fullBaseUrl)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithOrigin(flow, ClientStore.clientB, ClientStore.clientB.fullBaseUrl)
         Response initLogin = Steps.followRedirectWithOrigin(flow, oidcAuth, ClientStore.clientB.fullBaseUrl)
 
         Map formParams = [loginChallenge: flow.loginChallenge,
@@ -115,7 +116,8 @@ class HeadersSpec extends GovSsoSpecification {
     @Feature("CORS")
     def "Cross-Origin Resource Sharing headers are not applied in error request"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "invalid-client-id", ClientStore.clientA.redirectUri)
+        Client invalidClient = new Client(clientId: "invalid-client-id", redirectUris: ClientStore.clientA.redirectUris)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, invalidClient)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response oidcError = Steps.followRedirectWithOrigin(flow, oidcAuth, ClientStore.clientA.fullBaseUrl)
 
@@ -153,7 +155,7 @@ class HeadersSpec extends GovSsoSpecification {
     def "Verify response headers for session service requests in session continuation sequence"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: Utils.getParamValueFromResponseHeader(oidcAuth, "login_challenge"),
@@ -178,7 +180,7 @@ class HeadersSpec extends GovSsoSpecification {
     def "Verify response headers for session service requests in reauthentication sequence"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: Utils.getParamValueFromResponseHeader(oidcAuth, "login_challenge"),

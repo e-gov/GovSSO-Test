@@ -135,7 +135,7 @@ class MainFlowSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         JWTClaimsSet claimsClientA1 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.path("id_token")).JWTClaimsSet
 
-        Response continueSession = Steps.continueWithExistingSession(flow, ClientStore.clientA.clientId, ClientStore.clientA.secret, ClientStore.clientA.redirectUri)
+        Response continueSession = Steps.continueWithExistingSession(flow, ClientStore.clientA)
 
         JWTClaimsSet claimsClientA2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("id_token")).JWTClaimsSet
         assertThat("Correct authentication method value", claimsClientA2.getClaim("amr"), is(["idcard"]))
@@ -151,7 +151,7 @@ class MainFlowSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.path("id_token")).JWTClaimsSet
 
-        Response reauthenticate = Steps.reauthenticate(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri)
+        Response reauthenticate = Steps.reauthenticate(flow, ClientStore.clientB)
 
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, reauthenticate.body.path("id_token")).JWTClaimsSet
         assertThat("Correct authentication method value", claimsClientB.getClaim("amr"), is(["idcard"]))
@@ -167,7 +167,7 @@ class MainFlowSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
 
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
 
         Response reauthenticate = Steps.reauthenticateAfterAcrDiscrepancy(flow, oidcAuth)
 

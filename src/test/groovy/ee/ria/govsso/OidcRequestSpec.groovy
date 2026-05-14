@@ -3,6 +3,7 @@ package ee.ria.govsso
 import com.google.common.hash.Hashing
 import com.nimbusds.jose.jwk.JWKSet
 import ee.ria.govsso.configuration.ConfigHolder
+import ee.ria.govsso.model.Client
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -38,7 +39,8 @@ class OidcRequestSpec extends GovSsoSpecification {
     @Feature("OIDC_ENDPOINT")
     def "Authentication request with incorrect client ID"() {
         expect:
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "invalid-client-id", ClientStore.clientA.redirectUri)
+        Client invalidClient = new Client(clientId: "invalid-client-id", redirectUris: ClientStore.clientA.redirectUris)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, invalidClient)
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response oidcError = Steps.followRedirect(flow, oidcAuth)
 
@@ -296,7 +298,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Correct URL returned from OIDC after return to service provider request"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: flow.loginChallenge,
@@ -389,7 +391,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, ClientStore.clientA.clientId, ClientStore.clientA.secret)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, ClientStore.clientA)
 
         assertThat("Correct HTTP status code", logoutVerifier.statusCode, is(302))
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
@@ -404,14 +406,14 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithEidasInGovSso(flow, "substantial", "C")
         String refreshToken = createSession.body.path("refresh_token")
 
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         Map formParams = [loginChallenge: flow.loginChallenge,
                           _csrf         : initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
         Requests.postRequestWithParams(flow, flow.sessionService.fullReauthenticateUrl, formParams)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, ClientStore.clientA.clientId, ClientStore.clientA.secret)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, ClientStore.clientA)
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
@@ -430,7 +432,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String refreshToken2 = continueSession.path("refresh_token")
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken2, ClientStore.clientA.clientId, ClientStore.clientA.secret)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken2, ClientStore.clientA)
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
@@ -450,7 +452,7 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         Steps.getSessionUpdateResponse(flow)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken1, ClientStore.clientA.clientId, ClientStore.clientA.secret)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken1, ClientStore.clientA)
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(401))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("token_inactive"))
@@ -463,7 +465,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, "123abc.123abc", ClientStore.clientA.clientId, ClientStore.clientA.secret)
+        Response updateResponse = Requests.getSessionUpdateWebToken(flow, "123abc.123abc", ClientStore.clientA)
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
@@ -492,7 +494,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Missing session cookie in login init request in session continuation flow"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Response initLogin = Requests.getRequest(oidcAuth.then().extract().response().header("location"))
 
         assertThat("Correct HTTP status code", initLogin.body.jsonPath().getString("status"), is("400"))
@@ -506,7 +508,7 @@ class OidcRequestSpec extends GovSsoSpecification {
     def "Incorrect session cookie in login init request in session continuation flow"() {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
 
         Map cookies = ["__Host-ory_hydra_session": "SW5jb3JyZWN0IHNlc3Npb24gY29va2ll"]
         Response initLogin = Steps.followRedirectWithCookies(flow, oidcAuth, cookies)

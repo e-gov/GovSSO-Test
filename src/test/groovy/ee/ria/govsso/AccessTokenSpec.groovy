@@ -30,7 +30,7 @@ class AccessTokenSpec extends GovSsoSpecification {
 
     def "Authentication with access token configured client should return JWT access token with configured expiration time"() {
         given: "Create session"
-        Response tokenResponse = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "access_token")
+        Response tokenResponse = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB, "access_token")
 
         when: "Get access token claims"
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.body.path("access_token")).JWTClaimsSet
@@ -42,10 +42,10 @@ class AccessTokenSpec extends GovSsoSpecification {
 
     def "Session update with access token configured client should return JWT access token"() {
         given: "Create session"
-        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri)
+        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB)
 
         when: "Update session and get new access token claims"
-        Response updateSession = Steps.getSessionUpdateResponse(flow, flow.refreshToken, ClientStore.clientB.clientId, ClientStore.clientB.secret, "access_token")
+        Response updateSession = Steps.getSessionUpdateResponse(flow, flow.refreshToken, ClientStore.clientB, "access_token")
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.path("access_token")).JWTClaimsSet
 
         then:
@@ -54,7 +54,7 @@ class AccessTokenSpec extends GovSsoSpecification {
 
     def "Continue session with access token configured client should return JWT access token"() {
         given: "Create session"
-        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri)
+        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB)
 
         when: "Continue session and get new access token claims"
         Response continueSession = Steps.continueWithExistingSession(flow)
@@ -66,12 +66,12 @@ class AccessTokenSpec extends GovSsoSpecification {
 
     def "Access token audience should hold only audience value specified in authorization request: #audience"() {
         given: "Create session with specified audience"
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.clientB)
         paramsMap << [audience: audience]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        Response tokenRequest = Steps.followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "access_token")
+        Response tokenRequest = Steps.followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB, "access_token")
 
         when: "Get access token claims"
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenRequest.body.path("access_token")).JWTClaimsSet
@@ -88,15 +88,15 @@ class AccessTokenSpec extends GovSsoSpecification {
 
     def "Access token audience should hold only audience value requested in authorization request after session update"() {
         given: "Create session with specified audience"
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.clientB)
         paramsMap << [audience: AUD1]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        Steps.followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "access_token")
+        Steps.followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB, "access_token")
 
         when: "Update session and get access token claims"
-        Response updateSession = Steps.getSessionUpdateResponse(flow, flow.refreshToken, ClientStore.clientB.clientId, ClientStore.clientB.secret, "access_token")
+        Response updateSession = Steps.getSessionUpdateResponse(flow, flow.refreshToken, ClientStore.clientB, "access_token")
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.path("access_token")).JWTClaimsSet
 
         then:
@@ -105,7 +105,7 @@ class AccessTokenSpec extends GovSsoSpecification {
 
     def "Authorization request should fail if request holds non-registered audience value: #audience"() {
         when: "Request authorization with not registered audience parameter value"
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.clientB)
         paramsMap << [audience: audience]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
@@ -123,7 +123,7 @@ class AccessTokenSpec extends GovSsoSpecification {
 
     def "Access token should hold correct values with scope: openid"() {
         given: "Create session"
-        Response createSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "access_token")
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB, "access_token")
 
         when: "Get access token claims"
         JWTClaimsSet claimsAccessToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.path("access_token")).JWTClaimsSet
@@ -155,12 +155,12 @@ class AccessTokenSpec extends GovSsoSpecification {
 
     def "Access token should hold correct values with scope: openid phone"() {
         given: "Create session"
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.clientB.clientId, ClientStore.clientB.redirectUri)
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.clientB)
         paramsMap << [scope: "openid phone"]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin)
-        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB.clientId, ClientStore.clientB.secret, ClientStore.clientB.redirectUri, "access_token")
+        Response token = Steps.followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB, "access_token")
 
         when: "Get access token claims"
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, token.path("access_token")).JWTClaimsSet
