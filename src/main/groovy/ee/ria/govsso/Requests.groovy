@@ -268,15 +268,13 @@ class Requests {
     @Step("Get token client_secret_post")
     static Response webTokenPostRequest(Flow flow,
                                         String authorizationCode,
-                                        String clientId = "client-f",
-                                        String clientSecret = "secretf",
-                                        String redirectUrl = "https://clientf.localhost:11443/login/oauth2/code/govsso") {
+                                        Client client = ClientStore.clientF) {
         return given()
                 .params([grant_type   : "authorization_code",
-                         redirect_uri : redirectUrl,
+                         redirect_uri : client.redirectUri,
                          code         : authorizationCode,
-                         client_id    : clientId,
-                         client_secret: clientSecret])
+                         client_id    : client.clientId,
+                         client_secret: client.secret])
                 .urlEncodingEnabled(true)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
@@ -292,13 +290,13 @@ class Requests {
     }
 
     @Step("Get session update response with client_secret_post")
-    static Response getSessionUpdateWebTokenWithClientSecretPost(Flow flow, String refreshToken) {
+    static Response getSessionUpdateWebTokenWithClientSecretPost(Flow flow, String refreshToken, Client client = ClientStore.clientF) {
         return given()
                 .urlEncodingEnabled(true)
                 .formParams([grant_type   : "refresh_token",
                              refresh_token: refreshToken,
-                             client_id    : "client-f",
-                             client_secret: "secretf"])
+                             client_id    : client.clientId,
+                             client_secret: client.secret])
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 

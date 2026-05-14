@@ -16,6 +16,12 @@ class ClientStore {
     static Client clientB = readClientJson("client-b")
 
     @Lazy
+    static Client clientE = readClientJson("client-e")
+
+    @Lazy
+    static Client clientF = readClientJson("client-f")
+
+    @Lazy
     static Client mockSecuredApp = readClientJson("client-mock-secured-app")
 
     @Lazy

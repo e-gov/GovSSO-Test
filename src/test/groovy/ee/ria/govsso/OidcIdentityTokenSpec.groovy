@@ -41,7 +41,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token response with client_secret_post configured client"() {
         given: "Create session"
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, "client-f", "https://clientf.localhost:11443/login/oauth2/code/govsso")
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientF)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
@@ -62,7 +62,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Verify ID token response after session update with client_secret_post configured client"() {
         given: "Create session"
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, "client-f", "https://clientf.localhost:11443/login/oauth2/code/govsso")
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientF)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
@@ -91,7 +91,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
 
         when: "Request ID token with incorrect token authentication method"
-        Response tokenResponse = Requests.webTokenPostRequest(flow, authorizationCode, ClientStore.clientA.clientId, ClientStore.clientA.secret, ClientStore.clientA.redirectUri)
+        Response tokenResponse = Requests.webTokenPostRequest(flow, authorizationCode, ClientStore.clientA)
 
         then:
         assertThat("Correct HTTP status", tokenResponse.statusCode, is(401))
@@ -103,18 +103,14 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     @Feature("ID_TOKEN")
     def "Client_secret_basic token endpoint request should fail when client has client_secret_post configuration"() {
         given: "Create session"
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, "client-f", "https://clientf.localhost:11443/login/oauth2/code/govsso")
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientF)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         Response consentVerifier = followRedirectsToClientApplication(flow, taraAuthentication)
         String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
 
         when: "Request ID token with incorrect token authentication method"
-        Response tokenResponse = Requests.webTokenBasicRequest(flow,
-                authorizationCode,
-                "client-f",
-                "secretf",
-                "https://clientf.localhost:11443/login/oauth2/code/govsso")
+        Response tokenResponse = Requests.webTokenBasicRequest(flow, authorizationCode, ClientStore.clientF)
 
         then:
         assertThat("Correct HTTP status", tokenResponse.statusCode, is(401))

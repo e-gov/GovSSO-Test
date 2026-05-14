@@ -119,7 +119,7 @@ class MainFlowSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         JWTClaimsSet claimsClientA = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.path("id_token")).JWTClaimsSet
 
-        Response continueSession = Steps.continueWithExistingSession(flow, "client-e", "secrete", "https://cliente.localhost:11443/login/oauth2/code/govsso")
+        Response continueSession = Steps.continueWithExistingSession(flow, ClientStore.clientE)
 
         JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("id_token")).JWTClaimsSet
         assertThat("Correct authentication method value", claimsClientB.getClaim("amr"), is(["idcard"]))
