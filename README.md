@@ -21,7 +21,6 @@ Tests for GovSSO (both Ory Hydra OIDC and Estonian specific session service comp
 configuration_base_path=/home/me/IdeaProjects/govsso-configuration
 configuration_path=dev-local
 ```   
-
 The example application.properties file with values are given ../src/test/resource/sample_application.properties
 
 Description of values:
@@ -99,6 +98,24 @@ Description of values:
 | idp.host                                | eidas-caproxy                                     | Service URL.                                           |
 | idp.port                                | 8081                                              | Service port.                                          |
 | idp.responseUrl                         | /IdP/Response                                     | Authentication response endpoint.                      |
+
+## Test clients
+
+The tests authenticate as several pre-registered OIDC clients.
+Each one is described by a JSON file at `${test.adminSetupPath}/<client-name>.json`,
+which can be found in the `GovSSO-Session` repository's `local/setup` directory.
+The same JSON files are consumed when registering the clients during local stack startup.
+
+Point `test.adminSetupPath` in `application.properties` at that directory, e.g.:
+
+```properties
+test.adminSetupPath=/path/to/GovSSO-Session/local/setup
+```
+
+To add a new test client:
+
+1. Add `<client-name>.json` to `adminSetupPath` and register it in `init.sh` (located in the same directory).
+2. Add a `@Lazy static Client <name> = readClientJson("<client-name>")` field to `ClientStore`.
 
 ## Execute tests and generate report
 
