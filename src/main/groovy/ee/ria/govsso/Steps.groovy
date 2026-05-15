@@ -67,14 +67,14 @@ class Steps {
 
     @Step("Initialize logout sequence in OIDC with GET or POST")
     static Response startLogout(Flow flow, String idTokenHint, String logoutRedirectUri, boolean usePost = false) {
-        Map params = OpenIdUtils.getLogoutParameters(idTokenHint,logoutRedirectUri)
-        return logoutRequest(flow,params,logoutRedirectUri,usePost)
+        Map params = OpenIdUtils.getLogoutParameters(idTokenHint, logoutRedirectUri)
+        return logoutRequest(flow, params, logoutRedirectUri, usePost)
     }
 
     @Step("Initialize logout sequence in OIDC with GET or POST")
     static Response startLogoutWithUiLocales(Flow flow, String idTokenHint, String logoutRedirectUri, String uiLocales, boolean usePost = false) {
-        Map params = OpenIdUtils.getLogoutParametersWithUiLocales(idTokenHint,logoutRedirectUri,uiLocales)
-        return logoutRequest(flow,params,logoutRedirectUri,usePost)
+        Map params = OpenIdUtils.getLogoutParametersWithUiLocales(idTokenHint, logoutRedirectUri, uiLocales)
+        return logoutRequest(flow, params, logoutRedirectUri, usePost)
     }
 
     @Step("Logout request in OIDC with GET or POST")
@@ -93,7 +93,7 @@ class Steps {
     @Step("Initialize logout sequence in OIDC with origin")
     static Response startLogoutWithOrigin(Flow flow, String idTokenHint, String logoutRedirectUri, String origin) {
         Map headersMap = [Origin: origin]
-        Map queryParams = OpenIdUtils.getLogoutParameters(idTokenHint,logoutRedirectUri)
+        Map queryParams = OpenIdUtils.getLogoutParameters(idTokenHint, logoutRedirectUri)
         Response initLogout = Requests.getRequestWithHeadersAndParams(flow, flow.ssoOidcService.fullLogoutUrl, headersMap, queryParams)
         flow.setLogoutChallenge(Utils.getParamValueFromResponseHeader(initLogout, "logout_challenge"))
         return initLogout
@@ -231,18 +231,18 @@ class Steps {
     @Step("Use existing session to authenticate to another client")
     static Response continueWithExistingSession(Flow flow, Client client = ClientStore.clientB) {
         Response oidcAuth = startAuthenticationInSsoOidc(flow, client)
-        if (client != ClientStore.clientB && client != ClientStore.clientA) {
+        if (client.isUserConsentRequired != Boolean.TRUE) {
+            // No consent screen
             return followRedirectsToClientApplication(flow, oidcAuth, client)
+        }
+        Response redirectResponse = followRedirect(flow, oidcAuth)
+        if (redirectResponse.statusCode != 200) {
+            return redirectResponse
         } else {
-            Response redirectResponse = followRedirect(flow, oidcAuth)
-            if (redirectResponse.statusCode != 200) {
-                return redirectResponse
-            } else {
-                Map formParams = [loginChallenge: flow.loginChallenge,
-                                  _csrf         : redirectResponse.body.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
-                Response continueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullContinueSessionUrl, formParams)
-                return followRedirectsToClientApplicationWithExistingSession(flow, continueSession, client)
-            }
+            Map formParams = [loginChallenge: flow.loginChallenge,
+                              _csrf         : redirectResponse.body.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
+            Response continueSession = Requests.postRequestWithParams(flow, flow.sessionService.fullContinueSessionUrl, formParams)
+            return followRedirectsToClientApplicationWithExistingSession(flow, continueSession, client)
         }
     }
 

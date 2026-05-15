@@ -2,6 +2,7 @@ package ee.ria.govsso
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.govsso.model.ClientType
 import io.qameta.allure.Feature
 import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
@@ -137,9 +138,9 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
     }
 
     @Feature("ID_TOKEN")
-    def "Verify ID token mandatory elements"() {
+    def "Verify ID token mandatory elements for authentication with #clientType client"() {
         expect:
-        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow, client)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.path("id_token")).JWTClaimsSet
 
@@ -152,11 +153,11 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct JWT ID claim exists", claims.JWTID, matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
         assertThat("Correct issuer", claims.issuer, equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        assertThat("Correct audience", claims.audience[0], equalTo(ClientStore.clientA.clientId))
+        assertThat("Correct audience", claims.audience[0], equalTo(client.clientId))
         Date date = new Date()
         assertThat("Correct authentication time", Math.abs(date.time - claims.getDateClaim("auth_time").time) < 10000L)
         assertThat("Correct issued at time", Math.abs(date.time - claims.getDateClaim("iat").time) < 10000L)
-        assertThat("Correct expiration time", claims.expirationTime.time - claims.getDateClaim("iat").time, equalTo(900000L))
+        assertThat("Correct expiration time", claims.expirationTime.time - claims.getDateClaim("iat").time, equalTo(idTokenExpirationTime))
         assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["idcard"]))
         assertThat("Correct subject claim", claims.subject, equalTo("EE38001085718"))
         assertThat("Correct date of birth", claims.getClaim("birthdate"), equalTo("1980-01-08"))
@@ -167,7 +168,12 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Claim phone_number does not exist", claims.claims, not(hasKey("phone_number")))
         assertThat("Claim phone_number_verified does not exist", claims.claims, not(hasKey("phone_number_verified")))
         assertThat("Correct at_hash claim exists", claims.getStringClaim("at_hash").size() > 20)
-        assertThat("Incorrect initiator", claims.getStringClaim("initiator"), equalTo("DEFAULT"))
+        assertThat("Incorrect initiator", claims.getStringClaim("initiator"), equalTo(clientType.toString()))
+
+        where:
+        clientType             | client                     | idTokenExpirationTime
+        ClientType.DEFAULT     | ClientStore.clientA        | 900000L
+        ClientType.SECURED_APP | ClientStore.mockSecuredApp | 40000L
     }
 
     @Feature("ID_TOKEN")

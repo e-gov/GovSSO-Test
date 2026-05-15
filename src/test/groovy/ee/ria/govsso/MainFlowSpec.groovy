@@ -123,11 +123,11 @@ class MainFlowSpec extends GovSsoSpecification {
 
         Response continueSession = Steps.continueWithExistingSession(flow, ClientStore.clientE)
 
-        JWTClaimsSet claimsClientB = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("id_token")).JWTClaimsSet
-        assertThat("Correct authentication method value", claimsClientB.getClaim("amr"), is(["idcard"]))
-        assertThat("Correct audience value", claimsClientB.audience[0], is("client-e"))
-        assertThat("Correct subject value", claimsClientB.subject, is("EE38001085718"))
-        assertThat("Correct session ID", claimsClientB.getClaim("sid"), is(claimsClientA.getClaim("sid")))
+        JWTClaimsSet claimsClientE = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("id_token")).JWTClaimsSet
+        assertThat("Correct authentication method value", claimsClientE.getClaim("amr"), is(["idcard"]))
+        assertThat("Correct audience value", claimsClientE.audience[0], is(ClientStore.clientE.clientId))
+        assertThat("Correct subject value", claimsClientE.subject, is("EE38001085718"))
+        assertThat("Correct session ID", claimsClientE.getClaim("sid"), is(claimsClientA.getClaim("sid")))
     }
 
     @Feature("BUSINESS_LOGIC")
