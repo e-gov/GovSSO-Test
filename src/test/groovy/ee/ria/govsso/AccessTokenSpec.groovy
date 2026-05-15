@@ -42,7 +42,7 @@ class AccessTokenSpec extends GovSsoSpecification {
 
     def "Session update with access token configured client should return JWT access token"() {
         given: "Create session"
-        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB)
+        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB, "access_token")
 
         when: "Update session and get new access token claims"
         Response updateSession = Steps.getSessionUpdateResponse(flow, flow.refreshToken, ClientStore.clientB, "access_token")
@@ -54,7 +54,7 @@ class AccessTokenSpec extends GovSsoSpecification {
 
     def "Continue session with access token configured client should return JWT access token"() {
         given: "Create session"
-        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB)
+        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB, "access_token")
 
         when: "Continue session and get new access token claims"
         Response continueSession = Steps.continueWithExistingSession(flow)

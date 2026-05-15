@@ -5,6 +5,8 @@ import ee.ria.govsso.model.Client
 import io.qameta.allure.Step
 import io.restassured.response.Response
 
+import java.text.ParseException
+
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.anyOf
@@ -124,9 +126,7 @@ class Steps {
         Response token = Requests.webTokenBasicRequest(flow, authorizationCode, client)
         flow.setRefreshToken(token.path("refresh_token"))
         flow.setIdToken(token.path("id_token"))
-        SignedJWT signedJWT = SignedJWT.parse(token.body.path(tokenType))
-        Utils.addJsonAttachment("Header", signedJWT.header.toString())
-        Utils.addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
+        attachTokenToReport(token.body.path(tokenType) as String, tokenType)
         return token
     }
 
@@ -141,9 +141,7 @@ class Steps {
         if (tokenResponse.statusCode != 200) {
             return tokenResponse
         } else {
-            SignedJWT signedJWT = SignedJWT.parse(tokenResponse.body.path(tokenType))
-            Utils.addJsonAttachment("Header", signedJWT.header.toString())
-            Utils.addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
+            attachTokenToReport(tokenResponse.body.path(tokenType) as String, tokenType)
             return tokenResponse
         }
     }
@@ -154,9 +152,7 @@ class Steps {
         if (tokenResponse.statusCode != 200) {
             return tokenResponse
         } else {
-            SignedJWT signedJWT = SignedJWT.parse(tokenResponse.body.path("id_token"))
-            Utils.addJsonAttachment("Header", signedJWT.header.toString())
-            Utils.addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
+            attachTokenToReport(tokenResponse.body.path("id_token") as String, "id_token")
             flow.setRefreshToken(tokenResponse.path("refresh_token"))
             return tokenResponse
         }
@@ -183,14 +179,6 @@ class Steps {
         return getTokenResponseWithDefaults(flow, consentVerifier, client)
     }
 
-    @Step("Create initial session in GovSSO with ID-Card with client-A")
-    static Response authenticateWithIdCardInGovSso(Flow flow) {
-        Response oidcAuth = startAuthenticationInSsoOidc(flow)
-        Response initLogin = startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        return followRedirectsToClientApplication(flow, taraAuthentication)
-    }
-
     @Step("Create initial session in GovSSO with Client-B with scope")
     static Response authenticateInGovSsoWithScope(Flow flow, String scope = "openid representee.* representee_list") {
         Response oidcAuth = startAuthenticationInSsoOidcWithScope(flow, ClientStore.clientB, scope)
@@ -199,10 +187,10 @@ class Steps {
         return followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB, "id_token")
     }
 
-    @Step("Create initial session in GovSSO with ID-Card with client-A")
+    @Step("Create initial session in GovSSO with ID-Card")
     static Response authenticateWithIdCardInGovSso(Flow flow,
-                                                   Client client,
-                                                   String tokenType = "access_token") {
+                                                   Client client = ClientStore.clientA,
+                                                   String tokenType = "id_token") {
         Response oidcAuth = startAuthenticationInSsoOidc(flow, client)
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
@@ -314,6 +302,19 @@ class Steps {
         Response initLogin2 = followRedirect(flow, oidcAuth2)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin2)
         return followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB)
+    }
+
+    private static void attachTokenToReport(String tokenValue, String tokenName) {
+        if (tokenValue == null) {
+            return
+        }
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(tokenValue)
+            Utils.addJsonAttachment("Header", signedJWT.header.toString())
+            Utils.addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
+        } catch (ParseException ignored) {
+            Utils.addJsonAttachment(tokenName, tokenValue)
+        }
     }
 
     @Step("Verify session service response headers")
