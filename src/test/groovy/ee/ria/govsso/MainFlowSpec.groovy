@@ -5,6 +5,7 @@ import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import spock.lang.Tag
 
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
@@ -37,6 +38,7 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct given name value", claims.getClaim("given_name"), is("MARY ÄNN"))
     }
 
+    @Tag("sid-device-link-mock")
     @Feature("BUSINESS_LOGIC")
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authenticate with Smart-ID"() {
