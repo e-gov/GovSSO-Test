@@ -8,26 +8,30 @@ import groovy.sql.Sql
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Ignore
 import spock.lang.Unroll
 
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 
-import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.not
+import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.emptyString
 import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasSize
-import static org.hamcrest.Matchers.everyItem
-import static org.hamcrest.Matchers.emptyString
-import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
 
 class SelfServiceApiSpec extends GovSsoSpecification {
 
     static final SUBJECT_ENDPOINT = "/EE38001085718"
     static final NONVALID_SESSION_UUID = "/76474092-655e-4897-8aba-d6bb568fee4d"
+
+    private static final String WINDOWS_CHROME_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+    private static final String ANDROID_CHROME_USER_AGENT = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36"
+    private static final String MAC_SAFARI_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15"
+    private static final String IPHONE_SAFARI_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
+    private static final String LINUX_FIREFOX_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0"
+    private static final String WINDOWS_EDGE_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0"
 
     Flow flow2 = new Flow()
     Sql sql = null
@@ -42,14 +46,15 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         Requests.deleteRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
     }
 
-    @Ignore("AUT-1293")
     @Feature("SELF_SERVICE_API")
     def "GET sessions returns information of valid sessions for subject"() {
         given: "Create a session"
+        flow.userAgent = WINDOWS_CHROME_USER_AGENT
         Response session = Steps.authenticateWithIdCardInGovSso(flow)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, session.body.path("id_token")).JWTClaimsSet
         String sessionId = [claims.getClaim("sid")]
+        Instant authenticatedAt = claims.getDateClaim("auth_time").toInstant()
         Instant requestedAt = claims.getDateClaim("rat").toInstant()
 
         sql = DatabaseConnection.getSql(flow)
@@ -63,16 +68,88 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         then: "GET request is successful and correct response payload is returned"
         assertThat("Correct status code", sessionInfo.statusCode(), is(200))
         assertThat("User has a single session with correct session ID", sessionInfo.path("session_id").toString(), is(sessionId))
-        assertThat("Authenticated_at is present", sessionInfo.path("authenticated_at[0]").toString(), is(requestedAt.toString()))
-        assertThat("Ip_address is present", sessionInfo.path("ip_addresses"), allOf(hasSize(1), everyItem(not(emptyString()))))
-        assertThat("Correct user_agent", sessionInfo.path("user_agent[0]"), is("Test User-Agent"))
+        assertThat("Authenticated_at is present", sessionInfo.path("authenticated_at[0]").toString(), is(authenticatedAt.toString()))
+        assertThat("Ip_info is present", sessionInfo.path("ip_infos[0]"), hasSize(1))
+        assertThat("Ip_address is present", sessionInfo.path("ip_infos[0][0].ip_address"), not(emptyString()))
+        assertThat("Correct user_agent", sessionInfo.path("user_agent[0]"), is(WINDOWS_CHROME_USER_AGENT))
+        assertThat("Correct os", sessionInfo.path("os[0]"), is("Windows"))
+        assertThat("Correct browser", sessionInfo.path("browser[0]"), is("Chrome"))
         assertThat("Correct client_names values", sessionInfo.path("services.client_names[0][0]"), allOf(hasEntry("et", "Teenusenimi A"), hasEntry("en", "Service name A"), hasEntry("ru", "Название службы A")))
         assertThat("Correct services.authenticated_at value", sessionInfo.path("services.authenticated_at[0][0]").toString(), is(requestedAt.toString()))
         assertThat("Correct services.expires_at value", sessionInfo.path("services.expires_at[0][0]").toString(), is(expiresAt.toString()))
         assertThat("Correct services.last_updated_at value", sessionInfo.path("services.last_updated_at[0][0]").toString(), is(lastUpdatedAt.toString()))
     }
 
-    @Ignore("AUT-1293")
+    @Feature("SELF_SERVICE_API")
+    def "GET sessions returns correct device info for #description user agent"() {
+        given: "Create a session"
+        flow.userAgent = userAgent
+        Steps.authenticateWithIdCardInGovSso(flow)
+
+        when: "GET session information"
+        Response sessionInfo = Requests.getRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
+
+        then: "Device info reflects the user agent"
+        assertThat("Correct user_agent", sessionInfo.path("user_agent[0]"), is(userAgent))
+        assertThat("Correct os", sessionInfo.path("os[0]"), is(expectedOs))
+        assertThat("Correct browser", sessionInfo.path("browser[0]"), is(expectedBrowser))
+
+        where:
+        description      | userAgent                 | expectedOs | expectedBrowser
+        "Android Chrome" | ANDROID_CHROME_USER_AGENT | "Android"  | "Chrome Mobile"
+        "Mac Safari"     | MAC_SAFARI_USER_AGENT     | "Mac OS X" | "Safari"
+        "iPhone Safari"  | IPHONE_SAFARI_USER_AGENT  | "iOS"      | "Mobile Safari"
+        "Linux Firefox"  | LINUX_FIREFOX_USER_AGENT  | "Linux"    | "Firefox"
+        "Windows Edge"   | WINDOWS_EDGE_USER_AGENT   | "Windows"  | "Edge"
+//      "unknown"        | "Mozilla/5.0 (X11; Linux x86_64) Gecko/20100101 UnknownBrowser/1.0" | null | null   // TODO: AUT-2877 enable when session service handles unrecognised UA without NPE
+    }
+
+    @Feature("SELF_SERVICE_API")
+    def "GET sessions returns correct ip_country for #description"() {
+        given: "Create a session with a specific CF-IPCountry header value"
+        flow.ipCountry = ipCountry
+        Steps.authenticateWithIdCardInGovSso(flow)
+
+        when: "GET session information"
+        Response sessionInfo = Requests.getRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
+
+        then: "ip_country reflects the expected value"
+        assertThat("Correct ip_country", sessionInfo.path("ip_infos[0][0].country"), is(expectedCountry))
+
+        where:
+        description       | ipCountry | expectedCountry
+        "no header"       | null      | null
+        "Estonian IP"     | "EE"      | "EE"
+        "Finnish IP"      | "FI"      | "FI"
+        "unknown IP (XX)" | "XX"      | null
+        "Tor exit (T1)"   | "T1"      | null
+        "invalid value"   | "YXZ"     | "YXZ"  // app trusts Cloudflare to send valid ISO 3166-1 alpha-2 codes; no origin-level validation
+    }
+
+    @Feature("SELF_SERVICE_API")
+    def "GET sessions returns correct device info when same user has sessions from multiple devices"() {
+        given: "Create two sessions for the same user with different user agents"
+        flow.userAgent = WINDOWS_CHROME_USER_AGENT
+        flow2.userAgent = ANDROID_CHROME_USER_AGENT
+        Response session1 = Steps.authenticateWithIdCardInGovSso(flow)
+        Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
+
+        String session1Id = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, session1.path("id_token").toString()).JWTClaimsSet.getClaim("sid")
+        String session2Id = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow2, session2.path("id_token").toString()).JWTClaimsSet.getClaim("sid")
+
+        when: "GET session information"
+        Response sessionInfo = Requests.getRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
+
+        then: "Each session reflects its own device info"
+        assertThat("Desktop user_agent", sessionInfo.path("find { it.session_id == '${session1Id}' }.user_agent"), is(WINDOWS_CHROME_USER_AGENT))
+        assertThat("Desktop os", sessionInfo.path("find { it.session_id == '${session1Id}' }.os"), is("Windows"))
+        assertThat("Desktop browser", sessionInfo.path("find { it.session_id == '${session1Id}' }.browser"), is("Chrome"))
+        assertThat("Mobile user_agent", sessionInfo.path("find { it.session_id == '${session2Id}' }.user_agent"), is(ANDROID_CHROME_USER_AGENT))
+        assertThat("Mobile os", sessionInfo.path("find { it.session_id == '${session2Id}' }.os"), is("Android"))
+        assertThat("Mobile browser", sessionInfo.path("find { it.session_id == '${session2Id}' }.browser"), is("Chrome Mobile"))
+    }
+
+
     @Feature("SELF_SERVICE_API")
     def "GET sessions returns valid information after session update"() {
         given: "Create a session"
@@ -98,7 +175,6 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         assertThat("services.last_updated_at is updated", sessionInfo2.path("services.last_updated_at[0][0]") > sessionInfo1.path("services.last_updated_at[0][0]"))
     }
 
-    @Ignore("AUT-1293")
     @Feature("SELF_SERVICE_API")
     def "GET sessions returns valid information after user logs in to same service twice in the same session"() {
         given: "Create a session"
@@ -123,7 +199,6 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         assertThat("Services.last_updated_at is updated", sessionInfo2.path("services.last_updated_at[0][0]") > sessionInfo1.path("services.last_updated_at[0][0]"))
     }
 
-    @Ignore("AUT-1293")
     @Feature("SELF_SERVICE_API")
     def "GET sessions returns valid information after log out from one service"() {
         given: "Create a session"
@@ -147,7 +222,6 @@ class SelfServiceApiSpec extends GovSsoSpecification {
         assertThat("Services.expires_at is same value as services.last_updated_at", sessionInfo.path("services[0].expires_at[0]") == sessionInfo.path("services[0].last_updated_at[0]"))
     }
 
-    @Ignore("AUT-1293")
     @Feature("SELF_SERVICE_API")
     def "DELETE specific session"() {
         given: "Create two separate sessions for same user"

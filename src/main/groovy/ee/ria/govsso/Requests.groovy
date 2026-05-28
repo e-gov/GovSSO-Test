@@ -11,16 +11,20 @@ import static io.restassured.RestAssured.given
 
 class Requests {
 
+    // TODO: AUT-2877 Once session service handles missing UA without NPE, remove FALLBACK_USER_AGENT from
+    //  followRedirect and postRequestWithParams.
+    static final String FALLBACK_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
 
     @Step("Follow redirect request")
     static Response followRedirect(Flow flow, String location) {
-        return given()
+        def request = given()
                 .urlEncodingEnabled(false)
                 .filter(flow.cookieFilter)
                 .log().cookies()
                 .redirects().follow(false)
-                .header("User-Agent", "Test User-Agent")
-                .get(location)
+                .header("User-Agent", flow.userAgent ?: FALLBACK_USER_AGENT)
+        if (flow.ipCountry) request = request.header("CF-IPCountry", flow.ipCountry)
+        return request.get(location)
     }
 
     @Step("Follow redirect request with origin")
@@ -32,7 +36,6 @@ class Requests {
                 .log().cookies()
                 .redirects().follow(false)
                 .get(location)
-
     }
 
     @Step("Follow redirect request with additional query params")
@@ -176,12 +179,14 @@ class Requests {
     static Response postRequestWithParams(Flow flow, String url, Map formParams) {
         // Rest-Assured filters out form params with null value, but Allure is not able to handle them.
         formParams.removeAll { key, value -> value == null }
-        return given()
+        def request = given()
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
                 .formParams(formParams)
+                .header("User-Agent", flow.userAgent ?: FALLBACK_USER_AGENT)
                 .log().cookies()
-                .post(url)
+        if (flow.ipCountry) request = request.header("CF-IPCountry", flow.ipCountry)
+        return request.post(url)
     }
 
     @Step("Post request with cookies")

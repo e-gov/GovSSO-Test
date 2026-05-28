@@ -16,6 +16,8 @@ class Flow {
     TaraForeignProxyService foreignProxyService
 
     CookieFilter cookieFilter
+    String userAgent
+    String ipCountry
 
     String clientId
     String clientSecret
