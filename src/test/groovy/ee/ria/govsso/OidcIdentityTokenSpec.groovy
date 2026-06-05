@@ -146,9 +146,12 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
 
         Set expectedClaims = [
                 "acr", "amr", "at_hash", "aud", "auth_time",
-                "birthdate", "exp", "family_name", "given_name", "iat", "initiator",
+                "birthdate", "exp", "family_name", "given_name", "iat",
                 "iss", "jti", "nonce", "rat", "sid", "sub"
         ]
+        if (clientType != ClientType.DEFAULT) {
+            expectedClaims.add("initiator")
+        }
         assertThat("JWT has only expected claims", claims.claims.keySet(), equalTo(expectedClaims))
         assertThat("Correct JWT ID claim exists", claims.JWTID, matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertThat("Correct nonce", claims.getClaim("nonce"), equalTo(flow.nonce))
@@ -168,7 +171,10 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Claim phone_number does not exist", claims.claims, not(hasKey("phone_number")))
         assertThat("Claim phone_number_verified does not exist", claims.claims, not(hasKey("phone_number_verified")))
         assertThat("Correct at_hash claim exists", claims.getStringClaim("at_hash").size() > 20)
-        assertThat("Incorrect initiator", claims.getStringClaim("initiator"), equalTo(clientType.toString()))
+
+        if (clientType != ClientType.DEFAULT) {
+            assertThat("Correct initiator", claims.getStringClaim("initiator"), equalTo(clientType.toString()))
+        }
 
         where:
         clientType             | client                     | idTokenExpirationTime
@@ -189,7 +195,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
 
         Set expectedClaims = [
                 "acr", "amr", "at_hash", "aud", "auth_time",
-                "birthdate", "exp", "family_name", "given_name", "iat", "initiator",
+                "birthdate", "exp", "family_name", "given_name", "iat",
                 "iss", "jti", "nonce", "phone_number", "phone_number_verified",
                 "rat", "sid", "sub"
         ]
@@ -212,7 +218,6 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         assertThat("Correct LoA level", claims.getClaim("acr"), equalTo("high"))
         assertThat("Correct UUID pattern for session ID", claims.getStringClaim("sid"), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertThat("Correct at_hash claim exists", claims.getStringClaim("at_hash").size() > 20)
-        assertThat("Incorrect initiator", claims.getStringClaim("initiator"), equalTo("DEFAULT"))
     }
 
     @Feature("ID_TOKEN")

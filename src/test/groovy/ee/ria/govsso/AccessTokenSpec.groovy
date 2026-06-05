@@ -2,6 +2,7 @@ package ee.ria.govsso
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.govsso.model.ClientType
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -121,9 +122,9 @@ class AccessTokenSpec extends GovSsoSpecification {
         "test1.test/123"              | _
     }
 
-    def "Access token should hold correct values with scope: openid"() {
+    def "Access token for client type #clientType should hold correct values with scope: openid"() {
         given: "Create session"
-        Response createSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB, "access_token")
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow, client, "access_token")
 
         when: "Get access token claims"
         JWTClaimsSet claimsAccessToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.path("access_token")).JWTClaimsSet
@@ -131,10 +132,14 @@ class AccessTokenSpec extends GovSsoSpecification {
 
         then:
         Set expectedClaims = [
-                "acr", "amr", "aud", "auth_time", "birthdate", "client_id",
-                "exp", "family_name", "given_name", "iat", "initiator",
+                "acr", "amr", "aud", "birthdate", "client_id",
+                "exp", "family_name", "given_name", "iat",
                 "iss", "jti", "sub"
         ]
+        if (clientType != ClientType.DEFAULT) {
+            expectedClaims += ["auth_time", "initiator"]
+        }
+
         assertThat("JWT has only expected claims", claimsAccessToken.claims.keySet(), is(expectedClaims))
         assertThat("Jti claim exists", claimsAccessToken.getJWTID(), matchesPattern("([a-f0-9]{8}(-[a-f0-9]{4}){4}[a-f0-9]{8})"))
         assertThat("Access token jti claim is unique from ID token jti", claimsAccessToken.getJWTID(), not(is(claimsIDToken.getJWTID())))
@@ -149,8 +154,15 @@ class AccessTokenSpec extends GovSsoSpecification {
         assertThat("Correct given name", claimsAccessToken.getClaim("given_name"), is(claimsIDToken.getClaim("given_name")))
         assertThat("Correct family name", claimsAccessToken.getClaim("family_name"), is(claimsIDToken.getClaim("family_name")))
         assertThat("Correct LoA level", claimsAccessToken.getClaim("acr"), is(claimsIDToken.getClaim("acr")))
-        assertThat("Incorrect authentication time", claimsAccessToken.getClaim("auth_time"), is(claimsIDToken.getClaim("auth_time")))
-        assertThat("Incorrect initiator", claimsAccessToken.getClaim("initiator"), is(claimsIDToken.getClaim("initiator")))
+        if (clientType != ClientType.DEFAULT) {
+            assertThat("Correct authentication time", claimsAccessToken.getClaim("auth_time"), is(claimsIDToken.getClaim("auth_time")))
+            assertThat("Correct initiator", claimsAccessToken.getClaim("initiator"), is(claimsIDToken.getClaim("initiator")))
+        }
+
+        where:
+        clientType             | client
+        ClientType.DEFAULT     | ClientStore.clientB
+        ClientType.SECURED_APP | ClientStore.mockSecuredApp
     }
 
     def "Access token should hold correct values with scope: openid phone"() {
@@ -167,8 +179,8 @@ class AccessTokenSpec extends GovSsoSpecification {
 
         then:
         Set expectedClaims = [
-                "acr", "amr", "aud", "auth_time", "birthdate", "client_id",
-                "exp", "family_name", "given_name", "iat", "initiator",
+                "acr", "amr", "aud", "birthdate", "client_id",
+                "exp", "family_name", "given_name", "iat",
                 "iss", "jti", "phone_number", "phone_number_verified",
                 "sub"
         ]
