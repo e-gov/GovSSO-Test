@@ -36,6 +36,12 @@ class SelfServiceApiSpec extends GovSsoSpecification {
     Flow flow2 = new Flow()
     Sql sql = null
 
+    def setupSpec() {
+        DatabaseConnection.getSql(new Flow()).withCloseable { setupSql ->
+            SqlQueries.deleteFlowsForSubject(setupSql, "EE38001085718")
+        }
+    }
+
     def setup() {
         flow.cookieFilter = new CookieFilter()
         flow2.cookieFilter = new CookieFilter()

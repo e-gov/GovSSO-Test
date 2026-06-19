@@ -22,4 +22,9 @@ class SqlQueries {
         Integer consentRememberFor = response.consent_remember_for
         return consentRememberFor
     }
+
+    // For cleanup of the open flows for test user
+    static deleteFlowsForSubject(Sql sql, String subject) {
+        sql.execute "DELETE FROM public.hydra_oauth2_flow WHERE subject=?", [subject]
+    }
 }
