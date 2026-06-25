@@ -11,8 +11,7 @@ import static io.restassured.RestAssured.given
 
 class Requests {
 
-    // TODO: AUT-2877 Once session service handles missing UA without NPE, remove FALLBACK_USER_AGENT from
-    //  followRedirect and postRequestWithParams.
+    // TODO: AUT-2877 Once session service handles missing UA without NPE, remove FALLBACK_USER_AGENT and its usages.
     static final String FALLBACK_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
 
     @Step("Follow redirect request")
@@ -33,6 +32,7 @@ class Requests {
                 .urlEncodingEnabled(false)
                 .filter(flow.cookieFilter)
                 .header("Origin", origin)
+                .header("User-Agent", flow.userAgent ?: FALLBACK_USER_AGENT)
                 .log().cookies()
                 .redirects().follow(false)
                 .get(location)
@@ -120,6 +120,7 @@ class Requests {
                 .filter(flow.cookieFilter)
                 .queryParams(queryParams)
                 .header("Origin", origin)
+                .header("User-Agent", flow.userAgent ?: FALLBACK_USER_AGENT)
                 .log().cookies()
                 .redirects().follow(false)
                 .get(url)
@@ -158,6 +159,7 @@ class Requests {
                 .filter(flow.cookieFilter)
                 .formParams(formParams)
                 .header("Origin", origin)
+                .header("User-Agent", flow.userAgent ?: FALLBACK_USER_AGENT)
                 .log().cookies()
                 .post(url)
     }
