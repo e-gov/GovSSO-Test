@@ -4,6 +4,7 @@ import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import spock.lang.Tag
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.is
@@ -241,6 +242,7 @@ class UserInterfaceSpec extends GovSsoSpecification {
         assertThat("Correct logo", taraInitLogin.body.asString().contains(Utils.getFileAsString("src/test/resources/base64_client_A_logo")))
     }
 
+    @Tag("eidas")
     @Feature("LOGIN_INIT_VIEW")
     def "Correct buttons with correct form actions exist in session continuation if original acr is lower than expected with specified ui_locales: #uiLocale"() {
         expect:

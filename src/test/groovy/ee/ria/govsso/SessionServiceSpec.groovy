@@ -8,6 +8,7 @@ import ee.ria.govsso.model.LoA
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import spock.lang.Tag
 import spock.lang.Unroll
 
 import java.security.InvalidParameterException
@@ -41,6 +42,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Query parameters contain acr_values", initLogin.getHeader("location").contains("acr_values"))
     }
 
+    @Tag("eidas")
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Eidas authentication with insufficient Loa '#loa' fails with minimum_acr_value #minimumAcrValue and acr_values #acrValues"() {
         given:
@@ -97,6 +99,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         "C" | LoA.HIGH        | "undefined"   || "high"
     }
 
+    @Tag("eidas")
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authentication request with undefined acr_values defaults to minimum_acr_value '#minimumAcrValue' and succeeds for eIDAS LoA '#loa'"() {
         given:
@@ -195,6 +198,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         null        | "high"
     }
 
+    @Tag("eidas")
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Eidas authentication #loa Loa request with minimum_acr_value undefined and with acr_values parameter '#acrValues'"() {
         given:
@@ -228,6 +232,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         "high"        | "E" || "high"
     }
 
+    @Tag("eidas")
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Eidas authentication with Loa '#loa' succeeds with both minimum_acr_value and acr_values equal to #minimumAcrValue"() {
         given:
@@ -648,6 +653,7 @@ class SessionServiceSpec extends GovSsoSpecification {
         assertThat("Correct message", reauthenticate.jsonPath().getString("message"), is("Ebakorrektne päring."))
     }
 
+    @Tag("eidas")
     @Feature("BUSINESS_LOGIC")
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Create session in client-A with eIDAS substantial acr and initialize authentication sequence in client-B with high acr"() {

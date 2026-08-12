@@ -7,6 +7,7 @@ import ee.ria.govsso.model.Client
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import spock.lang.Tag
 import spock.lang.Unroll
 import java.nio.charset.StandardCharsets
 
@@ -400,6 +401,7 @@ class OidcRequestSpec extends GovSsoSpecification {
                 "includes a parameter more than once, or is otherwise malformed. Authentication session not found or expired."))
     }
 
+    @Tag("eidas")
     @Feature("OIDC_ENDPOINT")
     def "Start session update in client-A after initiating reauthentication with client-B due to acr discrepancy"() {
         expect:

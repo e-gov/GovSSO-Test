@@ -70,6 +70,7 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("Correct given name value", claims.getClaim("given_name"), is("JAAK-KRISTJAN"))
     }
 
+    @Tag("eidas")
     @Feature("BUSINESS_LOGIC")
     @Feature("LOGIN_INIT_ENDPOINT")
     def "Authenticate with eIDAS"() {
@@ -163,6 +164,7 @@ class MainFlowSpec extends GovSsoSpecification {
         assertThat("New session ID", claimsClientB.getClaim("sid"), not(is(claimsClientA.getClaim("sid"))))
     }
 
+    @Tag("eidas")
     @Feature("BUSINESS_LOGIC")
     @Feature("LOGIN_REAUTHENTICATE_ENDPOINT")
     def "Reauthenticate in client-B with high acr after acr discrepancy with client-A session"() {
