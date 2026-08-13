@@ -63,6 +63,9 @@ class Client {
     @JsonProperty("session_lifespan")
     String sessionLifespan
 
+    @JsonProperty("access_token_jwt_enabled")
+    Boolean accessTokenJwtEnabled
+
     String getRedirectUri() {
         redirectUris.first()
     }

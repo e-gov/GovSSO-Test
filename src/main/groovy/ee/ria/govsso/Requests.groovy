@@ -286,12 +286,12 @@ class Requests {
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 
-    @Step("Get session update response")
-    static Response getSessionUpdateWebToken(Flow flow, String refreshToken, Client client) {
+    @Step("Post token request")
+    static Response tokenRequest(Flow flow, Map params, Client client = ClientStore.clientA) {
         return given()
                 .urlEncodingEnabled(true)
-                .formParam("grant_type", "refresh_token")
-                .formParam("refresh_token", refreshToken)
+                // Rest-Assured filters out form params with null value, but Allure is not able to handle them.
+                .formParams(params.findAll { it.value != null })
                 .auth().preemptive().basic(client.clientId, client.secret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
@@ -304,26 +304,6 @@ class Requests {
                              refresh_token: refreshToken,
                              client_id    : client.clientId,
                              client_secret: client.secret])
-                .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
-    }
-
-    @Step("Get session update response with scope")
-    static Response getSessionUpdateWebToken(Flow flow, String scope, String refreshToken, Client client) {
-        return given()
-                .urlEncodingEnabled(true)
-                .formParam("scope", scope)
-                .formParam("grant_type", "refresh_token")
-                .formParam("refresh_token", refreshToken)
-                .auth().preemptive().basic(client.clientId, client.secret)
-                .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
-    }
-
-    @Step("Get token response body")
-    static Response getWebTokenResponseBody(Flow flow, Map formParams, Client client = ClientStore.clientA) {
-        return given()
-                .urlEncodingEnabled(true)
-                .formParams(formParams)
-                .auth().preemptive().basic(client.clientId, client.secret)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 

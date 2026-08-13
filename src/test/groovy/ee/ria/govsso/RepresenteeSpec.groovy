@@ -55,7 +55,7 @@ class RepresenteeSpec extends GovSsoSpecification {
         Steps.authenticateInGovSsoWithScope(flow)
 
         when: "Update session with representee_list scope"
-        Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid representee_list")
+        Response updateSession = Steps.updateSession(flow, ClientStore.clientB, [scope: "openid representee_list"])
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("id_token")).JWTClaimsSet
 
         then:
@@ -80,7 +80,7 @@ class RepresenteeSpec extends GovSsoSpecification {
         Steps.authenticateInGovSsoWithScope(flow)
 
         when: "Update session with valid representee scope"
-        Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid " + scope)
+        Response updateSession = Steps.updateSession(flow, ClientStore.clientB, [scope: "openid " + scope])
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("id_token")).JWTClaimsSet
 
         then:
@@ -104,7 +104,7 @@ class RepresenteeSpec extends GovSsoSpecification {
         Steps.authenticateInGovSsoWithScope(flow)
 
         when: "Update session with invalid representee scope"
-        Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid representee.EE12345678901")
+        Response updateSession = Steps.updateSession(flow, ClientStore.clientB, [scope: "openid representee.EE12345678901"])
         JWTClaimsSet claimsIdToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("id_token")).JWTClaimsSet
         JWTClaimsSet claimsAccessToken = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("access_token")).JWTClaimsSet
 
@@ -120,10 +120,10 @@ class RepresenteeSpec extends GovSsoSpecification {
         Steps.authenticateInGovSsoWithScope(flow)
 
         when: "Update session with representee.EE97007088"
-        Steps.getSessionUpdateResponseWithScope(flow, "openid representee.EE97007088")
+        Steps.updateSession(flow, ClientStore.clientB, [scope: "openid representee.EE97007088"])
 
         and: "Update session with representee.EE10303030002"
-        Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid representee.EE10303030002")
+        Response updateSession = Steps.updateSession(flow, ClientStore.clientB, [scope: "openid representee.EE10303030002"])
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path(token)).JWTClaimsSet
 
         then:
@@ -148,7 +148,7 @@ class RepresenteeSpec extends GovSsoSpecification {
         Steps.authenticateInGovSsoWithScope(flow)
 
         when: "Update session with representee and representee_list scope"
-        Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid representee.EE97007088 representee_list")
+        Response updateSession = Steps.updateSession(flow, ClientStore.clientB, [scope: "openid representee.EE97007088 representee_list"])
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("id_token")).JWTClaimsSet
 
         then:
@@ -187,7 +187,7 @@ class RepresenteeSpec extends GovSsoSpecification {
         Steps.authenticateInGovSsoWithScope(flow)
 
         when: "Update session with valid representee scope"
-        Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid " + scope)
+        Response updateSession = Steps.updateSession(flow, ClientStore.clientB, [scope: "openid " + scope])
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("access_token")).JWTClaimsSet
 
         then:
@@ -229,7 +229,7 @@ class RepresenteeSpec extends GovSsoSpecification {
         Steps.authenticateInGovSsoWithScope(flow, scope)
 
         when: "Update session with valid representee scope"
-        Response updateSession = Steps.getSessionUpdateResponseWithScope(flow, "openid representee.EE97007088")
+        Response updateSession = Steps.tryUpdateSession(flow, ClientStore.clientB, [scope: "openid representee.EE97007088"])
 
         then:
         assertThat("Correct HTTP status code", updateSession.statusCode, is(500))

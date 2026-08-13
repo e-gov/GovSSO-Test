@@ -24,7 +24,7 @@ class SecuredAppSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
 
         when:
-        Response updateSession = Steps.getSessionUpdateResponse(flow, flow.refreshToken, ClientStore.mockSecuredApp)
+        Response updateSession = Steps.updateSession(flow, ClientStore.mockSecuredApp)
 
         then:
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.path("id_token")).JWTClaimsSet

@@ -39,11 +39,11 @@ class ParallelSessionSpec extends GovSsoSpecification {
         String refreshToken2 = session2.path("refresh_token")
         JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow2, idToken2).JWTClaimsSet
 
-        Response session1Update = Steps.getSessionUpdateResponse(flow, refreshToken1, ClientStore.clientA)
+        Response session1Update = Steps.updateSession(flow, ClientStore.clientA, [refresh_token: refreshToken1])
         String idToken1Update = session1Update.path("id_token")
         JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, idToken1Update).JWTClaimsSet
 
-        Response session2Update = Steps.getSessionUpdateResponse(flow2, refreshToken2, ClientStore.clientA)
+        Response session2Update = Steps.updateSession(flow2, ClientStore.clientA, [refresh_token: refreshToken2])
         String idToken2Update = session2Update.path("id_token")
         JWTClaimsSet claims2Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow2, idToken2Update).JWTClaimsSet
 
@@ -65,7 +65,7 @@ class ParallelSessionSpec extends GovSsoSpecification {
         String idToken2 = session2.path("id_token")
         Response logout = Steps.logoutSingleClientSession(flow2, idToken2, ClientStore.clientA.postLogoutRedirectUri)
 
-        Response session1Update = Steps.getSessionUpdateResponse(flow, refreshToken1, ClientStore.clientA)
+        Response session1Update = Steps.updateSession(flow, ClientStore.clientA, [refresh_token: refreshToken1])
         String idToken1Update = session1Update.body.path("id_token")
         JWTClaimsSet claims1Update = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, idToken1Update).JWTClaimsSet
 
@@ -83,7 +83,7 @@ class ParallelSessionSpec extends GovSsoSpecification {
         Response session2 = Steps.authenticateWithIdCardInGovSso(flow2)
         String refreshToken2 = session2.path("refresh_token")
 
-        Response UpdateResponse = Steps.getSessionUpdateResponse(flow, refreshToken2, ClientStore.clientA)
+        Response UpdateResponse = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: refreshToken2])
 
         assertThat("Correct HTTP status code", UpdateResponse.getStatusCode(), is(400))
         assertThat("Correct error", UpdateResponse.jsonPath().getString("error"), is("USER_INPUT"))

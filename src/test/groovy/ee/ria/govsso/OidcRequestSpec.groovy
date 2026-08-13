@@ -353,7 +353,7 @@ class OidcRequestSpec extends GovSsoSpecification {
 
         Response oidcLogout = Steps.startLogout(flow, idToken, ClientStore.clientA.postLogoutRedirectUri)
 
-        Response oidcUpdateSession = Steps.getSessionUpdateResponse(flow)
+        Response oidcUpdateSession = Steps.updateSession(flow)
 
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
@@ -372,7 +372,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response oidcLogout = Steps.startLogout(flow, idToken, ClientStore.clientA.postLogoutRedirectUri)
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
 
-        Response oidcUpdateSession = Steps.getSessionUpdateResponse(flow)
+        Response oidcUpdateSession = Steps.updateSession(flow)
 
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
 
@@ -392,7 +392,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response initLogout = Steps.followRedirect(flow, oidcLogout)
         Response logoutVerifier = Steps.followRedirect(flow, initLogout)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, ClientStore.clientA)
+        Response updateResponse = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: refreshToken])
 
         assertThat("Correct HTTP status code", logoutVerifier.statusCode, is(302))
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
@@ -415,7 +415,7 @@ class OidcRequestSpec extends GovSsoSpecification {
                           _csrf         : initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
         Requests.postRequestWithParams(flow, flow.sessionService.fullReauthenticateUrl, formParams)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, ClientStore.clientA)
+        Response updateResponse = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: refreshToken])
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
@@ -434,7 +434,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response continueSession = Steps.continueWithExistingSession(flow)
         String refreshToken2 = continueSession.path("refresh_token")
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken2, ClientStore.clientA)
+        Response updateResponse = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: refreshToken2])
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
@@ -452,9 +452,9 @@ class OidcRequestSpec extends GovSsoSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         String refreshToken1 = createSession.path("refresh_token")
 
-        Steps.getSessionUpdateResponse(flow)
+        Steps.updateSession(flow)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, refreshToken1, ClientStore.clientA)
+        Response updateResponse = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: refreshToken1])
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(401))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("token_inactive"))
@@ -467,7 +467,7 @@ class OidcRequestSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response updateResponse = Requests.getSessionUpdateWebToken(flow, "123abc.123abc", ClientStore.clientA)
+        Response updateResponse = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: "123abc.123abc"])
 
         assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
         assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))

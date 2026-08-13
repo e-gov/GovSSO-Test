@@ -90,7 +90,7 @@ class MainFlowSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response updateSession = Steps.getSessionUpdateResponse(flow)
+        Response updateSession = Steps.updateSession(flow)
 
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.path("id_token")).JWTClaimsSet
         assertThat("Correct authentication method value", claims.getClaim("amr"), is(["idcard"]))
@@ -198,7 +198,7 @@ class MainFlowSpec extends GovSsoSpecification {
         expect:
         Steps.authenticateWithIdCardInGovSso(flow)
 
-        Response updateSession = Steps.getSessionUpdateResponse(flow)
+        Response updateSession = Steps.updateSession(flow)
         String idToken2 = updateSession.body.path("id_token")
 
         Response logout = Steps.logoutSingleClientSession(flow, idToken2, ClientStore.clientA.postLogoutRedirectUri)

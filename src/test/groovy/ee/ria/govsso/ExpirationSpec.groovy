@@ -62,7 +62,7 @@ class ExpirationSpec extends GovSsoSpecification {
         expireSession(flow, createSession)
 
         when: "Request session update"
-        Response updateSession = Steps.getSessionUpdateResponse(flow)
+        Response updateSession = Steps.tryUpdateSession(flow)
 
         then: "Expected status code is 400 and correct error response is returned"
         assertThat(updateSession.statusCode, is(400))
@@ -79,7 +79,7 @@ class ExpirationSpec extends GovSsoSpecification {
         SqlQueries.expireConsent(sql, flow.consentChallenge)
 
         when: "Request session update"
-        Response updateSession = Steps.getSessionUpdateResponse(flow)
+        Response updateSession = Steps.tryUpdateSession(flow)
 
         then: "Expected status code is 400 and correct error response is returned"
         assertThat(updateSession.statusCode, is(400))
@@ -96,7 +96,7 @@ class ExpirationSpec extends GovSsoSpecification {
         SqlQueries.inactivateRefreshToken(sql, flow.consentChallenge)
 
         when: "Request session update"
-        Response updateSession = Steps.getSessionUpdateResponse(flow)
+        Response updateSession = Steps.tryUpdateSession(flow)
 
         then: "Expected status code is 400 and correct error response is returned"
         assertThat(updateSession.statusCode, is(401))

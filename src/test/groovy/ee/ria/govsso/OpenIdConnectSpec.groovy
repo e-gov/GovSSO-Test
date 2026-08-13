@@ -71,7 +71,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
                           code        : "1234567",
                           redirect_uri: ClientStore.clientA.redirectUri]
         formParams.remove(paramName)
-        Response token = Requests.getWebTokenResponseBody(flow, formParams)
+        Response token = Requests.tokenRequest(flow, formParams)
 
         assertThat("Correct HTTP status code", token.statusCode, is(statusCode))
         assertThat("Correct Content-Type is returned", token.contentType, startsWith("application/json"))
@@ -93,7 +93,7 @@ class OpenIdConnectSpec extends GovSsoSpecification {
                           code        : "1234567",
                           redirect_uri: ClientStore.clientA.redirectUri]
         formParams << [(paramName): paramValue]
-        Response token = Requests.getWebTokenResponseBody(flow, formParams)
+        Response token = Requests.tokenRequest(flow, formParams)
 
         assertThat("Correct HTTP status code", token.statusCode, is(statusCode))
         assertThat("Correct Content-Type", token.contentType, startsWith("application/json"))

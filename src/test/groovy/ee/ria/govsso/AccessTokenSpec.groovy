@@ -46,7 +46,7 @@ class AccessTokenSpec extends GovSsoSpecification {
         Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB, "access_token")
 
         when: "Update session and get new access token claims"
-        Response updateSession = Steps.getSessionUpdateResponse(flow, flow.refreshToken, ClientStore.clientB, "access_token")
+        Response updateSession = Steps.updateSession(flow, ClientStore.clientB)
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.path("access_token")).JWTClaimsSet
 
         then:
@@ -97,7 +97,7 @@ class AccessTokenSpec extends GovSsoSpecification {
         Steps.followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB, "access_token")
 
         when: "Update session and get access token claims"
-        Response updateSession = Steps.getSessionUpdateResponse(flow, flow.refreshToken, ClientStore.clientB, "access_token")
+        Response updateSession = Steps.updateSession(flow, ClientStore.clientB)
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.path("access_token")).JWTClaimsSet
 
         then:

@@ -4,6 +4,7 @@ import com.nimbusds.jwt.SignedJWT
 import ee.ria.govsso.model.Client
 import io.qameta.allure.Step
 import io.restassured.response.Response
+import org.apache.http.HttpStatus
 
 import java.text.ParseException
 
@@ -130,32 +131,21 @@ class Steps {
         return token
     }
 
-    @Step("Update session with defaults")
-    static Response getSessionUpdateResponse(Flow flow) {
-        return getSessionUpdateResponse(flow, flow.refreshToken, ClientStore.clientA)
+    static Response tryUpdateSession(Flow flow, Client client = ClientStore.clientA, Map extraParams = [:]) {
+        Map params = [
+                grant_type   : "refresh_token",
+                refresh_token: flow.refreshToken
+        ] + extraParams
+        return Requests.tokenRequest(flow, params, client)
     }
 
     @Step("Update session")
-    static Response getSessionUpdateResponse(Flow flow, String refreshToken, Client client, String tokenType = "id_token") {
-        Response tokenResponse = Requests.getSessionUpdateWebToken(flow, refreshToken, client)
-        if (tokenResponse.statusCode != 200) {
-            return tokenResponse
-        } else {
-            attachTokenToReport(tokenResponse.body.path(tokenType) as String, tokenType)
-            return tokenResponse
-        }
-    }
-
-    @Step("Update session with scope")
-    static Response getSessionUpdateResponseWithScope(Flow flow, String scope) {
-        Response tokenResponse = Requests.getSessionUpdateWebToken(flow, scope, flow.refreshToken, ClientStore.clientB)
-        if (tokenResponse.statusCode != 200) {
-            return tokenResponse
-        } else {
-            attachTokenToReport(tokenResponse.body.path("id_token") as String, "id_token")
-            flow.setRefreshToken(tokenResponse.path("refresh_token"))
-            return tokenResponse
-        }
+    static Response updateSession(Flow flow, Client client = ClientStore.clientA, Map extraParams = [:]) {
+        Response response = tryUpdateSession(flow, client, extraParams)
+        response.then().statusCode(HttpStatus.SC_OK)
+        attachTokensToReport(response, client)
+        flow.setRefreshToken(response.path("refresh_token") as String ?: flow.refreshToken)
+        return response
     }
 
     @Step("Follow redirects to token request")
@@ -181,10 +171,15 @@ class Steps {
 
     @Step("Create initial session in GovSSO with Client-B with scope")
     static Response authenticateInGovSsoWithScope(Flow flow, String scope = "openid representee.* representee_list") {
-        Response oidcAuth = startAuthenticationInSsoOidcWithScope(flow, ClientStore.clientB, scope)
+        return authenticateInGovSsoWithScope(flow, ClientStore.clientB, scope)
+    }
+
+    @Step("Create initial session in GovSSO with scope")
+    static Response authenticateInGovSsoWithScope(Flow flow, Client client, String scope) {
+        Response oidcAuth = startAuthenticationInSsoOidcWithScope(flow, client, scope)
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        return followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB, "id_token")
+        return followRedirectsToClientApplication(flow, taraAuthentication, client, "id_token")
     }
 
     @Step("Create initial session in GovSSO with ID-Card")
@@ -304,14 +299,22 @@ class Steps {
         return followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB)
     }
 
+    // The access token is only a JWT when the client is configured for it.
+    private static void attachTokensToReport(Response response, Client client) {
+        attachTokenToReport(response.body.path("id_token") as String, "id_token")
+        if (client.accessTokenJwtEnabled) {
+            attachTokenToReport(response.body.path("access_token") as String, "access_token")
+        }
+    }
+
     private static void attachTokenToReport(String tokenValue, String tokenName) {
         if (tokenValue == null) {
             return
         }
         try {
             SignedJWT signedJWT = SignedJWT.parse(tokenValue)
-            Utils.addJsonAttachment("Header", signedJWT.header.toString())
-            Utils.addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
+            Utils.addJsonAttachment("$tokenName header", signedJWT.header.toString())
+            Utils.addJsonAttachment("$tokenName payload", signedJWT.JWTClaimsSet.toString())
         } catch (ParseException ignored) {
             Utils.addJsonAttachment(tokenName, tokenValue)
         }

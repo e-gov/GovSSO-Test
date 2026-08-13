@@ -228,7 +228,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
 
         // Sleep for one second to test that time claims in new ID token are unique from original ID token.
         sleep 1000
-        Response updateSession = Steps.getSessionUpdateResponse(flow)
+        Response updateSession = Steps.updateSession(flow)
 
         JWTClaimsSet claims2 = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("id_token")).JWTClaimsSet
 
@@ -261,7 +261,7 @@ class OidcIdentityTokenSpec extends GovSsoSpecification {
         Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin)
         Steps.followRedirectsToClientApplication(flow, taraAuthentication)
 
-        Response updateSession = Steps.getSessionUpdateResponse(flow)
+        Response updateSession = Steps.updateSession(flow)
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.path("id_token")).JWTClaimsSet
 
         assertThat("Correct scope value", updateSession.jsonPath().getString("scope"), equalTo("openid phone"))
