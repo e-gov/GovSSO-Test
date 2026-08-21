@@ -1,11 +1,9 @@
 package ee.ria.govsso
 
 import com.google.common.hash.Hashing
-import com.nimbusds.jose.jwk.JWKSet
 import ee.ria.govsso.configuration.ConfigHolder
 import ee.ria.govsso.model.Client
 import io.qameta.allure.Feature
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Tag
 import spock.lang.Unroll
@@ -18,13 +16,7 @@ import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.MatcherAssert.assertThat
 
-class OidcRequestSpec extends GovSsoSpecification {
-
-    def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
-    }
+class OidcRequestSpec extends GovSsoOidcSpecification {
 
     @Feature("OIDC_ENDPOINT")
     def "Start SSO authentication request with correct parameters"() {

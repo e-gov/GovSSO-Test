@@ -1,22 +1,14 @@
 package ee.ria.govsso
 
-import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
-class SecuredAppSpec extends GovSsoSpecification {
-
-    def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
-    }
+class SecuredAppSpec extends GovSsoOidcSpecification {
 
     @Feature("BUSINESS_LOGIC")
     def "Given authentication in secured app client, then update session succeeds"() {

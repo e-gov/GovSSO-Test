@@ -1,9 +1,7 @@
 package ee.ria.govsso
 
-import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Ignore
 
@@ -12,18 +10,13 @@ import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.MatcherAssert.assertThat
 
-class ParallelSessionSpec extends GovSsoSpecification {
+class ParallelSessionSpec extends GovSsoOidcSpecification {
 
     Flow flow2 = new Flow()
 
 
     def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow2.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow2.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow2.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
-        flow2.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow2.ssoOidcService.fullJwksUrl))
+        wireFlow(flow2)
     }
 
     @Feature("PARALLEL_SESSIONS")

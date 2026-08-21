@@ -1,6 +1,5 @@
 package ee.ria.govsso
 
-import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.govsso.database.DatabaseConnection
 import ee.ria.govsso.database.SqlQueries
@@ -8,7 +7,6 @@ import groovy.sql.Sql
 import io.qameta.allure.Epic
 import io.qameta.allure.Feature
 import io.qameta.allure.Story
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
 import static org.hamcrest.Matchers.startsWith
@@ -19,7 +17,7 @@ import static org.hamcrest.MatcherAssert.assertThat
 
 @Epic("DATABASE")
 @Feature("EXPIRATION")
-class ExpirationSpec extends GovSsoSpecification {
+class ExpirationSpec extends GovSsoOidcSpecification {
 
     static final ERROR_EXPIRED = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. Authentication session not found or expired."
     static final ERROR_INACTIVE = "Token is inactive because it is malformed, expired or otherwise invalid. Token validation failed."
@@ -27,9 +25,6 @@ class ExpirationSpec extends GovSsoSpecification {
     Sql sql = null
 
     def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
         sql = DatabaseConnection.getSql(flow)
     }
 

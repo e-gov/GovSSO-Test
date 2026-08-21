@@ -1,10 +1,8 @@
 package ee.ria.govsso
 
-import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.govsso.model.ClientType
 import io.qameta.allure.Feature
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
 import static ee.ria.govsso.OpenIdUtils.isJWT
@@ -18,16 +16,10 @@ import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.oneOf
 
 @Feature("ACCESS_TOKEN")
-class AccessTokenSpec extends GovSsoSpecification {
+class AccessTokenSpec extends GovSsoOidcSpecification {
 
     static final AUD1 = "https://test1.test/123"
     static final AUD2 = "https://test2.test/123"
-
-    def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
-    }
 
     def "Authentication with access token configured client should return JWT access token with configured expiration time"() {
         given: "Create session"

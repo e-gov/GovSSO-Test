@@ -1,12 +1,10 @@
 package ee.ria.govsso
 
-import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import ee.ria.govsso.model.Client
 import ee.ria.govsso.model.LoA
 import io.qameta.allure.Feature
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Tag
 import spock.lang.Unroll
@@ -16,13 +14,7 @@ import java.security.InvalidParameterException
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 
-class SessionServiceSpec extends GovSsoSpecification {
-
-    def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
-    }
+class SessionServiceSpec extends GovSsoOidcSpecification {
 
     @Feature("LOGIN_INIT_REDIRECT_TO_TARA")
     def "Correct request with query parameters from session service to TARA"() {

@@ -1,12 +1,10 @@
 package ee.ria.govsso
 
-import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.govsso.database.DatabaseConnection
 import ee.ria.govsso.database.SqlQueries
 import groovy.sql.Sql
 import io.qameta.allure.Feature
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Unroll
 
@@ -21,7 +19,7 @@ import static org.hamcrest.Matchers.hasSize
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 
-class SelfServiceApiSpec extends GovSsoSpecification {
+class SelfServiceApiSpec extends GovSsoOidcSpecification {
 
     static final SUBJECT_ENDPOINT = "/EE38001085718"
     static final NONVALID_SESSION_UUID = "/76474092-655e-4897-8aba-d6bb568fee4d"
@@ -43,12 +41,7 @@ class SelfServiceApiSpec extends GovSsoSpecification {
     }
 
     def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow2.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow2.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow2.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
-        flow2.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow2.ssoOidcService.fullJwksUrl))
+        wireFlow(flow2)
         Requests.deleteRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
     }
 

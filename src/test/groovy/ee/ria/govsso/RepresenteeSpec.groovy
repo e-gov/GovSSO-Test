@@ -1,10 +1,8 @@
 package ee.ria.govsso
 
-import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.qameta.allure.Step
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
 import static io.restassured.RestAssured.given
@@ -19,13 +17,7 @@ import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.startsWith
 
-class RepresenteeSpec extends GovSsoSpecification {
-
-    def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
-    }
+class RepresenteeSpec extends GovSsoOidcSpecification {
 
     @Feature("REPRESENTEE_LIST")
     def "Requesting representee_list should return the claim in ID token"() {

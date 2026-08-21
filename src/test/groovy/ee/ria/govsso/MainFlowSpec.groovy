@@ -1,9 +1,7 @@
 package ee.ria.govsso
 
-import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Tag
 
@@ -12,13 +10,7 @@ import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.MatcherAssert.assertThat
 
-class MainFlowSpec extends GovSsoSpecification {
-
-    def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
-    }
+class MainFlowSpec extends GovSsoOidcSpecification {
 
     @Feature("BUSINESS_LOGIC")
     @Feature("LOGIN_INIT_ENDPOINT")

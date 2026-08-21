@@ -1,8 +1,6 @@
 package ee.ria.govsso
 
-import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import spock.lang.Tag
@@ -13,13 +11,7 @@ import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.MatcherAssert.assertThat
 
-class UserInterfaceSpec extends GovSsoSpecification {
-
-    def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
-    }
+class UserInterfaceSpec extends GovSsoOidcSpecification {
 
     @Unroll
     @Feature("LOGIN_INIT_VIEW")

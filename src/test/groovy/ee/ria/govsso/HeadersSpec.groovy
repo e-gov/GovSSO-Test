@@ -1,20 +1,12 @@
 package ee.ria.govsso
 
-import com.nimbusds.jose.jwk.JWKSet
 import ee.ria.govsso.model.Client
 import io.qameta.allure.Feature
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
 import static org.hamcrest.MatcherAssert.assertThat
 
-class HeadersSpec extends GovSsoSpecification {
-
-    def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
-    }
+class HeadersSpec extends GovSsoOidcSpecification {
 
     @Feature("CORS")
     def "Cross-Origin Resource Sharing headers are not applied in login request sequence"() {

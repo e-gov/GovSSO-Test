@@ -3,9 +3,7 @@ package ee.ria.govsso
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.qameta.allure.Step
-import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import com.nimbusds.jose.jwk.JWKSet
 
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.equalTo
@@ -13,13 +11,7 @@ import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.Matchers.endsWith
 import static org.hamcrest.MatcherAssert.assertThat
 
-class OpenIdConnectSpec extends GovSsoSpecification {
-
-    def setup() {
-        flow.cookieFilter = new CookieFilter()
-        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
-        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
-    }
+class OpenIdConnectSpec extends GovSsoOidcSpecification {
 
     @Feature("OIDC_TOKEN")
     def "Metadata and token key ID matches"() {
