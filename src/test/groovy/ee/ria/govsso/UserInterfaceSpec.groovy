@@ -4,11 +4,13 @@ import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import org.apache.http.HttpStatus
 import spock.lang.Tag
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.MatcherAssert.assertThat
 
 class UserInterfaceSpec extends GovSsoSpecification {
@@ -263,5 +265,65 @@ class UserInterfaceSpec extends GovSsoSpecification {
         "et"     | "Tagasi"   | "Autendi uuesti"
         "en"     | "Back"     | "Re-authenticate"
         "ru"     | "Назад"    | "Войти снова"
+    }
+
+    @Feature("LOGIN_INIT_VIEW")
+    def "Session continuation display supports language switch"() {
+        given: "Open session continuation display in Estonian"
+        Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, "et")
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
+
+        when: "Follow the Russian language selection link"
+        String languageUrl = languageLinkHref(initLogin, "ru")
+        Response localizedView = Requests.followRedirect(flow, flow.sessionService.baseUrl + languageUrl)
+
+        then: "The same display is rendered in Russian"
+        assertThat("Language link retains login_challenge", languageUrl, containsString(flow.loginChallenge))
+        assertThat("Correct HTTP status code", localizedView.statusCode, is(HttpStatus.SC_OK))
+        assertThat("Still the session continuation display", localizedView.body.htmlPath()
+                .getString("**.find { button -> button.@formaction == '/login/continuesession'}"), is("Продолжить сеанс"))
+    }
+
+    @Feature("LOGOUT_INIT_VIEW")
+    def "Session logout display supports language switch"() {
+        given: "Open session logout display in English"
+        Steps.authenticateWithIdCardInGovSsoWithUiLocales(flow, "en")
+        Response continueSession = Steps.continueWithExistingSession(flow)
+        Response oidcLogout = Steps.startLogout(flow, continueSession.path("id_token"), ClientStore.clientB.postLogoutRedirectUri)
+        Response initLogout = Steps.followRedirect(flow, oidcLogout)
+
+        when: "Follow the Estonian language selection link"
+        String languageUrl = languageLinkHref(initLogout, "et")
+        Response localizedView = Requests.followRedirect(flow, flow.sessionService.baseUrl + languageUrl)
+
+        then: "The same display is rendered in Estonian"
+        assertThat("Language link retains logout_challenge", languageUrl, containsString(flow.logoutChallenge))
+        assertThat("Correct HTTP status code", localizedView.statusCode, is(HttpStatus.SC_OK))
+        assertThat("Still the session logout display", localizedView.body.htmlPath()
+                .getString("**.find { button -> button.@formaction == '/logout/endsession'}"), is("Logi kõikidest välja"))
+    }
+
+    @Tag("eidas")
+    @Feature("LOGIN_INIT_VIEW")
+    def "Acr display supports language switch"() {
+        given: "Open acr display in Estonian"
+        Steps.authenticateWithEidasInGovSsoWithUiLocales(flow, "substantial", "C", "et")
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
+        Response initLogin = Steps.followRedirect(flow, oidcAuth)
+
+        when: "Follow the English language selection link"
+        String languageUrl = languageLinkHref(initLogin, "en")
+        Response localizedView = Requests.followRedirect(flow, flow.sessionService.baseUrl + languageUrl)
+
+        then: "The same display is rendered in English"
+        assertThat("Language link retains login_challenge", languageUrl, containsString(flow.loginChallenge))
+        assertThat("Correct HTTP status code", localizedView.statusCode, is(HttpStatus.SC_OK))
+        assertThat("Still the acr display", localizedView.body.htmlPath()
+                .getString("**.find { button -> button.@formaction == '/login/reauthenticate'}"), is("Re-authenticate"))
+    }
+
+    private static String languageLinkHref(Response view, String language) {
+        return view.body.htmlPath().getString("**.find { it.@hreflang == '$language' }.@href")
     }
 }
