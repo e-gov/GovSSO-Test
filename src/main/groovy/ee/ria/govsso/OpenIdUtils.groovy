@@ -18,22 +18,23 @@ class OpenIdUtils {
 
 
     static Boolean isTokenSignatureValid(JWKSet jwkSet, SignedJWT signedJWT) throws JOSEException {
-        List<JWK> matches = new JWKSelector(new JWKMatcher.Builder()
-                .keyType(KeyType.RSA)
-                .build())
-                .select(jwkSet)
-
-        for (JWK jwk : matches) {
-            if (jwk instanceof RSAKey) {
-                RSAKey rsaKey = (RSAKey) jwk
-                JWSVerifier verifier = new RSASSAVerifier(rsaKey)
-
-                if (signedJWT.verify(verifier)) {
-                    return true
-                }
-            }
+        JWKMatcher matcher = JWKMatcher.forJWSHeader(signedJWT.header)
+        if (matcher == null) {
+            throw new JOSEException("Unsupported JWS algorithm: ${signedJWT.header.algorithm}")
         }
-        return false
+        List<JWK> matches = new JWKSelector(matcher).select(jwkSet)
+
+        if (matches.size() != 1) {
+            throw new JOSEException("Expected 1 JWKS key for kid=${signedJWT.header.keyID}, " +
+                    "alg=${signedJWT.header.algorithm}, found ${matches.size()} " +
+                    "(JWKS kids: ${jwkSet.keys*.keyID})")
+        }
+        JWK jwk = matches.first()
+        if (!(jwk instanceof RSAKey)) {
+            throw new JOSEException("Expected RSA key for kid=${signedJWT.header.keyID}, got ${jwk.keyType}")
+        }
+        JWSVerifier verifier = new RSASSAVerifier((RSAKey) jwk)
+        return signedJWT.verify(verifier)
     }
 
     static Boolean isJWT(String jwt) {

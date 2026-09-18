@@ -7,6 +7,7 @@ import io.restassured.response.Response
 
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.Matchers.endsWith
 import static org.hamcrest.MatcherAssert.assertThat
@@ -20,7 +21,7 @@ class OpenIdConnectSpec extends GovSsoOidcSpecification {
         String keyID = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.body.path("id_token")).header.keyID
 
         assertThat("Correct HTTP status code", createSession.statusCode, is(200))
-        assertThat("Matching key ID", keyID, is(flow.jwkSet.keys[0].getKeyID()))
+        assertThat("Matching key ID", flow.jwkSet.keys*.keyID, hasItem(keyID))
     }
 
     @Feature("OIDC_TOKEN")

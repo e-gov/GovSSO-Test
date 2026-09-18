@@ -64,8 +64,11 @@ class OidcMetadataSpec extends GovSsoSpecification {
         expect:
         JsonPath configuration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
         Response jwks = Requests.getRequest(configuration.getString("jwks_uri"))
-        assertThat("Correct n size", jwks.body.jsonPath().getString("keys.n").size() > 300)
-        assertThat("Correct e size", jwks.body.jsonPath().getString("keys.e").size() > 3)
+        List<String> moduli = jwks.body.jsonPath().getList("keys.n")
+        List<String> exponents = jwks.body.jsonPath().getList("keys.e")
+        assertThat("At least one key", moduli.size() > 0)
+        moduli.each { assertThat("Correct n size", it.size() > 300) }
+        exponents.each { assertThat("Correct e size", it.size() > 3) }
     }
 
 }
