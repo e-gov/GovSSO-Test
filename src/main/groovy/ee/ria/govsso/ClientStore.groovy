@@ -25,6 +25,12 @@ class ClientStore {
     static Client mockSecuredApp = readClientJson("client-mock-secured-app")
 
     @Lazy
+    static Client mockMinHandoverWindow = readClientJson("client-mock-min-handover-window")
+
+    @Lazy
+    static Client mockHandoverDisabled = readClientJson("client-mock-handover-disabled")
+
+    @Lazy
     static Client mockAcrLow = readClientJson("client-mock-acr-low")
 
     @Lazy

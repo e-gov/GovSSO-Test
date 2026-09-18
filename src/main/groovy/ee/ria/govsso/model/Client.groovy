@@ -66,6 +66,15 @@ class Client {
     @JsonProperty("access_token_jwt_enabled")
     Boolean accessTokenJwtEnabled
 
+    @JsonProperty("access_token_audience_uris")
+    List<String> accessTokenAudienceUris
+
+    @JsonProperty("allow_secured_app_web_session")
+    Boolean allowSecuredAppWebSession
+
+    @JsonProperty("secured_app_session_max_duration")
+    String securedAppSessionMaxDuration
+
     String getRedirectUri() {
         redirectUris.first()
     }
