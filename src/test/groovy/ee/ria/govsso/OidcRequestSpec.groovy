@@ -57,14 +57,15 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
         assertThat("Correct error message", Utils.getParamValueFromResponseHeader(oidcAuth, "error_description"), is(errorMessage))
 
         where:
-        paramKey        | paramValue | error                       | statusCode | errorMessage
-        "prompt"        | "none"     | "login_required"            | 303        | "The Authorization Server requires End-User authentication. Prompt 'none' was requested, but no existing login session was found."
-        "scope"         | "invalid"  | "invalid_scope"             | 303        | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'invalid'."
-        "state"         | "invalid"  | "invalid_state"             | 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
-        "response_type" | "token"    | "unsupported_response_type" | 303        | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'token'."
-        "response_type" | "invalid"  | "unsupported_response_type" | 303        | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'invalid'."
-        "client_id"     | "invalid"  | "invalid_client"            | 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
-        "redirect_uri"  | "invalid"  | "invalid_request"           | 302        | "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
+        paramKey        | paramValue      | error                       | statusCode | errorMessage
+        "prompt"        | "none"          | "login_required"            | 303        | "The Authorization Server requires End-User authentication. Prompt 'none' was requested, but no existing login session was found."
+        "scope"         | "invalid"       | "invalid_scope"             | 303        | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'invalid'."
+        "scope"         | "auth_handover" | "invalid_scope"             | 303        | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'auth_handover'."
+        "state"         | "invalid"       | "invalid_state"             | 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
+        "response_type" | "token"         | "unsupported_response_type" | 303        | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'token'."
+        "response_type" | "invalid"       | "unsupported_response_type" | 303        | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'invalid'."
+        "client_id"     | "invalid"       | "invalid_client"            | 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
+        "redirect_uri"  | "invalid"       | "invalid_request"           | 302        | "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
     }
 
     @Unroll

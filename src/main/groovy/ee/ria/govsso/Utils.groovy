@@ -7,13 +7,21 @@ import org.json.JSONObject
 import org.spockframework.lang.Wildcard
 import io.restassured.response.Response
 
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.PrivateKey
+import java.security.SecureRandom
 import java.security.Signature
 import java.security.cert.Certificate
+import java.time.Duration
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 class Utils {
+
+    private static final Pattern DURATION_PATTERN = ~/^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/
 
     static Map setParameter(Map hashMap, Object param, Object paramValue) {
         if (!(param instanceof Wildcard)) {
@@ -46,7 +54,7 @@ class Utils {
     }
 
     static void storeTaraServiceUrlToflow(Flow flow, String url) {
-        URL rawUrl = new URL(url)
+        URL rawUrl = new URI(url).toURL()
         flow.taraService.taraloginBaseUrl = rawUrl.getProtocol() + "://" + rawUrl.getHost() + getPortIfPresent(rawUrl)
     }
 
@@ -130,5 +138,42 @@ class Utils {
 
     static boolean isLocal() {
         return !isRunningInDocker()
+    }
+
+
+    // prefix: "ory_rt_" = refresh token; "ory_at_" = access tokens; "ory_ac_" = authorization code
+    static String generateOryToken(String prefix, String globalSecret = "testsecret") {
+        // 1. 32 random bytes (fosite's default token entropy = 256 bits)
+        byte[] randomBytes = new byte[32]
+        new SecureRandom().nextBytes(randomBytes)
+
+        // 2. HMAC-SHA512/256 over the random bytes, keyed with Hydra's system secret
+        Mac mac = Mac.getInstance("HmacSHA512/256")
+        mac.init(new SecretKeySpec(globalSecret.getBytes("UTF-8"), "HmacSHA512/256"))
+        byte[] signature = mac.doFinal(randomBytes)
+
+        // 3. base64url, NO padding, for both parts
+        def b64 = Base64.urlEncoder.withoutPadding()
+        String key = b64.encodeToString(randomBytes)
+        String sig = b64.encodeToString(signature)
+
+        // 4. prefix + key.signature
+        return "${prefix}${key}.${sig}"
+    }
+
+    //Parses a duration in the format the admin service and Hydra use.
+    static Duration parseDuration(String duration) {
+        Matcher matcher = DURATION_PATTERN.matcher(duration ?: "")
+        if (!duration || !matcher.matches()) {
+            throw new IllegalArgumentException("Invalid duration string: \"${duration}\"")
+        }
+        return Duration.ofDays(durationPart(matcher, 1))
+                .plusHours(durationPart(matcher, 2))
+                .plusMinutes(durationPart(matcher, 3))
+                .plusSeconds(durationPart(matcher, 4))
+    }
+
+    private static long durationPart(Matcher matcher, int group) {
+        return matcher.group(group) == null ? 0L : matcher.group(group) as long
     }
 }

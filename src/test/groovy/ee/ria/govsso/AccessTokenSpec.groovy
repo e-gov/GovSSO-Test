@@ -8,6 +8,7 @@ import io.restassured.response.Response
 import static ee.ria.govsso.OpenIdUtils.isJWT
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsInAnyOrder
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
@@ -137,7 +138,7 @@ class AccessTokenSpec extends GovSsoOidcSpecification {
         assertThat("Access token jti claim is unique from ID token jti", claimsAccessToken.getJWTID(), not(is(claimsIDToken.getJWTID())))
         assertThat("Correct issuer", claimsAccessToken.issuer, is(flow.openIdServiceConfiguration.get("issuer")))
         assertThat("Correct client ID", claimsAccessToken.getClaim("client_id"), is(flow.clientId))
-        assertThat("Correct audience", claimsAccessToken.audience, is([AUD1, AUD2]))
+        assertThat("Correct audience", claimsAccessToken.audience, containsInAnyOrder(expectedAudience as String[]))
         assertThat("Correct issued at time", Math.abs(new Date().time - claimsAccessToken.getDateClaim("iat").time) < 10000L)
         assertThat("Correct expiration time", claimsAccessToken.expirationTime.time - claimsAccessToken.getDateClaim("iat").time, oneOf(600000L, 601000L))
         assertThat("Correct authentication method", claimsAccessToken.getClaim("amr"), is(["idcard"]))
@@ -152,9 +153,10 @@ class AccessTokenSpec extends GovSsoOidcSpecification {
         }
 
         where:
-        clientType             | client
-        ClientType.DEFAULT     | ClientStore.clientB
-        ClientType.SECURED_APP | ClientStore.mockSecuredApp
+        clientType             | client                     || expectedAudience
+        ClientType.DEFAULT     | ClientStore.clientB        || [AUD1, AUD2]
+        // The GovSSO issuer must be whitelisted for SECURED_APP clients so they can request auth handover tokens.
+        ClientType.SECURED_APP | ClientStore.mockSecuredApp || [AUD1, AUD2, openIdConfiguration.get("issuer")]
     }
 
     def "Access token should hold correct values with scope: openid phone"() {

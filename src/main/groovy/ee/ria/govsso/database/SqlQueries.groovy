@@ -13,6 +13,12 @@ class SqlQueries {
         sql.execute "UPDATE public.hydra_oauth2_flow SET requested_at = requested_at - INTERVAL '15 minutes 1 second' WHERE consent_challenge_id=?", [consentChallenge]
     }
 
+    // Moves the authentication time backwards, so that checks measuring the age of a session do not have to wait it out.
+    static ageLoginAuthentication(Sql sql, String sessionId, String interval) {
+        sql.execute "UPDATE public.hydra_oauth2_authentication_session SET authenticated_at = authenticated_at - CAST(? AS INTERVAL) WHERE id=?", [interval, sessionId]
+        sql.execute "UPDATE public.hydra_oauth2_flow SET login_authenticated_at = login_authenticated_at - CAST(? AS INTERVAL) WHERE login_session_id=?", [interval, sessionId]
+    }
+
     static inactivateRefreshToken(Sql sql, String consentChallenge) {
         sql.execute "UPDATE public.hydra_oauth2_refresh SET active = FALSE WHERE challenge_id=?", [consentChallenge]
     }

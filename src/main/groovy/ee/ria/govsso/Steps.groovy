@@ -16,6 +16,9 @@ import static org.hamcrest.Matchers.containsString
 
 class Steps {
 
+    static final String AUTH_HANDOVER_SCOPE = "auth_handover"
+    static final String AUTH_HANDOVER_TOKEN_PARAM = "govsso_auth_handover_token"
+
     @Step("Initialize authentication sequence in SSO OIDC service with params")
     static Response startAuthenticationInSsoOidcWithParams(Flow flow, Map paramsMap) {
         Response oidcAuth = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, paramsMap)
@@ -148,6 +151,30 @@ class Steps {
         return response
     }
 
+    static Response tryGetHandoverToken(Flow flow, Client client, Map extraParams = [:]) {
+        Map params = [
+                grant_type   : "refresh_token",
+                refresh_token: flow.refreshToken,
+                audience     : flow.openIdServiceConfiguration.get("issuer"),
+                scope        : AUTH_HANDOVER_SCOPE
+        ] + extraParams
+        return Requests.tokenRequest(flow, params, client)
+    }
+
+    @Step("Get handover token response")
+    static Response getHandoverTokenResponse(Flow flow, Client client, Map extraParams = [:]) {
+        Response response = tryGetHandoverToken(flow, client, extraParams)
+        response.then().statusCode(HttpStatus.SC_OK)
+        attachTokensToReport(response, client)
+        // The handover request rotates the client's refresh token.
+        flow.setRefreshToken(response.path("refresh_token") as String ?: flow.refreshToken)
+        return response
+    }
+
+    static String getHandoverToken(Flow flow, Client client, Map extraParams = [:]) {
+        return getHandoverTokenResponse(flow, client, extraParams).path("access_token")
+    }
+
     @Step("Follow redirects to token request")
     static Response followRedirectsToClientApplication(Flow flow,
                                                        Response response,
@@ -180,6 +207,14 @@ class Steps {
         Response initLogin = startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
         return followRedirectsToClientApplication(flow, taraAuthentication, client, "id_token")
+    }
+
+    @Step("Create session in GovSSO with auth handover token")
+    static Response authenticateWithHandoverToken(Flow flow, Client client, String handoverToken) {
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, client)
+        paramsMap << [(AUTH_HANDOVER_TOKEN_PARAM): handoverToken]
+        Response oidcAuth = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+        return followRedirectsToClientApplication(flow, oidcAuth, client, "id_token")
     }
 
     @Step("Create initial session in GovSSO with ID-Card")
