@@ -1,9 +1,7 @@
 package ee.ria.govsso
 
 import com.nimbusds.jwt.JWTClaimsSet
-import ee.ria.govsso.database.DatabaseConnection
 import ee.ria.govsso.database.SqlQueries
-import groovy.sql.Sql
 import io.qameta.allure.Epic
 import io.qameta.allure.Feature
 import io.qameta.allure.Story
@@ -21,16 +19,6 @@ class ExpirationSpec extends GovSsoOidcSpecification {
 
     static final ERROR_EXPIRED = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. Authentication session not found or expired."
     static final ERROR_INACTIVE = "Token is inactive because it is malformed, expired or otherwise invalid. Token validation failed."
-
-    Sql sql = null
-
-    def setup() {
-        sql = DatabaseConnection.getSql(flow)
-    }
-
-    def cleanup() {
-        sql.close()
-    }
 
     @Story("REFRESH_TOKEN_INACTIVE")
     def "Authentication request succeeds after refresh token expiration"() {

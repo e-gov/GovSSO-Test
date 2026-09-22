@@ -1,6 +1,8 @@
 package ee.ria.govsso
 
 import com.nimbusds.jose.jwk.JWKSet
+import ee.ria.govsso.database.DatabaseConnection
+import groovy.sql.Sql
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.path.json.JsonPath
 import spock.lang.Shared
@@ -15,6 +17,8 @@ class GovSsoOidcSpecification extends GovSsoSpecification {
     @Shared JsonPath openIdConfiguration
     @Shared JWKSet jwks
 
+    @Shared private Sql sharedSql
+
     def setupSpec() {
         Flow bootstrapFlow = new Flow()
         openIdConfiguration = Requests.getOpenidConfiguration(bootstrapFlow.ssoOidcService.fullConfigurationUrl)
@@ -23,6 +27,18 @@ class GovSsoOidcSpecification extends GovSsoSpecification {
 
     def setup() {
         wireFlow(flow)
+    }
+
+    // Opened on first use, so specs that never touch the database pay nothing for it.
+    Sql getSql() {
+        if (sharedSql == null) {
+            sharedSql = DatabaseConnection.getSql(flow)
+        }
+        return sharedSql
+    }
+
+    def cleanupSpec() {
+        sharedSql?.close()
     }
 
     void wireFlow(Flow flowToWire) {

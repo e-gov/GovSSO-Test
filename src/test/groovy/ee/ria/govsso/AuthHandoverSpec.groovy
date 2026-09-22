@@ -7,7 +7,6 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
-import ee.ria.govsso.database.DatabaseConnection
 import ee.ria.govsso.database.SqlQueries
 import ee.ria.govsso.model.ClientType
 import io.qameta.allure.Feature
@@ -245,7 +244,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         long remainingSeconds = 10
         long windowSeconds = Utils.parseDuration(ClientStore.clientA.securedAppSessionMaxDuration).toSeconds()
         SqlQueries.ageLoginAuthentication(
-                DatabaseConnection.getSql(flow), appClaims.getClaim("sid") as String,
+                sql, appClaims.getClaim("sid") as String,
                 "${windowSeconds - remainingSeconds} seconds")
 
         and: "Session handed over to a web client while still inside the window"
@@ -469,7 +468,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         JWTClaimsSet appClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, appSession.path("id_token")).JWTClaimsSet
         // Aging the login - must exceed clients secured_app_session_max_duration.
         SqlQueries.ageLoginAuthentication(
-                DatabaseConnection.getSql(flow), appClaims.getClaim("sid") as String, "1 hour 1 second")
+                sql, appClaims.getClaim("sid") as String, "1 hour 1 second")
 
         and: "Handover token issued from the aged session"
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
@@ -491,7 +490,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
         JWTClaimsSet appClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, appSession.path("id_token")).JWTClaimsSet
         SqlQueries.ageLoginAuthentication(
-                DatabaseConnection.getSql(flow), appClaims.getClaim("sid") as String, "2 hours")
+                sql, appClaims.getClaim("sid") as String, "2 hours")
 
         and: "Handed over to a client whose window is wide enough to accept it"
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)

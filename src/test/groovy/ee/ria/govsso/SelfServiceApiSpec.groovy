@@ -3,7 +3,6 @@ package ee.ria.govsso
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.govsso.database.DatabaseConnection
 import ee.ria.govsso.database.SqlQueries
-import groovy.sql.Sql
 import io.qameta.allure.Feature
 import io.restassured.response.Response
 import spock.lang.Unroll
@@ -32,7 +31,6 @@ class SelfServiceApiSpec extends GovSsoOidcSpecification {
     private static final String WINDOWS_EDGE_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0"
 
     Flow flow2 = new Flow()
-    Sql sql = null
 
     def setupSpec() {
         DatabaseConnection.getSql(new Flow()).withCloseable { setupSql ->
@@ -56,7 +54,6 @@ class SelfServiceApiSpec extends GovSsoOidcSpecification {
         Instant authenticatedAt = claims.getDateClaim("auth_time").toInstant()
         Instant requestedAt = claims.getDateClaim("rat").toInstant()
 
-        sql = DatabaseConnection.getSql(flow)
         Integer consentRememberFor = SqlQueries.getConsentRememberFor(sql, flow.consentChallenge)
         Instant expiresAt = requestedAt.plusSeconds(consentRememberFor)
         Instant lastUpdatedAt = expiresAt.minusSeconds(900)
