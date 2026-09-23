@@ -20,7 +20,6 @@ import spock.lang.Tag
 import java.time.Instant
 
 import static ee.ria.govsso.Steps.AUTH_HANDOVER_SCOPE
-import static ee.ria.govsso.Steps.AUTH_HANDOVER_TOKEN_PARAM
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 
@@ -219,9 +218,13 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Same auth_time value", webClaims.getClaim("auth_time"), is(appClaims.getClaim("auth_time")))
     }
 
+    @PendingFeature(reason = "AUT-3127")
+    @Issue("AUT-3127")
     def "Handed over session can be updated independently of the app session"() {
         given:
-        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+        Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+        JWTClaimsSet beforeHandover = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(
+                flow, appSession.path("access_token")).JWTClaimsSet
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
         // The handover request rotates the app's refresh token, so capture it only afterwards.
         String appRefreshToken = flow.refreshToken
@@ -234,6 +237,11 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         then:
         assertThat("Web session update succeeds", webUpdate.statusCode, is(HttpStatus.SC_OK))
         assertThat("App session update succeeds", appUpdate.statusCode, is(HttpStatus.SC_OK))
+
+        and: "The audience of the auth handover request has not leaked into the app session's access tokens"
+        JWTClaimsSet afterHandover = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(
+                flow, appUpdate.path("access_token")).JWTClaimsSet
+        assertThat("Audience unchanged by the handover request", afterHandover.audience, equalTo(beforeHandover.audience))
     }
 
     def "Handed over session cannot be updated once the original authentication exceeds the client's window"() {
@@ -333,10 +341,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         String accessToken = Steps.updateSession(flow, ClientStore.mockSecuredApp, extraParams).path("access_token")
 
         when:
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(webFlow, ClientStore.clientA)
-        paramsMap << [(AUTH_HANDOVER_TOKEN_PARAM): accessToken]
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(webFlow, paramsMap)
-        Response initLogin = Steps.followRedirect(webFlow, oidcAuth)
+        Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientA, accessToken)
 
         then:
         initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INVALID_OIDC_REQUEST"))
@@ -349,12 +354,10 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
 
     def "Authentication with a forged auth handover token fails"() {
         given: "Token with valid claims, signed with a key that is not GovSSO's"
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(webFlow, ClientStore.clientA)
-        paramsMap << [(AUTH_HANDOVER_TOKEN_PARAM): craftForgedHandoverToken()]
+        String forgedToken = craftForgedHandoverToken()
 
         when:
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(webFlow, paramsMap)
-        Response initLogin = Steps.followRedirect(webFlow, oidcAuth)
+        Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientA, forgedToken)
 
         then:
         initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INVALID_OIDC_REQUEST"))
@@ -368,10 +371,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         String existingRefreshToken = webFlow.refreshToken
 
         when: "Forced logout attempt with a garbage token"
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(webFlow, ClientStore.clientB)
-        paramsMap << [(AUTH_HANDOVER_TOKEN_PARAM): "random"]
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(webFlow, paramsMap)
-        Response initLogin = Steps.followRedirect(webFlow, oidcAuth)
+        Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientB, "random")
 
         then: "The request is rejected without restarting authentication"
         initLogin.then()
@@ -396,10 +396,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         sleep(65_000)
 
         when:
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(webFlow, ClientStore.clientA)
-        paramsMap << [(AUTH_HANDOVER_TOKEN_PARAM): handoverToken]
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(webFlow, paramsMap)
-        Response initLogin = Steps.followRedirect(webFlow, oidcAuth)
+        Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
 
         then:
         initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INVALID_OIDC_REQUEST"))
@@ -415,10 +412,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         when: "Reuse the same token in another browser"
         Flow replayFlow = new Flow()
         wireFlow(replayFlow)
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(replayFlow, ClientStore.clientA)
-        paramsMap << [(AUTH_HANDOVER_TOKEN_PARAM): handoverToken]
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(replayFlow, paramsMap)
-        Response initLogin = Steps.followRedirect(replayFlow, oidcAuth)
+        Response initLogin = Steps.startAuthenticationWithHandoverToken(replayFlow, ClientStore.clientA, handoverToken)
 
         then:
         initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INVALID_OIDC_REQUEST"))
@@ -430,10 +424,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
 
         when: "Authenticate with a client that cannot receive a handed over session"
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(webFlow, client)
-        paramsMap << [(AUTH_HANDOVER_TOKEN_PARAM): handoverToken]
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(webFlow, paramsMap)
-        Response initLogin = Steps.followRedirect(webFlow, oidcAuth)
+        Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, client, handoverToken)
 
         then: "The handover token is ignored and ordinary authentication is started"
         assertThat("Correct HTTP status code", initLogin.statusCode, is(HttpStatus.SC_MOVED_TEMPORARILY))
@@ -452,10 +443,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
 
         when: "Hand over immediately, well inside the window"
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(webFlow, ClientStore.mockMinHandoverWindow)
-        paramsMap << [(AUTH_HANDOVER_TOKEN_PARAM): handoverToken]
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(webFlow, paramsMap)
-        Response initLogin = Steps.followRedirect(webFlow, oidcAuth)
+        Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.mockMinHandoverWindow, handoverToken)
 
         then: "The handover token is accepted without TARA authentication"
         assertThat("Correct HTTP status code", initLogin.statusCode, is(HttpStatus.SC_MOVED_TEMPORARILY))
@@ -474,10 +462,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
 
         when:
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(webFlow, ClientStore.mockMinHandoverWindow)
-        paramsMap << [(AUTH_HANDOVER_TOKEN_PARAM): handoverToken]
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(webFlow, paramsMap)
-        Response initLogin = Steps.followRedirect(webFlow, oidcAuth)
+        Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.mockMinHandoverWindow, handoverToken)
 
         then: "The handover token is ignored and ordinary authentication is started"
         assertThat("Correct HTTP status code", initLogin.statusCode, is(HttpStatus.SC_MOVED_TEMPORARILY))

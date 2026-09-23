@@ -181,19 +181,19 @@ class Steps {
                                                        Client client = ClientStore.clientA,
                                                        String tokenType = "id_token") {
         Response initLogin = followRedirect(flow, response)
-        Response loginVerifier = followRedirect(flow, initLogin)
+        return followRedirectsToClientApplicationWithExistingSession(flow, initLogin, client, tokenType)
+    }
+
+    @Step("Follow redirects to client application with existing session")
+    static Response followRedirectsToClientApplicationWithExistingSession(Flow flow,
+                                                                         Response response,
+                                                                         Client client,
+                                                                         String tokenType = "id_token") {
+        Response loginVerifier = followRedirect(flow, response)
         flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
         Response initConsent = followRedirect(flow, loginVerifier)
         Response consentVerifier = followRedirect(flow, initConsent)
         return getTokenResponseWithDefaults(flow, consentVerifier, client, tokenType)
-    }
-
-    @Step("Follow redirects to client application with existing session")
-    static Response followRedirectsToClientApplicationWithExistingSession(Flow flow, Response response, Client client) {
-        Response loginVerifier = followRedirect(flow, response)
-        Response initConsent = followRedirect(flow, loginVerifier)
-        Response consentVerifier = followRedirect(flow, initConsent)
-        return getTokenResponseWithDefaults(flow, consentVerifier, client)
     }
 
     @Step("Create initial session in GovSSO with Client-B with scope")
@@ -209,12 +209,18 @@ class Steps {
         return followRedirectsToClientApplication(flow, taraAuthentication, client, "id_token")
     }
 
-    @Step("Create session in GovSSO with auth handover token")
-    static Response authenticateWithHandoverToken(Flow flow, Client client, String handoverToken) {
+    @Step("Start authentication in GovSSO with auth handover token")
+    static Response startAuthenticationWithHandoverToken(Flow flow, Client client, String handoverToken) {
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, client)
         paramsMap << [(AUTH_HANDOVER_TOKEN_PARAM): handoverToken]
         Response oidcAuth = startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        return followRedirectsToClientApplication(flow, oidcAuth, client, "id_token")
+        return followRedirect(flow, oidcAuth)
+    }
+
+    @Step("Create session in GovSSO with auth handover token")
+    static Response authenticateWithHandoverToken(Flow flow, Client client, String handoverToken) {
+        Response initLogin = startAuthenticationWithHandoverToken(flow, client, handoverToken)
+        return followRedirectsToClientApplicationWithExistingSession(flow, initLogin, client)
     }
 
     @Step("Create initial session in GovSSO with ID-Card")

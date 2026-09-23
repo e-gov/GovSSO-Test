@@ -149,8 +149,7 @@ class SelfServiceApiSpec extends GovSsoOidcSpecification {
     @Feature("SELF_SERVICE_API")
     def "GET sessions returns valid information after session update"() {
         given: "Create a session"
-        Response session = Steps.authenticateWithIdCardInGovSso(flow)
-        String refreshToken = session.path("refresh_token")
+        Steps.authenticateWithIdCardInGovSso(flow)
 
         and: "GET session information"
         Response sessionInfo1 = Requests.getRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
