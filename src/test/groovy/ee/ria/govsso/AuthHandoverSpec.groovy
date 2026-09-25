@@ -218,8 +218,6 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Same auth_time value", webClaims.getClaim("auth_time"), is(appClaims.getClaim("auth_time")))
     }
 
-    @PendingFeature(reason = "AUT-3127")
-    @Issue("AUT-3127")
     def "Handed over session can be updated independently of the app session"() {
         given:
         Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
