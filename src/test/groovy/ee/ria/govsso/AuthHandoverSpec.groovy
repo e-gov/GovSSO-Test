@@ -220,9 +220,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
 
     def "Handed over session can be updated independently of the app session"() {
         given:
-        Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
-        JWTClaimsSet beforeHandover = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(
-                flow, appSession.path("access_token")).JWTClaimsSet
+        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
         // The handover request rotates the app's refresh token, so capture it only afterwards.
         String appRefreshToken = flow.refreshToken
@@ -235,11 +233,61 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         then:
         assertThat("Web session update succeeds", webUpdate.statusCode, is(HttpStatus.SC_OK))
         assertThat("App session update succeeds", appUpdate.statusCode, is(HttpStatus.SC_OK))
+    }
 
-        and: "The audience of the auth handover request has not leaked into the app session's access tokens"
-        JWTClaimsSet afterHandover = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(
-                flow, appUpdate.path("access_token")).JWTClaimsSet
-        assertThat("Audience unchanged by the handover request", afterHandover.audience, equalTo(beforeHandover.audience))
+    def "Auth handover request does not change the app session's own tokens"() {
+        given:
+        Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+        JWTClaimsSet beforeHandover = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(
+                flow, appSession.path("access_token")).JWTClaimsSet
+        // The handover request rotates the app's refresh token, leaving this one behind.
+        String staleRefreshToken = flow.refreshToken
+
+        when: "Request a handover token and update the app session twice"
+        Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
+        Response firstUpdate = Steps.updateSession(flow, ClientStore.mockSecuredApp)
+        Response secondUpdate = Steps.updateSession(flow, ClientStore.mockSecuredApp)
+
+        then: "The audience of the handover request has not leaked into the app session's access tokens"
+        JWTClaimsSet firstClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(
+                flow, firstUpdate.path("access_token")).JWTClaimsSet
+        JWTClaimsSet secondClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(
+                flow, secondUpdate.path("access_token")).JWTClaimsSet
+        assertThat("Audience unchanged by the handover request", firstClaims.audience, equalTo(beforeHandover.audience))
+        assertThat("Audience unchanged by every following update", secondClaims.audience, equalTo(beforeHandover.audience))
+
+        and: "Neither has its scope"
+        assertThat("Correct scope value", firstUpdate.jsonPath().getString("scope"), is("openid"))
+        assertThat("Correct scope value", secondUpdate.jsonPath().getString("scope"), is("openid"))
+        assertThat("Access token has no scope claim", firstClaims.claims.keySet(), not(hasItem("scope")))
+        assertThat("Access token has no scope claim", secondClaims.claims.keySet(), not(hasItem("scope")))
+
+        and: "The refresh token that the handover request rotated away is no longer accepted"
+        Response reuse = Steps.tryUpdateSession(flow, ClientStore.mockSecuredApp, [refresh_token: staleRefreshToken])
+        assertThat("Correct HTTP status code", reuse.statusCode, is(HttpStatus.SC_UNAUTHORIZED))
+        assertThat("Correct error", reuse.jsonPath().getString("error"), is("token_inactive"))
+    }
+
+    def "Auth handover can be repeated on the same app session"() {
+        given:
+        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+        String issuer = flow.openIdServiceConfiguration.get("issuer")
+
+        when: "Request a second auth handover token from the same app session"
+        JWTClaimsSet firstHandoverToken = SignedJWT.parse(
+                Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)).JWTClaimsSet
+        String secondToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
+        JWTClaimsSet secondHandoverToken = SignedJWT.parse(secondToken).JWTClaimsSet
+
+        then: "Both handover tokens are addressed to GovSSO"
+        assertThat("Correct audience in the first handover token", firstHandoverToken.audience, is([issuer]))
+        assertThat("Correct scope in the first handover token", firstHandoverToken.getClaim("scope"), is(AUTH_HANDOVER_SCOPE))
+        assertThat("Correct audience in the second handover token", secondHandoverToken.audience, is([issuer]))
+        assertThat("Correct scope in the second handover token", secondHandoverToken.getClaim("scope"), is(AUTH_HANDOVER_SCOPE))
+
+        and: "The second handover token can still create a web session"
+        Response webSession = Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, secondToken)
+        assertThat("Handover is successful", webSession.statusCode, is(HttpStatus.SC_OK))
     }
 
     def "Handed over session cannot be updated once the original authentication exceeds the client's window"() {
