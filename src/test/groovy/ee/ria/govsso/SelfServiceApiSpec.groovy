@@ -5,6 +5,7 @@ import ee.ria.govsso.database.DatabaseConnection
 import ee.ria.govsso.database.SqlQueries
 import io.qameta.allure.Feature
 import io.restassured.response.Response
+import spock.lang.Isolated
 import spock.lang.Unroll
 
 import java.time.Instant
@@ -18,6 +19,7 @@ import static org.hamcrest.Matchers.hasSize
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 
+@Isolated
 class SelfServiceApiSpec extends GovSsoOidcSpecification {
 
     static final SUBJECT_ENDPOINT = "/EE38001085718"
