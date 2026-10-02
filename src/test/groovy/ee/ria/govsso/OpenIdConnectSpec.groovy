@@ -1,6 +1,8 @@
 package ee.ria.govsso
 
+import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.qameta.allure.Feature
 import io.qameta.allure.Step
 import io.restassured.response.Response
@@ -22,6 +24,20 @@ class OpenIdConnectSpec extends GovSsoOidcSpecification {
 
         assertThat("Correct HTTP status code", createSession.statusCode, is(200))
         assertThat("Matching key ID", flow.jwkSet.keys*.keyID, hasItem(keyID))
+    }
+
+    @Feature("OIDC_TOKEN")
+    def "Tokens from session update are verifiable with freshly downloaded JWKS"() {
+        given: "Create session"
+        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB, "access_token")
+
+        when: "Update session and download JWKS after the tokens were issued"
+        Response updateSession = Steps.updateSession(flow, ClientStore.clientB)
+        JWKSet freshJwks = JWKSet.load(Requests.getOpenidJwks(flow.ssoOidcService.fullJwksUrl))
+
+        then:
+        assertThat("ID token signature valid", OpenIdUtils.isTokenSignatureValid(freshJwks, SignedJWT.parse(updateSession.body.path("id_token") as String)), is(true))
+        assertThat("Access token signature valid", OpenIdUtils.isTokenSignatureValid(freshJwks, SignedJWT.parse(updateSession.body.path("access_token") as String)), is(true))
     }
 
     @Feature("OIDC_TOKEN")

@@ -1,5 +1,9 @@
 package ee.ria.govsso
 
+import com.nimbusds.jose.jwk.JWK
+import com.nimbusds.jose.jwk.JWKSet
+import com.nimbusds.jose.jwk.KeyType
+import com.nimbusds.jose.jwk.KeyUse
 import io.qameta.allure.Feature
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
@@ -69,6 +73,21 @@ class OidcMetadataSpec extends GovSsoSpecification {
         assertThat("At least one key", moduli.size() > 0)
         moduli.each { assertThat("Correct n size", it.size() > 300) }
         exponents.each { assertThat("Correct e size", it.size() > 3) }
+    }
+
+    @Feature("OIDC_DISCOVERY")
+    def "Keystore endpoint publishes only public RSA signing keys"() {
+        expect:
+        JsonPath configuration = Requests.getOpenidConfiguration(flow.ssoOidcService.fullConfigurationUrl)
+        JWKSet jwks = JWKSet.load(Requests.getOpenidJwks(configuration.getString("jwks_uri")))
+
+        assertThat("At least one key", jwks.keys.size() > 0)
+        jwks.keys.each { JWK key ->
+            assertThat("Correct key type for kid=${key.keyID}", key.keyType, is(KeyType.RSA))
+            assertThat("Correct key use for kid=${key.keyID}", key.keyUse, is(KeyUse.SIGNATURE))
+            assertThat("Correct algorithm for kid=${key.keyID}", key.algorithm?.name, is("RS256"))
+            assertThat("No private key material for kid=${key.keyID}", key.isPrivate(), is(false))
+        }
     }
 
 }
