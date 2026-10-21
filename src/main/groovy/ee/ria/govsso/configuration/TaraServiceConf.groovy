@@ -1,15 +1,8 @@
 package ee.ria.govsso.configuration
 
-import org.aeonbits.owner.Config
 import org.aeonbits.owner.Config.Key
 
-interface TaraServiceConf extends Config {
-    String protocol()
-
-    String host()
-
-    String port()
-
+interface TaraServiceConf extends NodeServiceConf {
     String initUrl()
 
     String midInitUrl()
@@ -47,13 +40,4 @@ interface TaraServiceConf extends Config {
 
     @Key("id.password")
     String idPassword()
-
-    @Key("node.protocol")
-    String nodeProtocol()
-
-    @Key("node.host")
-    String nodeHost()
-
-    @Key("node.port")
-    String nodePort()
 }

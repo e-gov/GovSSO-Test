@@ -1,13 +1,5 @@
 package ee.ria.govsso.configuration
 
-import org.aeonbits.owner.Config
-
-interface ForeignIdpConf extends Config {
-    String protocol()
-
-    String host()
-
-    String port()
-
+interface ForeignIdpConf extends ServiceConf {
     String responseUrl()
 }

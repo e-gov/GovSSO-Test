@@ -38,13 +38,19 @@ Description of values:
 | Parameter                               | Default                                           | Description                                            |
 |-----------------------------------------|---------------------------------------------------|--------------------------------------------------------|
 | ssooidcservice.protocol                 | http                                              | Service protocol.                                      |
-| ssooidcservice.host                     | oidc-service                                      | Service URL.                                           |
+| ssooidcservice.host                     | oidc-service                                      | Service host.                                          |
 | ssooidcservice.port                     | 13444                                             | Service port.                                          |
 | ssooidcservice.revocation               | /oauth2/revoke                                    | Session revocation endpoint.                           |
 | ssooidcservice.logout                   | /oauth2/sessions/logout                           | Session logout endpoint.                               |
 | ssooidcservice.authenticationRequestUrl | /oauth2/auth                                      | OIDC flow start endpoint.                              |
 | ssooidcservice.configurationUrl         | /.well-known/openid-configuration                 | OIDC metadata endpoint.                                |
 | ssooidcservice.jwksUrl                  | /.well-known/jwks.json                            | Signing key info endpoint.                             |
+| ssooidcservice.node.protocol            | https                                             | Service node protocol.                                 |
+| ssooidcservice.node.host                | hydra.localhost                                   | Service node host.                                     |
+| ssooidcservice.node.port                | 14443                                             | Service node port.                                     |
+| ssooidcservice.admin.protocol           | https                                             | Service admin protocol.                                |
+| ssooidcservice.admin.host               | hydra.localhost                                   | Service admin host.                                    |
+| ssooidcservice.admin.port               | 14445                                             | Service admin port.                                    |
 | ssooidcdatabase.protocol                | jdbc                                              | Database protocol.                                     |
 | ssooidcdatabase.host                    | oidc-db                                           | Database URL.                                          |
 | ssooidcdatabase.port                    | 5432                                              | Database port.                                         |
@@ -52,11 +58,11 @@ Description of values:
 | ssooidcdatabase.username                | username                                          | Database users' username                               |
 | ssooidcdatabase.password                | password                                          | Database users' password                               |
 | sessionservice.protocol                 | http                                              | Service protocol.                                      |
-| sessionservice.host                     | session-service                                   | Service URL.                                           |
+| sessionservice.host                     | session-service                                   | Service host.                                          |
 | sessionservice.port                     | 14080                                             | Service port.                                          |
-| sessionservice.node.protocol            | http                                              | Service node protocol. Used in monitoring tests.       |
-| sessionservice.node.host                | session-service                                   | Service node URL. Used in monitoring tests.            |
-| sessionservice.node.port                | 14080                                             | Service node port. Used in monitoring tests.           |
+| sessionservice.node.protocol            | http                                              | Service node protocol.                                 |
+| sessionservice.node.host                | session-service                                   | Service node host.                                     |
+| sessionservice.node.port                | 14080                                             | Service node port.                                     |
 | sessionservice.initUrl                  | /login/init                                       | Service authentication start endpoint.                 |
 | sessionservice.continueSessionUrl       | /login/continuesession                            | Service session continuation endpoint.                 |
 | sessionservice.reauthenticateUrl        | /login/reauthenticate                             | Service reauthentication endpoint.                     |
@@ -67,13 +73,25 @@ Description of values:
 | sessionservice.logoutEndSessionUrl      | /logout/endsession                                | Service logout with end all sessions endpoint.         |
 | sessionservice.consentUrl               | /consent/init                                     | Service consent selection endpoint.                    |
 | sessionservice.consentConfirmUrl        | /auth/consent/confirm                             | Service consent confirmation endpoint.                 |
-| sessionservice.healthUrl                | /actuator/health                                  | Service health endpoint.                               |
-| sessionservice.readinessUrl             | /actuator/health/readiness                        | Service readiness endpoint.                            |
-| sessionservice.livenessUrl              | /actuator/health/liveness                         | Service liveness endpoint.                             |
-| sessionservice.infoUrl                  | /actuator/info                                    | Service info endpoint.                                 |
 | sessionservice.sessions                 | /admin/sessions                                   | Service sessions endpoint.                             |
+| inproxyservice.protocol                 | https                                             | Service protocol.                                      |
+| inproxyservice.host                     | inproxy.localhost                                 | Service host.                                          |
+| inproxyservice.port                     | 13443                                             | Service port.                                          |
+| inproxyservice.node.protocol            | https                                             | Service node protocol.                                 |
+| inproxyservice.node.host                | inproxy.localhost                                 | Service node host.                                     |
+| inproxyservice.node.port                | 13443                                             | Service node port.                                     |
+| adminservice.protocol                   | https                                             | Service protocol.                                      |
+| adminservice.host                       | admin.localhost                                   | Service host.                                          |
+| adminservice.port                       | 17443                                             | Service port.                                          |
+| enduserselfservice.protocol             | https                                             | Service protocol.                                      |
+| enduserselfservice.host                 | enduserselfservice.localhost                      | Service host.                                          |
+| enduserselfservice.port                 | 25443                                             | Service port.                                          |
+| enduserselfservice.node.protocol        | https                                             | Service node protocol.                                 |
+| enduserselfservice.node.host            | enduserselfservice.localhost                      | Service node host.                                     |
+| enduserselfservice.node.port            | 25443                                             | Service node port.                                     |
 | taraservice.protocol                    | https                                             | Service protocol.                                      |
-| taraservice.host                        | login-service-backend                             | Service URL.                                           |
+| taraservice.host                        | login-service-backend                             | Service host.                                          |
+| taraservice.port                        | 8444                                              | Service port.                                          |
 | taraservice.initUrl                     | https                                             | Authentication start endpoint in login service.        |
 | taraservice.midInitUrl                  | /auth/mid/init                                    | Mobile-ID start endpoint.                              |
 | taraservice.midPollUrl                  | /auth/mid/poll                                    | Mobile-ID status polling endpoint.                     |

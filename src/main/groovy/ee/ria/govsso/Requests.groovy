@@ -201,46 +201,6 @@ class Requests {
                 .post(url)
     }
 
-    @Step("Get health")
-    static Response getHealth(Flow flow) {
-        return given()
-                .urlEncodingEnabled(true)
-                .get(flow.sessionService.fullHealthUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
-    }
-
-    @Step("Get readiness")
-    static Response getReadiness(Flow flow) {
-        return given()
-                .urlEncodingEnabled(true)
-                .get(flow.sessionService.fullReadinessUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
-    }
-
-    @Step("Get liveness")
-    static Response getLiveness(Flow flow) {
-        return given()
-                .urlEncodingEnabled(true)
-                .get(flow.sessionService.fullLivenessUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
-    }
-
-    @Step("Get info")
-    static Response getInfo(Flow flow) {
-        return given()
-                .urlEncodingEnabled(true)
-                .get(flow.sessionService.fullInfoUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
-    }
-
     @Step("Download openid service configuration")
     static JsonPath getOpenidConfiguration(String url) {
         return given()

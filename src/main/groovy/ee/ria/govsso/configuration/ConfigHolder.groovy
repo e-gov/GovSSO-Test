@@ -13,6 +13,9 @@ class ConfigHolder {
     private static final TaraServiceConf taraService = readConf(TaraServiceConf, "taraservice")
     private static final CaProxyServiceConf caProxyService = readConf(CaProxyServiceConf, "ca-proxyservice")
     private static final ForeignIdpConf foreignIdp = readConf(ForeignIdpConf, "idp")
+    private static final InproxyServiceConf inproxyService = readConf(InproxyServiceConf, "inproxyservice")
+    private static final AdminServiceConf adminService = readConf(AdminServiceConf, "adminservice")
+    private static final EnduserselfserviceConf enduserselfservice = readConf(EnduserselfserviceConf, "enduserselfservice")
     private static final TestConf testConf = readConf(TestConf, "test")
 
     private static <T extends Config> T readConf(Class<T> configClass) {
@@ -41,6 +44,12 @@ class ConfigHolder {
     static CaProxyServiceConf getCaProxyService() { caProxyService }
 
     static ForeignIdpConf getForeignIdp() { foreignIdp }
+
+    static InproxyServiceConf getInproxyService() { inproxyService }
+
+    static AdminServiceConf getAdminService() { adminService }
+
+    static EnduserselfserviceConf getEnduserselfservice() { enduserselfservice }
 
     static TestConf getTestConf() { testConf }
 }

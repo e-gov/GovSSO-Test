@@ -1,15 +1,6 @@
 package ee.ria.govsso.configuration
 
-import org.aeonbits.owner.Config
-import org.aeonbits.owner.Config.Key
-
-interface SessionServiceConf extends Config {
-    String protocol()
-
-    String host()
-
-    String port()
-
+interface SessionServiceConf extends NodeServiceConf {
     String initUrl()
 
     String logoutInitUrl()
@@ -30,22 +21,5 @@ interface SessionServiceConf extends Config {
 
     String taraCallbackUrl()
 
-    String healthUrl()
-
-    String readinessUrl()
-
-    String livenessUrl()
-
-    String infoUrl()
-
     String sessionsUrl()
-
-    @Key("node.protocol")
-    String nodeProtocol()
-
-    @Key("node.host")
-    String nodeHost()
-
-    @Key("node.port")
-    String nodePort()
 }

@@ -1,14 +1,8 @@
 package ee.ria.govsso.configuration
 
-import org.aeonbits.owner.Config
+import org.aeonbits.owner.Config.Key
 
-interface SsoOidcServiceConf extends Config {
-    String protocol()
-
-    String host()
-
-    String port()
-
+interface SsoOidcServiceConf extends NodeServiceConf {
     String revocation()
 
     String logout()
@@ -18,4 +12,13 @@ interface SsoOidcServiceConf extends Config {
     String configurationUrl()
 
     String jwksUrl()
+
+    @Key("admin.protocol")
+    String adminProtocol()
+
+    @Key("admin.host")
+    String adminHost()
+
+    @Key("admin.port")
+    String adminPort()
 }

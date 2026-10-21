@@ -1,6 +1,7 @@
 package ee.ria.govsso
 
 import com.nimbusds.jwt.SignedJWT
+import ee.ria.govsso.model.Actuator
 import ee.ria.govsso.model.Client
 import io.qameta.allure.Step
 import io.restassured.response.Response
@@ -371,5 +372,21 @@ class Steps {
         assertThat(response.header("Cache-Control"), equalTo("no-cache, no-store, max-age=0, must-revalidate"))
         assertThat(response.header("X-Content-Type-Options"), equalTo("nosniff"))
         assertThat(response.header("X-XSS-Protection"), equalTo("0"))
+    }
+
+    @Step("GET {1} from {0}")
+    static Response tryGetMonitoringEndpoint(String baseUrl, String path) {
+        return Requests.getRequest(baseUrl + path)
+    }
+
+    static Response tryGetActuatorEndpoint(String baseUrl, Actuator actuator) {
+        return tryGetMonitoringEndpoint(baseUrl, actuator.path)
+    }
+
+    @Step("Get Actuator {1}")
+    static Response getActuatorEndpoint(String baseUrl, Actuator actuator) {
+        Response response = tryGetActuatorEndpoint(baseUrl, actuator)
+        response.then().statusCode(HttpStatus.SC_OK)
+        return response
     }
 }
