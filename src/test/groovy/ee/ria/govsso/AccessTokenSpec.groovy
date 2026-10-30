@@ -1,26 +1,18 @@
 package ee.ria.govsso
 
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.govsso.model.Client
 import ee.ria.govsso.model.ClientType
 import io.qameta.allure.Feature
 import io.restassured.response.Response
+import org.apache.http.HttpStatus
 
 import static ee.ria.govsso.OpenIdUtils.isJWT
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.containsInAnyOrder
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.matchesPattern
-import static org.hamcrest.Matchers.not
-import static org.hamcrest.Matchers.oneOf
+import static org.hamcrest.Matchers.*
 
 @Feature("ACCESS_TOKEN")
 class AccessTokenSpec extends GovSsoOidcSpecification {
-
-    static final AUD1 = "https://test1.test/123"
-    static final AUD2 = "https://test2.test/123"
 
     def "Authentication with access token configured client should return JWT access token with configured expiration time"() {
         given: "Create session"
@@ -30,20 +22,21 @@ class AccessTokenSpec extends GovSsoOidcSpecification {
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.body.path("access_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.getClaim("aud"), equalTo([AUD1, AUD2]))
+        assertThat("Correct audience", claims.audience, containsInAnyOrder(ClientStore.clientB.accessTokenAudienceUris as String[]))
         assertThat("Default expiration time", tokenResponse.jsonPath().getInt("expires_in"), oneOf(599, 600))
     }
 
     def "Session update with access token configured client should return JWT access token"() {
         given: "Create session"
-        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientB, "access_token")
+        Client client = ClientStore.clientB
+        Steps.authenticateWithIdCardInGovSso(flow, client, "access_token")
 
         when: "Update session and get new access token claims"
-        Response updateSession = Steps.updateSession(flow, ClientStore.clientB)
+        Response updateSession = Steps.updateSession(flow, client)
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.path("access_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.getClaim("aud"), equalTo([AUD1, AUD2]))
+        assertThat("Correct audience", claims.audience, containsInAnyOrder(client.accessTokenAudienceUris as String[]))
     }
 
     def "Continue session with access token configured client should return JWT access token"() {
@@ -55,46 +48,31 @@ class AccessTokenSpec extends GovSsoOidcSpecification {
         JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, continueSession.body.path("access_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.getClaim("aud"), equalTo([AUD1, AUD2]))
+        assertThat("Correct audience", claims.audience, containsInAnyOrder(ClientStore.clientB.accessTokenAudienceUris as String[]))
     }
 
     def "Access token audience should hold only audience value specified in authorization request: #audience"() {
         given: "Create session with specified audience"
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.clientB)
+        Client client = ClientStore.clientB
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, client)
         paramsMap << [audience: audience]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
         Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        Response tokenRequest = Steps.followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB, "access_token")
+        Response tokenRequest = Steps.followRedirectsToClientApplication(flow, taraAuthentication, client, "access_token")
 
-        when: "Get access token claims"
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenRequest.body.path("access_token")).JWTClaimsSet
+        when: "Update session"
+        Response updateSession = Steps.updateSession(flow, client)
 
         then:
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, tokenRequest.body.path("access_token")).JWTClaimsSet
+        JWTClaimsSet updatedClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.path("access_token")).JWTClaimsSet
         assertThat("Correct audience", claims.getClaim("aud"), equalTo([audience]))
+        assertThat("Correct audience after session update", updatedClaims.getClaim("aud"), equalTo([audience]))
 
         where:
-        audience      | _
-        AUD1          | _
-        AUD1 + "/"    | _
-        AUD1 + "/456" | _
-    }
-
-    def "Access token audience should hold only audience value requested in authorization request after session update"() {
-        given: "Create session with specified audience"
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.clientB)
-        paramsMap << [audience: AUD1]
-        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
-        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
-        Response taraAuthentication = TaraSteps.authenticateWithIdCardInTARA(flow, initLogin)
-        Steps.followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.clientB, "access_token")
-
-        when: "Update session and get access token claims"
-        Response updateSession = Steps.updateSession(flow, ClientStore.clientB)
-        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, updateSession.body.path("access_token")).JWTClaimsSet
-
-        then:
-        assertThat("Correct audience", claims.getClaim("aud"), equalTo([AUD1]))
+        audienceSuffix << ["", "/", "/456"]
+        audience = ClientStore.clientB.accessTokenAudienceUris[0] + audienceSuffix
     }
 
     def "Authorization request should fail if request holds non-registered audience value: #audience"() {
@@ -104,7 +82,7 @@ class AccessTokenSpec extends GovSsoOidcSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
         then:
-        assertThat("Correct HTTP code", oidcAuth.statusCode(), is(303))
+        assertThat("Correct HTTP code", oidcAuth.statusCode, is(HttpStatus.SC_SEE_OTHER))
         assertThat("Correct OIDC error", oidcAuth.header("location"), allOf(containsString("Requested+audience+"), containsString("+has+not+been+whitelisted+by+the+OAuth+2.0+Client")))
 
         where:
@@ -113,6 +91,44 @@ class AccessTokenSpec extends GovSsoOidcSpecification {
         "https://test1.test/"         | _
         "https://test.test/123"       | _
         "test1.test/123"              | _
+    }
+
+    def "Authorization request should fail if request holds the auth handover audience"() {
+        when: "Request authorization with GovSSO issuer as audience"
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.mockSecuredApp)
+        paramsMap << [audience: flow.openIdServiceConfiguration.get("issuer")]
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
+
+        then:
+        assertThat("Correct HTTP code", oidcAuth.statusCode, is(HttpStatus.SC_SEE_OTHER))
+        assertThat("Correct OIDC error", oidcAuth.header("location"), allOf(containsString("error=invalid_request"),
+                containsString("Requested+audience+"), containsString("+has+not+been+whitelisted+by+the+OAuth+2.0+Client")))
+    }
+
+    def "Session update should fail if request holds the auth handover audience #reason"() {
+        given: "Create session"
+        Steps.authenticateWithIdCardInGovSso(flow, client)
+        String issuer = flow.openIdServiceConfiguration.get("issuer")
+
+        when: "Update session with GovSSO issuer as audience"
+        Response response = Steps.tryUpdateSession(flow, client, [audience: issuer] + extraParams)
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(HttpStatus.SC_BAD_REQUEST))
+        assertThat("Correct error", response.jsonPath().getString("error"), is("invalid_request"))
+        assertThat("Correct error description", response.jsonPath().getString("error_description"),
+                containsString("Requested audience '${issuer}' has not been whitelisted by the OAuth 2.0 Client.".toString()))
+
+        and: "The rejected request did not consume the refresh token"
+        Response retry = Steps.tryUpdateSession(flow, client)
+        assertThat("Session update succeeds with the same refresh token", retry.statusCode, is(HttpStatus.SC_OK))
+
+        where:
+        reason                                         | client                     | extraParams
+        "without scope"                                | ClientStore.mockSecuredApp | [:]
+        "with scope 'openid'"                          | ClientStore.mockSecuredApp | [scope: "openid"]
+        "with empty scope"                             | ClientStore.mockSecuredApp | [scope: ""]
+        "for a client without the handover capability" | ClientStore.clientA        | [:]
     }
 
     def "Access token for client type #clientType should hold correct values with scope: openid"() {
@@ -138,7 +154,7 @@ class AccessTokenSpec extends GovSsoOidcSpecification {
         assertThat("Access token jti claim is unique from ID token jti", claimsAccessToken.getJWTID(), not(is(claimsIDToken.getJWTID())))
         assertThat("Correct issuer", claimsAccessToken.issuer, is(flow.openIdServiceConfiguration.get("issuer")))
         assertThat("Correct client ID", claimsAccessToken.getClaim("client_id"), is(flow.clientId))
-        assertThat("Correct audience", claimsAccessToken.audience, containsInAnyOrder(expectedAudience as String[]))
+        assertThat("Correct audience", claimsAccessToken.audience, containsInAnyOrder(client.accessTokenAudienceUris as String[]))
         assertThat("Correct issued at time", Math.abs(new Date().time - claimsAccessToken.getDateClaim("iat").time) < 10000L)
         assertThat("Correct expiration time", claimsAccessToken.expirationTime.time - claimsAccessToken.getDateClaim("iat").time, oneOf(600000L, 601000L))
         assertThat("Correct authentication method", claimsAccessToken.getClaim("amr"), is(["idcard"]))
@@ -153,10 +169,9 @@ class AccessTokenSpec extends GovSsoOidcSpecification {
         }
 
         where:
-        clientType             | client                     || expectedAudience
-        ClientType.DEFAULT     | ClientStore.clientB        || [AUD1, AUD2]
-        // The GovSSO issuer must be whitelisted for SECURED_APP clients so they can request auth handover tokens.
-        ClientType.SECURED_APP | ClientStore.mockSecuredApp || [AUD1, AUD2, openIdConfiguration.get("issuer")]
+        clientType             | client
+        ClientType.DEFAULT     | ClientStore.clientB
+        ClientType.SECURED_APP | ClientStore.mockSecuredApp
     }
 
     def "Access token should hold correct values with scope: openid phone"() {

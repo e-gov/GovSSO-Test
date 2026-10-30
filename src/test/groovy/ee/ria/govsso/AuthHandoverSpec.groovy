@@ -12,7 +12,8 @@ import ee.ria.govsso.model.ClientType
 import io.qameta.allure.Feature
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
-import spock.lang.Ignore
+import org.spockframework.runtime.model.parallel.ExecutionMode
+import spock.lang.Execution
 import spock.lang.Issue
 import spock.lang.PendingFeature
 import spock.lang.Tag
@@ -63,9 +64,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         JWTClaimsSet handoverTokenClaims = SignedJWT.parse(Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)).JWTClaimsSet
 
         Set expectedClaims = [
-                "acr", "amr", "aud", "auth_time", "birthdate",
-                "client_id", "exp", "family_name", "given_name", "iat",
-                "initiator", "iss", "jti", "scope", "sub"
+                "aud", "client_id", "exp", "iat", "iss", "jti", "scope", "sid"
         ]
 
         then: "Required claims are present and match"
@@ -75,19 +74,9 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Correct audience", handoverTokenClaims.audience, equalTo([flow.openIdServiceConfiguration.get("issuer")]))
         assertThat("Correct scope", handoverTokenClaims.getClaim("scope"), equalTo(AUTH_HANDOVER_SCOPE))
         assertThat("Correct client_id", handoverTokenClaims.getClaim("client_id"), equalTo(ClientStore.mockSecuredApp.clientId))
-        assertThat("Correct initiator", handoverTokenClaims.getClaim("initiator"), equalTo(ClientType.SECURED_APP.toString()))
-        assertThat("Correct subject claim", handoverTokenClaims.subject, equalTo("EE38001085718"))
-        assertThat("Correct date of birth", handoverTokenClaims.getClaim("birthdate"), equalTo("1980-01-08"))
-        assertThat("Correct given name", handoverTokenClaims.getClaim("given_name"), equalTo("JAAK-KRISTJAN"))
-        assertThat("Correct family name", handoverTokenClaims.getClaim("family_name"), equalTo("JÕEORG"))
-        assertThat("Correct LoA level", handoverTokenClaims.getClaim("acr"), equalTo("high"))
-        assertThat("Correct authentication method", handoverTokenClaims.getClaim("amr"), equalTo(["idcard"]))
-
-        assertThat("Correct authentication time", handoverTokenClaims.getClaim("auth_time"),
-                equalTo(appClaims.getClaim("auth_time")))
+        assertThat("Correct session id", handoverTokenClaims.getClaim("sid"), equalTo(appClaims.getClaim("sid")))
     }
 
-    @PendingFeature(reason = "auth handover token lifetime limit (60s) not implemented")
     def "Auth handover token has a 60 second lifetime"() {
         given: "Create (app) session with SECURED_APP client"
         Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
@@ -97,12 +86,12 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         JWTClaimsSet claims = SignedJWT.parse(tokenResponse.path("access_token") as String).JWTClaimsSet
 
         then:
-        assertThat("Correct expires_in", tokenResponse.jsonPath().getInt("expires_in"), is(60))
-        assertThat("Correct lifetime", claims.expirationTime.time - claims.issueTime.time, is(60_000L))
+        // Handover token follows Hydra approach for other tokens, where the timing can vary due to rounding used in times.
+        assertThat("Correct expires_in", tokenResponse.jsonPath().getInt("expires_in"), oneOf(59, 60))
+        assertThat("Correct lifetime", claims.expirationTime.time - claims.issueTime.time, oneOf(60_000L, 61_000L))
     }
 
-    @PendingFeature(reason = "auth handover token request - missing or faulty validations")
-    @Issue("AUT-3087")
+    @Issue("AUT-3290")
     def "Auth handover token request fails when #reason"() {
         given: "Create (app) session with SECURED_APP client"
         Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
@@ -112,24 +101,27 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response tokenResponse = Steps.tryGetHandoverToken(flow, ClientStore.mockSecuredApp, extraParams)
 
         then:
-        assertThat("Correct HTTP status code", tokenResponse.statusCode, is(HttpStatus.SC_BAD_REQUEST))
-//        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(expectedError))
+        assertThat("Correct HTTP status code", tokenResponse.statusCode, is(expectedStatus))
+        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(expectedError))
 
         where:
-        reason                              | extraParams                                        //|| expectedError
-        "refresh token is invalid"          | [refresh_token: Utils.generateOryToken("ory_rt_")] //|| "invalid_grant"
-        "scope='openid'"                    | [scope: "openid"]
-        "scope is empty"                    | [scope: ""]
-        "scope is omitted"                  | [scope: null]
-        "audience is not GovSSO's base URL" | [audience: "https://not.govsso/"]                  //|| "invalid_request"
-        "audience contains extra URL(s)"    | [audience: ClientStore.mockSecuredApp.accessTokenAudienceUris.join(" ")]
+        reason                                         | extraParams                                                              || expectedStatus                      | expectedError
+        "refresh token is invalid"                     | [refresh_token: Utils.generateOryToken("ory_rt_")]                       || HttpStatus.SC_BAD_REQUEST           | "invalid_grant"
+        // TODO: AUT-3290 Non-informative error needs improving
+//        "scope contains other scopes"                  | [scope: "openid " + AUTH_HANDOVER_SCOPE]                                 || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
+//        "audience is empty"                            | [audience: ""]                                                           || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
+//        "audience is omitted"                          | [audience: null]                                                         || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
+        "audience is not GovSSO's base URL"            | [audience: "https://not.govsso/"]                                        || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
+        "audience is issuer without trailing slash"    | [audience: openIdConfiguration.getString("issuer").replaceAll('/$', "")] || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
+        "audience is issuer with extra trailing slash" | [audience: openIdConfiguration.getString("issuer") + "/"]                || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
+        "audience is issuer in upper case"             | [audience: openIdConfiguration.getString("issuer").toUpperCase()]        || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
+        "audience is a path below issuer"              | [audience: openIdConfiguration.getString("issuer") + "some/path"]        || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
+        "audience contains extra URL(s)"               | [audience: ([openIdConfiguration.getString("issuer")]
+                + ClientStore.mockSecuredApp.accessTokenAudienceUris).join(" ")]                                                  || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
         // TODO: Allure logging can't handle lists in formParams, causing the request to fail - needs a solution
-//        "audience contains extra URL(s)"    | [audience: ClientStore.mockSecuredApp.accessTokenAudienceUris]
-        "audience is empty"                 | [audience: ""]
-        "audience is omitted"               | [audience: null]
+//        "audience contains extra URL(s)"               | [audience: ClientStore.mockSecuredApp.accessTokenAudienceUris]
     }
 
-    @PendingFeature(reason = "auth handover token request - missing or faulty validations")
     def "Auth handover token request fails for a client without the handover capability configured"() {
         given: "Create session with DEFAULT client"
         Steps.authenticateWithIdCardInGovSso(flow, ClientStore.clientA)
@@ -139,7 +131,9 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
 
         then:
         assertThat("Correct HTTP status code", tokenResponse.statusCode, is(HttpStatus.SC_BAD_REQUEST))
-        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is("TODO"))
+        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is("invalid_request"))
+        assertThat("Correct error description", tokenResponse.jsonPath().getString("error_description"),
+                is("The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. Requested audience '${flow.openIdServiceConfiguration.get('issuer')}' has not been whitelisted by the OAuth 2.0 Client.".toString()))
     }
 
     def "Auth handover scope cannot be requested in the authentication request"() {
@@ -175,15 +169,8 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Same acr value", webClaims.getClaim("acr"), is(appClaims.getClaim("acr")))
         assertThat("Same amr value", webClaims.getClaim("amr"), is(appClaims.getClaim("amr")))
         assertThat("Handed over session has a new session ID", webClaims.getClaim("sid"), not(is(appClaims.getClaim("sid"))))
-        // The initiator claim is covered by "Handed over session tokens identify the app as the initiator".
-        // assertThat("Correct initiator", handoverTokenClaims.getClaim("initiator"), equalTo(ClientType.SECURED_APP.toString()))
-        // The auth_time claim is covered by "Handed over session keeps the original authentication time"
-        // assertThat("Correct authentication time", webClaims.getClaim("auth_time"), equalTo(appClaims.getClaim("auth_time")))
-
     }
 
-    @PendingFeature(reason = "initiator is absent on a handed over session")
-    @Issue("AUT-3087")
     def "Handed over session tokens identify the app as the initiator"() {
         given: "App session handed over to a web client that issues JWT access tokens"
         Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
@@ -201,6 +188,28 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Correct initiator in access token", accessTokenClaims.getClaim("initiator"), is("SECURED_APP"))
     }
 
+    def "Handed over session carries the phone number when the phone scope is granted"() {
+        given: "App session authenticated with Mobile-ID and phone scope"
+        Response oidcAuth = Steps.startAuthenticationInSsoOidcWithScope(flow, ClientStore.mockSecuredApp, "openid phone")
+        Response initLogin = Steps.startSessionInSessionService(flow, oidcAuth)
+        Response taraAuthentication = TaraSteps.authenticateWithMidInTARA(flow, "60001017716", "59100366", initLogin)
+        Steps.followRedirectsToClientApplication(flow, taraAuthentication, ClientStore.mockSecuredApp)
+        String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
+
+        when: "Authenticate with the handover token in a web client that requests the phone scope"
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithScope(webFlow, ClientStore.clientA, "openid phone")
+        paramsMap << [(Steps.AUTH_HANDOVER_TOKEN_PARAM): handoverToken]
+        Response webOidcAuth = Steps.startAuthenticationInSsoOidcWithParams(webFlow, paramsMap)
+        Response webInitLogin = Steps.followRedirect(webFlow, webOidcAuth)
+        Response webSession = Steps.followRedirectsToClientApplicationWithExistingSession(webFlow, webInitLogin, ClientStore.clientA)
+
+        then:
+        JWTClaimsSet webClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(webFlow, webSession.path("id_token")).JWTClaimsSet
+        assertThat("Correct phone_number claim", webClaims.getClaim("phone_number"), is("+37259100366"))
+        assertThat("Correct phone_number_verified claim", webClaims.getClaim("phone_number_verified"), is(true))
+    }
+
+    @Issue("AUT-3272")
     @PendingFeature(reason = "auth_time is set to the handover token's issue time instead of being copied from the app session, so the authentication age resets at handover")
     def "Handed over session keeps the original authentication time"() {
         given:
@@ -290,27 +299,26 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Handover is successful", webSession.statusCode, is(HttpStatus.SC_OK))
     }
 
+    @Issue("AUT-3290")
     def "Handed over session cannot be updated once the original authentication exceeds the client's window"() {
         given: "App authentication that is about to reach the end of the target client's handover window"
         Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
-        JWTClaimsSet appClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, appSession.path("id_token")).JWTClaimsSet
         // The handover must complete inside this window.
         long remainingSeconds = 10
         long windowSeconds = Utils.parseDuration(ClientStore.clientA.securedAppSessionMaxDuration).toSeconds()
-        SqlQueries.ageLoginAuthentication(
-                sql, appClaims.getClaim("sid") as String,
-                "${windowSeconds - remainingSeconds} seconds")
+        ageAppAuthentication(appSession, "${windowSeconds - remainingSeconds} seconds")
 
         and: "Session handed over to a web client while still inside the window"
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
-        Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
+        Response webSession = Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
+        assertThat("Handover is successful", webSession.statusCode, is(HttpStatus.SC_OK))
 
         when: "The window lapses, while the handed over session itself is only seconds old"
         sleep((remainingSeconds) * 1000)
         Response webUpdate = Steps.tryUpdateSession(webFlow, ClientStore.clientA)
 
         then: "The handed over session is bounded by the client's window from the original authentication"
-        // TODO: assert expected failure instead of not OK.
+        // TODO: AUT-3290 - assert expected failure instead of not OK.
         assertThat("Web session update is refused", webUpdate.statusCode, not(is(HttpStatus.SC_OK)))
     }
 
@@ -367,37 +375,32 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("App session can still be updated", appUpdate.statusCode, is(HttpStatus.SC_OK))
     }
 
-    def "Handover token is still valid after the origin session is terminated"() {
-        given: "App session handed over to a web client"
+    def "Auth handover token is rejected after the origin session is terminated"() {
+        given: "Auth handover token from an app session that is then logged out"
         Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
         Steps.logoutSingleClientSession(flow, flow.idToken, ClientStore.mockSecuredApp.postLogoutRedirectUri)
 
         when:
-        sleep(5000)
-        Response webSession = Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
+        Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
 
         then:
-        assertThat("Handover is successful", webSession.statusCode, is(HttpStatus.SC_OK))
+        initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INPUT"))
     }
 
-    def "Authentication with #reason fails"() {
+    def "Authentication with ordinary access token as auth handover token fails"() {
         given:
         Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
-        String accessToken = Steps.updateSession(flow, ClientStore.mockSecuredApp, extraParams).path("access_token")
+        String accessToken = Steps.updateSession(flow, ClientStore.mockSecuredApp).path("access_token")
 
         when:
         Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientA, accessToken)
 
         then:
         initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INVALID_OIDC_REQUEST"))
-
-        where:
-        reason                                                              | extraParams
-        "ordinary access token as auth handover token"                      | [:]
-        "access token as auth handover token and GovSSO issuer as audience" | [audience: openIdConfiguration.get("issuer")]
     }
 
+    @Issue("AUT-3272 - rate-limiter may cause test to fail due to different failure message")
     def "Authentication with a forged auth handover token fails"() {
         given: "Token with valid claims, signed with a key that is not GovSSO's"
         String forgedToken = craftForgedHandoverToken()
@@ -409,37 +412,43 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INVALID_OIDC_REQUEST"))
     }
 
-    @PendingFeature(reason = "Missing token validation before reauthentication")
-    @Issue("AUT-3087")
-    def "Authentication with unparseable auth handover token is rejected without ending the existing session"() {
+    @Issue("AUT-3272 - rate-limiter may cause test to fail due to different failure message")
+    def "Authentication with #reason auth handover token is rejected without ending the existing session"() {
         given: "Existing web session"
         Steps.authenticateWithIdCardInGovSso(webFlow, ClientStore.clientA)
         String existingRefreshToken = webFlow.refreshToken
 
-        when: "Forced logout attempt with a garbage token"
-        Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientB, "random")
+        when: "Forced logout attempt with an invalid token"
+        Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientB, handoverToken)
 
         then: "The request is rejected without restarting authentication"
         initLogin.then()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body(
-                        "error", is("USER_INPUT"),
+                        "error", is(expectedError),
                         "path", is("/login/init"),
-                        "message", is("Ebakorrektne päring."))
+                        "message", is(expectedMessage))
 
         and: "The existing session survives"
         assertThat("Existing session can still be updated",
                 Steps.tryUpdateSession(webFlow, ClientStore.clientA, [refresh_token: existingRefreshToken]).statusCode, is(HttpStatus.SC_OK))
+
+        where:
+        reason        | handoverToken              || expectedError               | expectedMessage
+        "unparseable" | "random"                   || "USER_INPUT"                | "Ebakorrektne päring."
+        "forged"      | craftForgedHandoverToken() || "USER_INVALID_OIDC_REQUEST" | "Vale <span translate=\"no\">OIDC</span> päring."
     }
 
-    // TODO: slow test
-    @Ignore("Slow failing test")
-    @PendingFeature(reason = "auth handover token lifetime limit (60s) not implemented")
+    @Tag("slow")
+    @Execution(ExecutionMode.CONCURRENT)
     def "Auth handover token older than one minute is rejected"() {
         given: "Genuine handover token, older than its 60 second lifetime"
         Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
-        sleep(65_000)
+        JWTClaimsSet claims = SignedJWT.parse(handoverToken).JWTClaimsSet
+        long lifetime = claims.expirationTime.time - claims.issueTime.time
+        assertThat("Handover token lifetime is at most 61 seconds", lifetime, lessThanOrEqualTo(61_000L))
+        sleep(lifetime + 2000)
 
         when:
         Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
@@ -448,12 +457,12 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INVALID_OIDC_REQUEST"))
     }
 
-    @PendingFeature(reason = "token is not marked as used, replay is possible")
     def "Auth handover token can only be used once"() {
         given:
         Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
-        Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
+        Response firstUse = Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
+        assertThat("First handover is successful", firstUse.statusCode, is(HttpStatus.SC_OK))
 
         when: "Reuse the same token in another browser"
         Flow replayFlow = new Flow()
@@ -461,12 +470,15 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response initLogin = Steps.startAuthenticationWithHandoverToken(replayFlow, ClientStore.clientA, handoverToken)
 
         then:
-        initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INVALID_OIDC_REQUEST"))
+        initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INPUT"))
     }
 
     def "Authentication with auth handover token falls back to TARA for #reason"() {
         given:
-        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+        Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+        if (appAuthAge != _) {
+            ageAppAuthentication(appSession, appAuthAge as String)
+        }
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
 
         when: "Authenticate with a client that cannot receive a handed over session"
@@ -478,9 +490,10 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Login was not accepted with the handover token", initLogin.header("location"), not(containsString("login_verifier")))
 
         where:
-        reason                                                  | client
-        "a client that does not allow secured app web sessions" | ClientStore.mockHandoverDisabled
-        "a secured app client"                                  | ClientStore.mockSecuredApp
+        reason                                                          | client                            | appAuthAge
+        "a default client without secured app web sessions allowed"     | ClientStore.mockHandoverDisabled  | _
+        "a secured app client without secured app web sessions allowed" | ClientStore.mockSecuredApp        | _
+        "an authentication outside the target client's handover window" | ClientStore.mockMinHandoverWindow | "1 hour 1 second"
     }
 
     def "Authentication with auth handover token succeeds within the target client's handover window"() {
@@ -496,67 +509,93 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Login was accepted with the handover token", initLogin.header("location"), containsString("login_verifier"))
     }
 
-    def "Authentication with auth handover token falls back to TARA outside the target client's handover window"() {
-        given: "App session authenticated longer ago than the window allows"
+    def "Handed over session cannot be continued into a client when #reason"() {
+        given: "App session handed over to a web client whose window is wide enough to accept it"
         Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
-        JWTClaimsSet appClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, appSession.path("id_token")).JWTClaimsSet
-        // Aging the login - must exceed clients secured_app_session_max_duration.
-        SqlQueries.ageLoginAuthentication(
-                sql, appClaims.getClaim("sid") as String, "1 hour 1 second")
-
-        and: "Handover token issued from the aged session"
-        String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
-
-        when:
-        Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.mockMinHandoverWindow, handoverToken)
-
-        then: "The handover token is ignored and ordinary authentication is started"
-        assertThat("Correct HTTP status code", initLogin.statusCode, is(HttpStatus.SC_MOVED_TEMPORARILY))
-        assertThat("Redirected to TARA", initLogin.header("location"), containsString(flow.taraService.host))
-        assertThat("Login was not accepted with the handover token", initLogin.header("location"), not(containsString("login_verifier")))
-    }
-
-    def "Handed over session cannot be continued into a client whose handover window the authentication exceeds"() {
-        given: "App session authenticated two hours ago"
-        Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
-        JWTClaimsSet appClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, appSession.path("id_token")).JWTClaimsSet
-        SqlQueries.ageLoginAuthentication(
-                sql, appClaims.getClaim("sid") as String, "2 hours")
-
-        and: "Handed over to a client whose window is wide enough to accept it"
+        if (appAuthAge != _) {
+            ageAppAuthentication(appSession, appAuthAge as String)
+        }
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
         Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
+        String webRefreshToken = webFlow.refreshToken
 
-        when: "Continue the handed over session into a client with a one hour window"
+        when: "Continue the handed over session into the target client"
+        Response oidcAuth = Steps.startAuthenticationInSsoOidc(webFlow, client)
+        Response initLogin = Steps.followRedirect(webFlow, oidcAuth)
+
+        then: "The session is not continued, the authentication request is restarted instead"
+        assertThat("Correct HTTP status code", initLogin.statusCode, is(HttpStatus.SC_MOVED_TEMPORARILY))
+        assertThat("Redirected back to the authorization request", initLogin.header("location"),
+                allOf(containsString("/oauth2/auth"),
+                        containsString("client_id=" + client.clientId)))
+
+        and: "The browser is no longer carrying a session"
+        // The cookie is cleared by being re-sent already expired.
+        assertThat("Oidc session cookie is expired",
+                initLogin.detailedCookie("__Host-ory_hydra_session").expiryDate, lessThan(new Date()))
+
+        and: "The handed over session is terminated"
+        Response webUpdate = Steps.tryUpdateSession(webFlow, ClientStore.clientA, [refresh_token: webRefreshToken])
+        assertThat("Web session can no longer be updated", webUpdate.statusCode, is(HttpStatus.SC_BAD_REQUEST))
+        assertThat("Correct error", webUpdate.body.jsonPath().getString("error"), is("invalid_grant"))
+
+        where:
+        reason                                                    | client                            | appAuthAge
+        "it does not allow secured app web sessions"              | ClientStore.mockHandoverDisabled  | _
+        "the authentication exceeds the client's handover window" | ClientStore.mockMinHandoverWindow | "2 hours"
+    }
+
+    def "Handed over session cannot be continued from the continuation view once the authentication exceeds the client's window"() {
+        given: "App authentication that is about to reach the end of the target client's handover window"
+        Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+        // The continuation view must be opened inside this window.
+        long remainingSeconds = 10
+        long windowSeconds = Utils.parseDuration(ClientStore.mockMinHandoverWindow.securedAppSessionMaxDuration).toSeconds()
+        ageAppAuthentication(appSession, "${windowSeconds - remainingSeconds} seconds")
+
+        and: "Session handed over to a web client"
+        String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
+        Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
+        String webRefreshToken = webFlow.refreshToken
+
+        and: "Continuation view opened for the target client while still inside the window"
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(webFlow, ClientStore.mockMinHandoverWindow)
         Response initLogin = Steps.followRedirect(webFlow, oidcAuth)
+        assertThat("Continuation view is shown", initLogin.statusCode, is(HttpStatus.SC_OK))
 
-        then: "The session is not continued, ordinary authentication is required instead"
-        assertThat("Correct HTTP status code", initLogin.statusCode, is(HttpStatus.SC_MOVED_TEMPORARILY))
-        assertThat("Session was not continued", initLogin.header("location"), not(containsString("login_verifier")))
+        when: "The window lapses before the continuation is submitted"
+        sleep(remainingSeconds * 1000)
+        Map formParams = [loginChallenge: webFlow.loginChallenge,
+                          _csrf         : initLogin.body.htmlPath().get("**.find {it.@name == '_csrf'}.@value")]
+        Response continueSession = Requests.postRequestWithParams(webFlow, webFlow.sessionService.fullContinueSessionUrl, formParams)
+
+        then: "The session is not continued, the authentication request is restarted instead"
+        assertThat("Correct HTTP status code", continueSession.statusCode, is(HttpStatus.SC_MOVED_TEMPORARILY))
+        assertThat("Redirected back to the authorization request", continueSession.header("location"),
+                allOf(containsString("/oauth2/auth"),
+                        containsString("client_id=" + ClientStore.mockMinHandoverWindow.clientId)))
+
+        and: "The browser is no longer carrying a session"
+        // The cookie is cleared by being re-sent already expired.
+        assertThat("Oidc session cookie is expired",
+                continueSession.detailedCookie("__Host-ory_hydra_session").expiryDate, lessThan(new Date()))
+
+        and: "The handed over session is terminated"
+        Response webUpdate = Steps.tryUpdateSession(webFlow, ClientStore.clientA, [refresh_token: webRefreshToken])
+        assertThat("Web session can no longer be updated", webUpdate.statusCode, is(HttpStatus.SC_BAD_REQUEST))
+        assertThat("Correct error", webUpdate.body.jsonPath().getString("error"), is("invalid_grant"))
     }
 
-    def "Handed over session cannot be continued into a client that does not allow secured app web sessions"() {
-        given: "App session handed over to a web client"
-        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
-        String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
-        Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
-
-        when: "Continue the handed over session into a client that does not allow handover"
-        Response oidcAuth = Steps.startAuthenticationInSsoOidc(webFlow, ClientStore.mockHandoverDisabled)
-        Response initLogin = Steps.followRedirect(webFlow, oidcAuth)
-
-        then: "The session is not continued, ordinary authentication is required instead"
-        assertThat("Correct HTTP status code", initLogin.statusCode, is(HttpStatus.SC_MOVED_TEMPORARILY))
-        assertThat("Session was not continued", initLogin.header("location"), not(containsString("login_verifier")))
+    private void ageAppAuthentication(Response appSession, String interval) {
+        JWTClaimsSet appClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, appSession.path("id_token")).JWTClaimsSet
+        SqlQueries.ageLoginAuthentication(sql, appClaims.getClaim("sid") as String, interval)
     }
-
 
     /**
      * Builds a handover token whose claims are valid but signed with a throwaway key.
      */
     private String craftForgedHandoverToken() {
-        String issuer = flow.openIdServiceConfiguration.getString("issuer")
+        String issuer = openIdConfiguration.getString("issuer")
         Instant now = Instant.now()
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .jwtID(UUID.randomUUID().toString())

@@ -10,10 +10,7 @@ import org.apache.http.HttpStatus
 import java.text.ParseException
 
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.anyOf
-import static org.hamcrest.Matchers.containsString
-
+import static org.hamcrest.Matchers.*
 
 class Steps {
 
@@ -187,9 +184,9 @@ class Steps {
 
     @Step("Follow redirects to client application with existing session")
     static Response followRedirectsToClientApplicationWithExistingSession(Flow flow,
-                                                                         Response response,
-                                                                         Client client,
-                                                                         String tokenType = "id_token") {
+                                                                          Response response,
+                                                                          Client client,
+                                                                          String tokenType = "id_token") {
         Response loginVerifier = followRedirect(flow, response)
         flow.setConsentChallenge(Utils.getParamValueFromResponseHeader(loginVerifier, "consent_challenge"))
         Response initConsent = followRedirect(flow, loginVerifier)
@@ -221,6 +218,8 @@ class Steps {
     @Step("Create session in GovSSO with auth handover token")
     static Response authenticateWithHandoverToken(Flow flow, Client client, String handoverToken) {
         Response initLogin = startAuthenticationWithHandoverToken(flow, client, handoverToken)
+        assertThat("Correct HTTP status code", initLogin.statusCode, is(HttpStatus.SC_MOVED_TEMPORARILY))
+        assertThat("Login was accepted with the handover token", initLogin.header("location"), containsString("login_verifier"))
         return followRedirectsToClientApplicationWithExistingSession(flow, initLogin, client)
     }
 
