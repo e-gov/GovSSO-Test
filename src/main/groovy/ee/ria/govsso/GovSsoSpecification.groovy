@@ -9,6 +9,4 @@ class GovSsoSpecification extends Specification {
     }
 
     Flow flow = new Flow()
-
-    static String REJECT_ERROR_CODE = "user_cancel"
 }

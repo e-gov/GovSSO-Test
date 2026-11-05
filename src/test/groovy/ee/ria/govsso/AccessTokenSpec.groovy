@@ -3,11 +3,14 @@ package ee.ria.govsso
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.govsso.model.Client
 import ee.ria.govsso.model.ClientType
+import ee.ria.govsso.model.HydraError
+import ee.ria.govsso.util.HydraErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 
 import static ee.ria.govsso.OpenIdUtils.isJWT
+import static ee.ria.govsso.util.HydraErrorValidator.notWhitelisted
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 
@@ -83,7 +86,7 @@ class AccessTokenSpec extends GovSsoOidcSpecification {
 
         then:
         assertThat("Correct HTTP code", oidcAuth.statusCode, is(HttpStatus.SC_SEE_OTHER))
-        assertThat("Correct OIDC error", oidcAuth.header("location"), allOf(containsString("Requested+audience+"), containsString("+has+not+been+whitelisted+by+the+OAuth+2.0+Client")))
+        HydraErrorValidator.validateRedirect(oidcAuth, HydraError.INVALID_REQUEST, notWhitelisted(audience))
 
         where:
         audience                      | _
@@ -95,14 +98,14 @@ class AccessTokenSpec extends GovSsoOidcSpecification {
 
     def "Authorization request should fail if request holds the auth handover audience"() {
         when: "Request authorization with GovSSO issuer as audience"
+        String issuer = flow.openIdServiceConfiguration.get("issuer")
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, ClientStore.mockSecuredApp)
-        paramsMap << [audience: flow.openIdServiceConfiguration.get("issuer")]
+        paramsMap << [audience: issuer]
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
         then:
         assertThat("Correct HTTP code", oidcAuth.statusCode, is(HttpStatus.SC_SEE_OTHER))
-        assertThat("Correct OIDC error", oidcAuth.header("location"), allOf(containsString("error=invalid_request"),
-                containsString("Requested+audience+"), containsString("+has+not+been+whitelisted+by+the+OAuth+2.0+Client")))
+        HydraErrorValidator.validateRedirect(oidcAuth, HydraError.INVALID_REQUEST, notWhitelisted(issuer))
     }
 
     def "Session update should fail if request holds the auth handover audience #reason"() {
@@ -114,10 +117,7 @@ class AccessTokenSpec extends GovSsoOidcSpecification {
         Response response = Steps.tryUpdateSession(flow, client, [audience: issuer] + extraParams)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(HttpStatus.SC_BAD_REQUEST))
-        assertThat("Correct error", response.jsonPath().getString("error"), is("invalid_request"))
-        assertThat("Correct error description", response.jsonPath().getString("error_description"),
-                containsString("Requested audience '${issuer}' has not been whitelisted by the OAuth 2.0 Client.".toString()))
+        HydraErrorValidator.validate(response, HydraError.INVALID_REQUEST, notWhitelisted(issuer))
 
         and: "The rejected request did not consume the refresh token"
         Response retry = Steps.tryUpdateSession(flow, client)

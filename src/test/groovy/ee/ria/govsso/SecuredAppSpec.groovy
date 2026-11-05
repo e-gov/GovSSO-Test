@@ -2,7 +2,9 @@ package ee.ria.govsso
 
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.govsso.model.ErrorMessage
+import ee.ria.govsso.model.HydraError
 import ee.ria.govsso.util.ErrorValidator
+import ee.ria.govsso.util.HydraErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
@@ -146,8 +148,7 @@ class SecuredAppSpec extends GovSsoOidcSpecification {
 
         and: "The existing web session is terminated"
         Response webUpdate = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: webRefreshToken])
-        assertThat("Web session can no longer be updated", webUpdate.statusCode, is(HttpStatus.SC_BAD_REQUEST))
-        assertThat("Correct error", webUpdate.body.jsonPath().getString("error"), is("invalid_grant"))
+        HydraErrorValidator.validate(webUpdate, HydraError.INVALID_GRANT)
     }
 
     @Feature("LOGIN_CONTINUE_SESSION_ENDPOINT")

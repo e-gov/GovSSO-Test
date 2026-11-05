@@ -10,7 +10,9 @@ import com.nimbusds.jwt.SignedJWT
 import ee.ria.govsso.database.SqlQueries
 import ee.ria.govsso.model.ClientType
 import ee.ria.govsso.model.ErrorMessage
+import ee.ria.govsso.model.HydraError
 import ee.ria.govsso.util.ErrorValidator
+import ee.ria.govsso.util.HydraErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
@@ -23,6 +25,8 @@ import spock.lang.Tag
 import java.time.Instant
 
 import static ee.ria.govsso.Steps.AUTH_HANDOVER_SCOPE
+import static ee.ria.govsso.util.HydraErrorValidator.HINT_TOKEN_VALIDATION_FAILED
+import static ee.ria.govsso.util.HydraErrorValidator.notWhitelisted
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 
@@ -103,25 +107,37 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response tokenResponse = Steps.tryGetHandoverToken(flow, ClientStore.mockSecuredApp, extraParams)
 
         then:
-        assertThat("Correct HTTP status code", tokenResponse.statusCode, is(expectedStatus))
-        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(expectedError))
+        HydraErrorValidator.validate(tokenResponse, expectedError)
 
         where:
-        reason                                         | extraParams                                                              || expectedStatus                      | expectedError
-        "refresh token is invalid"                     | [refresh_token: Utils.generateOryToken("ory_rt_")]                       || HttpStatus.SC_BAD_REQUEST           | "invalid_grant"
+        reason                        | extraParams                                        || expectedError
+        "refresh token is invalid"    | [refresh_token: Utils.generateOryToken("ory_rt_")] || HydraError.INVALID_GRANT
         // TODO: AUT-3290 Non-informative error needs improving
-//        "scope contains other scopes"                  | [scope: "openid " + AUTH_HANDOVER_SCOPE]                                 || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
-//        "audience is empty"                            | [audience: ""]                                                           || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
-//        "audience is omitted"                          | [audience: null]                                                         || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
-        "audience is not GovSSO's base URL"            | [audience: "https://not.govsso/"]                                        || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
-        "audience is issuer without trailing slash"    | [audience: openIdConfiguration.getString("issuer").replaceAll('/$', "")] || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
-        "audience is issuer with extra trailing slash" | [audience: openIdConfiguration.getString("issuer") + "/"]                || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
-        "audience is issuer in upper case"             | [audience: openIdConfiguration.getString("issuer").toUpperCase()]        || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
-        "audience is a path below issuer"              | [audience: openIdConfiguration.getString("issuer") + "some/path"]        || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
-        "audience contains extra URL(s)"               | [audience: ([openIdConfiguration.getString("issuer")]
-                + ClientStore.mockSecuredApp.accessTokenAudienceUris).join(" ")]                                                  || HttpStatus.SC_BAD_REQUEST           | "invalid_request"
+//        "scope contains other scopes" | [scope: "openid " + AUTH_HANDOVER_SCOPE]           || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
+//        "audience is empty"           | [audience: ""]                                     || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
+//        "audience is omitted"         | [audience: null]                                   || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
+    }
+
+    def "Auth handover token request fails when audience #reason"() {
+        given: "Create (app) session with SECURED_APP client"
+        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+
+        when: "Request auth handover token"
+        Response tokenResponse = Steps.tryGetHandoverToken(flow, ClientStore.mockSecuredApp, [audience: audience])
+
+        then: "Hydra names the first requested audience that is not whitelisted, which in every case is the first one"
+        HydraErrorValidator.validate(tokenResponse, HydraError.INVALID_REQUEST, notWhitelisted(audience.split(" ").first()))
+
+        where:
+        reason                                | audience
+        "is not GovSSO's base URL"            | "https://not.govsso/"
+        "is issuer without trailing slash"    | openIdConfiguration.getString("issuer").replaceAll('/$', "")
+        "is issuer with extra trailing slash" | openIdConfiguration.getString("issuer") + "/"
+        "is issuer in upper case"             | openIdConfiguration.getString("issuer").toUpperCase()
+        "is a path below issuer"              | openIdConfiguration.getString("issuer") + "some/path"
+        "contains extra URL(s)"               | ([openIdConfiguration.getString("issuer")] + ClientStore.mockSecuredApp.accessTokenAudienceUris).join(" ")
         // TODO: Allure logging can't handle lists in formParams, causing the request to fail - needs a solution
-//        "audience contains extra URL(s)"               | [audience: ClientStore.mockSecuredApp.accessTokenAudienceUris]
+//        "contains extra URL(s)"               | ClientStore.mockSecuredApp.accessTokenAudienceUris
     }
 
     def "Auth handover token request fails for a client without the handover capability configured"() {
@@ -132,10 +148,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response tokenResponse = Steps.tryGetHandoverToken(flow, ClientStore.clientA)
 
         then:
-        assertThat("Correct HTTP status code", tokenResponse.statusCode, is(HttpStatus.SC_BAD_REQUEST))
-        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is("invalid_request"))
-        assertThat("Correct error description", tokenResponse.jsonPath().getString("error_description"),
-                is("The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. Requested audience '${flow.openIdServiceConfiguration.get('issuer')}' has not been whitelisted by the OAuth 2.0 Client.".toString()))
+        HydraErrorValidator.validate(tokenResponse, HydraError.INVALID_REQUEST, notWhitelisted(flow.openIdServiceConfiguration.get("issuer") as String))
     }
 
     def "Auth handover scope cannot be requested in the authentication request"() {
@@ -270,8 +283,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
 
         and: "The refresh token that the handover request rotated away is no longer accepted"
         Response reuse = Steps.tryUpdateSession(flow, ClientStore.mockSecuredApp, [refresh_token: staleRefreshToken])
-        assertThat("Correct HTTP status code", reuse.statusCode, is(HttpStatus.SC_UNAUTHORIZED))
-        assertThat("Correct error", reuse.jsonPath().getString("error"), is("token_inactive"))
+        HydraErrorValidator.validate(reuse, HydraError.TOKEN_INACTIVE, HINT_TOKEN_VALIDATION_FAILED)
     }
 
     def "Auth handover can be repeated on the same app session"() {
@@ -528,8 +540,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
 
         and: "The handed over session is terminated"
         Response webUpdate = Steps.tryUpdateSession(webFlow, ClientStore.clientA, [refresh_token: webRefreshToken])
-        assertThat("Web session can no longer be updated", webUpdate.statusCode, is(HttpStatus.SC_BAD_REQUEST))
-        assertThat("Correct error", webUpdate.body.jsonPath().getString("error"), is("invalid_grant"))
+        HydraErrorValidator.validate(webUpdate, HydraError.INVALID_GRANT)
 
         where:
         reason                                                    | client                            | appAuthAge
@@ -574,8 +585,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
 
         and: "The handed over session is terminated"
         Response webUpdate = Steps.tryUpdateSession(webFlow, ClientStore.clientA, [refresh_token: webRefreshToken])
-        assertThat("Web session can no longer be updated", webUpdate.statusCode, is(HttpStatus.SC_BAD_REQUEST))
-        assertThat("Correct error", webUpdate.body.jsonPath().getString("error"), is("invalid_grant"))
+        HydraErrorValidator.validate(webUpdate, HydraError.INVALID_GRANT)
     }
 
     private void ageAppAuthentication(Response appSession, String interval) {

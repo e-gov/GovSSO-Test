@@ -4,7 +4,9 @@ import com.google.common.hash.Hashing
 import ee.ria.govsso.configuration.ConfigHolder
 import ee.ria.govsso.model.Client
 import ee.ria.govsso.model.ErrorMessage
+import ee.ria.govsso.model.HydraError
 import ee.ria.govsso.util.ErrorValidator
+import ee.ria.govsso.util.HydraErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.response.Response
 import spock.lang.Tag
@@ -16,9 +18,18 @@ import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.startsWith
+import static ee.ria.govsso.util.HydraErrorValidator.HINT_SESSION_EXPIRED
+import static ee.ria.govsso.util.HydraErrorValidator.HINT_TOKEN_VALIDATION_FAILED
+import static ee.ria.govsso.util.HydraErrorValidator.responseTypeNotAllowed
+import static ee.ria.govsso.util.HydraErrorValidator.scopeNotAllowed
 import static org.hamcrest.MatcherAssert.assertThat
 
 class OidcRequestSpec extends GovSsoOidcSpecification {
+
+    static final HINT_CLIENT_NOT_FOUND = "The requested OAuth 2.0 Client does not exist."
+    static final HINT_REDIRECT_URI_NOT_REGISTERED = "The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
+    static final HINT_STATE_TOO_SHORT = "Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
+    static final HINT_POST_LOGOUT_REDIRECT_URI_NOT_REGISTERED = "Logout failed because query parameter post_logout_redirect_uri is not a whitelisted as a post_logout_redirect_uri for the client."
 
     @Feature("OIDC_ENDPOINT")
     def "Start SSO authentication request with correct parameters"() {
@@ -51,19 +62,18 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
         assertThat("Correct HTTP status code", oidcAuth.statusCode, is(statusCode))
-        assertThat("Correct error parameter", Utils.getParamValueFromResponseHeader(oidcAuth, "error"), is(error))
-        assertThat("Correct error message", Utils.getParamValueFromResponseHeader(oidcAuth, "error_description"), is(errorMessage))
+        HydraErrorValidator.validateRedirect(oidcAuth, error, hint)
 
         where:
-        paramKey        | paramValue      | error                       | statusCode | errorMessage
-        "prompt"        | "none"          | "login_required"            | 303        | "The Authorization Server requires End-User authentication. Prompt 'none' was requested, but no existing login session was found."
-        "scope"         | "invalid"       | "invalid_scope"             | 303        | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'invalid'."
-        "scope"         | "auth_handover" | "invalid_scope"             | 303        | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'auth_handover'."
-        "state"         | "invalid"       | "invalid_state"             | 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
-        "response_type" | "token"         | "unsupported_response_type" | 303        | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'token'."
-        "response_type" | "invalid"       | "unsupported_response_type" | 303        | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'invalid'."
-        "client_id"     | "invalid"       | "invalid_client"            | 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
-        "redirect_uri"  | "invalid"       | "invalid_request"           | 302        | "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
+        paramKey        | paramValue      || statusCode | error                               | hint
+        "prompt"        | "none"          || 303        | HydraError.LOGIN_REQUIRED            | "Prompt 'none' was requested, but no existing login session was found."
+        "scope"         | "invalid"       || 303        | HydraError.INVALID_SCOPE             | scopeNotAllowed("invalid")
+        "scope"         | "auth_handover" || 303        | HydraError.INVALID_SCOPE             | scopeNotAllowed("auth_handover")
+        "state"         | "invalid"       || 303        | HydraError.INVALID_STATE             | HINT_STATE_TOO_SHORT
+        "response_type" | "token"         || 303        | HydraError.UNSUPPORTED_RESPONSE_TYPE | responseTypeNotAllowed("token")
+        "response_type" | "invalid"       || 303        | HydraError.UNSUPPORTED_RESPONSE_TYPE | responseTypeNotAllowed("invalid")
+        "client_id"     | "invalid"       || 302        | HydraError.INVALID_CLIENT            | HINT_CLIENT_NOT_FOUND
+        "redirect_uri"  | "invalid"       || 302        | HydraError.INVALID_REQUEST           | HINT_REDIRECT_URI_NOT_REGISTERED
     }
 
     @Unroll
@@ -75,14 +85,13 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
 
         assertThat("Correct HTTP status code", oidcAuth.statusCode, is(statusCode))
-        assertThat("Correct error parameter", Utils.getParamValueFromResponseHeader(oidcAuth, "error"), is(error))
-        assertThat("Correct error message", Utils.getParamValueFromResponseHeader(oidcAuth, "error_description"), is(errorMessage))
+        HydraErrorValidator.validateRedirect(oidcAuth, error, hint)
 
         where:
-        missingParam    | error                       | statusCode | errorMessage
-        "state"         | "invalid_state"             | 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
-        "response_type" | "unsupported_response_type" | 303        | "The authorization server does not support obtaining a token using this method. `The request is missing the 'response_type' parameter."
-        "client_id"     | "invalid_client"            | 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
+        missingParam    || statusCode | error                               | hint
+        "state"         || 303        | HydraError.INVALID_STATE             | HINT_STATE_TOO_SHORT
+        "response_type" || 303        | HydraError.UNSUPPORTED_RESPONSE_TYPE | "`The request is missing the 'response_type' parameter."
+        "client_id"     || 302        | HydraError.INVALID_CLIENT            | HINT_CLIENT_NOT_FOUND
     }
 
     @Feature("OIDC_ENDPOINT")
@@ -158,16 +167,16 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
         Response loginVerifier = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, queryParams)
 
         assertThat("Correct HTTP status code", loginVerifier.statusCode, is(statusCode))
-        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(loginVerifier, "error_description"), is(error))
+        HydraErrorValidator.validateRedirect(loginVerifier, error, hint)
 
         where:
-        reason                     | clientId    | login_verifier   | redirectUri    | responseType    | scope       | state   | statusCode | error
-        "Incorrect client_id"      | "scope"     | "login_verifier" | "redirect_uri" | "response_type" | "scope"     | "state" | 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
-        "Incorrect login_verifier" | "client_id" | "scope"          | "redirect_uri" | "response_type" | "scope"     | "state" | 303        | "The resource owner or authorization server denied the request. The login verifier has already been used, has not been granted, or is invalid."
-        "Incorrect redirect_uri"   | "client_id" | "login_verifier" | "scope"        | "response_type" | "scope"     | "state" | 302        | "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
-        "Incorrect response_type"  | "client_id" | "login_verifier" | "redirect_uri" | "scope"         | "scope"     | "state" | 303        | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'openid'."
-        "Incorrect scope"          | "client_id" | "login_verifier" | "redirect_uri" | "response_type" | "client_id" | "state" | 303        | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'client-a'."
-        "Incorrect state"          | "client_id" | "login_verifier" | "redirect_uri" | "response_type" | "scope"     | "scope" | 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
+        reason                     | clientId    | login_verifier   | redirectUri    | responseType    | scope       | state   || statusCode | error                               | hint
+        "Incorrect client_id"      | "scope"     | "login_verifier" | "redirect_uri" | "response_type" | "scope"     | "state" || 302        | HydraError.INVALID_CLIENT            | HINT_CLIENT_NOT_FOUND
+        "Incorrect login_verifier" | "client_id" | "scope"          | "redirect_uri" | "response_type" | "scope"     | "state" || 303        | HydraError.ACCESS_DENIED             | "The login verifier has already been used, has not been granted, or is invalid."
+        "Incorrect redirect_uri"   | "client_id" | "login_verifier" | "scope"        | "response_type" | "scope"     | "state" || 302        | HydraError.INVALID_REQUEST           | HINT_REDIRECT_URI_NOT_REGISTERED
+        "Incorrect response_type"  | "client_id" | "login_verifier" | "redirect_uri" | "scope"         | "scope"     | "state" || 303        | HydraError.UNSUPPORTED_RESPONSE_TYPE | responseTypeNotAllowed("openid")
+        "Incorrect scope"          | "client_id" | "login_verifier" | "redirect_uri" | "response_type" | "client_id" | "state" || 303        | HydraError.INVALID_SCOPE             | scopeNotAllowed("client-a")
+        "Incorrect state"          | "client_id" | "login_verifier" | "redirect_uri" | "response_type" | "scope"     | "scope" || 303        | HydraError.INVALID_STATE             | HINT_STATE_TOO_SHORT
     }
 
     @Unroll
@@ -191,16 +200,16 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
         Response consentVerifier = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullAuthenticationRequestUrl, queryParams)
 
         assertThat("Correct HTTP status code", consentVerifier.statusCode, is(statusCode))
-        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(consentVerifier, "error_description"), is(error))
+        HydraErrorValidator.validateRedirect(consentVerifier, error, hint)
 
         where:
-        reason                       | clientId    | consent_verifier   | redirectUri    | responseType    | scope       | state   | statusCode | error
-        "Incorrect client_id"        | "scope"     | "consent_verifier" | "redirect_uri" | "response_type" | "scope"     | "state" | 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
-        "Incorrect consent_verifier" | "client_id" | "scope"            | "redirect_uri" | "response_type" | "scope"     | "state" | 303        | "The resource owner or authorization server denied the request. The consent verifier has already been used, has not been granted, or is invalid."
-        "Incorrect redirect_uri"     | "client_id" | "consent_verifier" | "scope"        | "response_type" | "scope"     | "state" | 302        | "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. The 'redirect_uri' parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls."
-        "Incorrect responseType"     | "client_id" | "consent_verifier" | "redirect_uri" | "scope"         | "scope"     | "state" | 303        | "The authorization server does not support obtaining a token using this method. The client is not allowed to request response_type 'openid'."
-        "Incorrect scope"            | "client_id" | "consent_verifier" | "redirect_uri" | "response_type" | "client_id" | "state" | 303        | "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'client-a'."
-        "Incorrect state"            | "client_id" | "consent_verifier" | "redirect_uri" | "response_type" | "scope"     | "scope" | 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
+        reason                       | clientId    | consent_verifier   | redirectUri    | responseType    | scope       | state   || statusCode | error                               | hint
+        "Incorrect client_id"        | "scope"     | "consent_verifier" | "redirect_uri" | "response_type" | "scope"     | "state" || 302        | HydraError.INVALID_CLIENT            | HINT_CLIENT_NOT_FOUND
+        "Incorrect consent_verifier" | "client_id" | "scope"            | "redirect_uri" | "response_type" | "scope"     | "state" || 303        | HydraError.ACCESS_DENIED             | "The consent verifier has already been used, has not been granted, or is invalid."
+        "Incorrect redirect_uri"     | "client_id" | "consent_verifier" | "scope"        | "response_type" | "scope"     | "state" || 302        | HydraError.INVALID_REQUEST           | HINT_REDIRECT_URI_NOT_REGISTERED
+        "Incorrect responseType"     | "client_id" | "consent_verifier" | "redirect_uri" | "scope"         | "scope"     | "state" || 303        | HydraError.UNSUPPORTED_RESPONSE_TYPE | responseTypeNotAllowed("openid")
+        "Incorrect scope"            | "client_id" | "consent_verifier" | "redirect_uri" | "response_type" | "client_id" | "state" || 303        | HydraError.INVALID_SCOPE             | scopeNotAllowed("client-a")
+        "Incorrect state"            | "client_id" | "consent_verifier" | "redirect_uri" | "response_type" | "scope"     | "scope" || 303        | HydraError.INVALID_STATE             | HINT_STATE_TOO_SHORT
     }
 
     @Feature("OIDC_LOGOUT_ENDPOINT")
@@ -239,12 +248,8 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
         Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
         Response initLogout = Steps.startLogout(flow, createSession.path("id_token"), "https://not.whitelisted.eu")
 
-        String errorDescription = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. " +
-                "Logout failed because query parameter post_logout_redirect_uri is not a whitelisted as a post_logout_redirect_uri for the client."
-
         assertThat("Correct HTTP status code", initLogout.statusCode, is(302))
-        assertThat("Correct error", Utils.getParamValueFromResponseHeader(initLogout, "error"), is("invalid_request"))
-        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(initLogout, "error_description"), is(errorDescription))
+        HydraErrorValidator.validateRedirect(initLogout, HydraError.INVALID_REQUEST, HINT_POST_LOGOUT_REDIRECT_URI_NOT_REGISTERED)
     }
 
     @Feature("OIDC_LOGOUT_ENDPOINT")
@@ -259,12 +264,8 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
                            post_logout_redirect_uri: ClientStore.clientB.fullBaseUrl]
         Response initLogout = Requests.getRequestWithParams(flow, flow.ssoOidcService.fullLogoutUrl, queryParams)
 
-        String errorDescription = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. " +
-                "Logout failed because query parameter post_logout_redirect_uri is not a whitelisted as a post_logout_redirect_uri for the client."
-
         assertThat("Correct HTTP status code", initLogout.statusCode, is(302))
-        assertThat("Correct error", Utils.getParamValueFromResponseHeader(initLogout, "error"), is("invalid_request"))
-        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(initLogout, "error_description"), is(errorDescription))
+        HydraErrorValidator.validateRedirect(initLogout, HydraError.INVALID_REQUEST, HINT_POST_LOGOUT_REDIRECT_URI_NOT_REGISTERED)
     }
 
     @Feature("OIDC_LOGOUT_ENDPOINT")
@@ -300,8 +301,7 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
 
         assertThat("Correct HTTP status code", loginVerifier.statusCode, is(303))
         assertThat("Correct redirect URL", loginVerifier.header("location").startsWith(ClientStore.clientB.fullBaseUrl))
-        assertThat("Correct error in URL", loginVerifier.header("location").contains("error=user_cancel"))
-        assertThat("Correct error description in URL", loginVerifier.header("location").contains("error_description=User+canceled+the+authentication+process."))
+        HydraErrorValidator.validateRedirect(loginVerifier, HydraError.USER_CANCEL)
         assertThat("URL contains state parameter", loginVerifier.header("location").contains("state"))
     }
 
@@ -386,10 +386,7 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
         Response updateResponse = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: refreshToken])
 
         assertThat("Correct HTTP status code", logoutVerifier.statusCode, is(302))
-        assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
-        assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_request"))
-        assertThat("Correct error description", updateResponse.body.jsonPath().getString("error_description"), is("The request is missing a required parameter, includes an invalid parameter value, " +
-                "includes a parameter more than once, or is otherwise malformed. Authentication session not found or expired."))
+        HydraErrorValidator.validate(updateResponse, HydraError.INVALID_REQUEST, HINT_SESSION_EXPIRED)
     }
 
     @Tag("eidas")
@@ -408,13 +405,7 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
 
         Response updateResponse = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: refreshToken])
 
-        assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
-        assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
-        assertThat("Correct error description", updateResponse.body.jsonPath().getString("error_description"), is("The provided authorization grant " +
-                "(e.g., authorization code, resource owner credentials) " +
-                "or refresh token is invalid, expired, revoked, " +
-                "does not match the redirection URI used in the authorization request, " +
-                "or was issued to another client."))
+        HydraErrorValidator.validate(updateResponse, HydraError.INVALID_GRANT)
     }
 
     @Feature("ID_TOKEN")
@@ -427,14 +418,8 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
 
         Response updateResponse = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: refreshToken2])
 
-        assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
-        assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
-        assertThat("Correct error description", updateResponse.body.jsonPath().getString("error_description"), is("The provided authorization grant " +
-                "(e.g., authorization code, resource owner credentials) " +
-                "or refresh token is invalid, expired, revoked, " +
-                "does not match the redirection URI used in the authorization request, " +
-                "or was issued to another client. " +
-                "The OAuth 2.0 Client ID from this request does not match the ID during the initial token issuance."))
+        HydraErrorValidator.validate(updateResponse, HydraError.INVALID_GRANT,
+                "The OAuth 2.0 Client ID from this request does not match the ID during the initial token issuance.")
     }
 
     @Feature("ID_TOKEN")
@@ -447,10 +432,7 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
 
         Response updateResponse = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: refreshToken1])
 
-        assertThat("Correct HTTP status code", updateResponse.statusCode, is(401))
-        assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("token_inactive"))
-        assertThat("Correct error description", updateResponse.body.jsonPath().getString("error_description"), is("Token is inactive because it is malformed, expired or otherwise invalid. " +
-                "Token validation failed."))
+        HydraErrorValidator.validate(updateResponse, HydraError.TOKEN_INACTIVE, HINT_TOKEN_VALIDATION_FAILED)
     }
 
     @Feature("ID_TOKEN")
@@ -460,12 +442,7 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
 
         Response updateResponse = Steps.tryUpdateSession(flow, ClientStore.clientA, [refresh_token: "123abc.123abc"])
 
-        assertThat("Correct HTTP status code", updateResponse.statusCode, is(400))
-        assertThat("Correct error", updateResponse.body.jsonPath().getString("error"), is("invalid_grant"))
-        assertThat("Correct error description", updateResponse.body.jsonPath().getString("error_description"), is("The provided authorization grant (e.g., authorization code, resource owner credentials) " +
-                "or refresh token is invalid, expired, revoked, " +
-                "does not match the redirection URI used in the authorization request, " +
-                "or was issued to another client."))
+        HydraErrorValidator.validate(updateResponse, HydraError.INVALID_GRANT)
     }
 
     @Feature("OIDC_ENDPOINT")

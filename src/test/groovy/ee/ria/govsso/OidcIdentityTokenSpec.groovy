@@ -2,10 +2,13 @@ package ee.ria.govsso
 
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.govsso.model.ClientType
+import ee.ria.govsso.model.HydraError
+import ee.ria.govsso.util.HydraErrorValidator
 import io.qameta.allure.Feature
 import io.qameta.allure.Step
 import io.restassured.response.Response
 
+import static ee.ria.govsso.util.HydraErrorValidator.authMethodNotSupported
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.equalTo
@@ -87,10 +90,8 @@ class OidcIdentityTokenSpec extends GovSsoOidcSpecification {
         Response tokenResponse = Requests.webTokenPostRequest(flow, authorizationCode, ClientStore.clientA)
 
         then:
-        assertThat("Correct HTTP status", tokenResponse.statusCode, is(401))
-        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is("invalid_client"))
-        assertThat("Correct error message", tokenResponse.jsonPath().getString("error_description"), containsString(
-                "The OAuth 2.0 Client supports client authentication method 'client_secret_basic', but method 'client_secret_post' was requested."))
+        HydraErrorValidator.validate(tokenResponse, HydraError.INVALID_CLIENT,
+                containsString(authMethodNotSupported("client_secret_basic", "client_secret_post")))
     }
 
     @Feature("ID_TOKEN")
@@ -106,10 +107,8 @@ class OidcIdentityTokenSpec extends GovSsoOidcSpecification {
         Response tokenResponse = Requests.webTokenBasicRequest(flow, authorizationCode, ClientStore.clientF)
 
         then:
-        assertThat("Correct HTTP status", tokenResponse.statusCode, is(401))
-        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is("invalid_client"))
-        assertThat("Correct error message", tokenResponse.jsonPath().getString("error_description"), containsString(
-                "The OAuth 2.0 Client supports client authentication method 'client_secret_post', but method 'client_secret_basic' was requested."))
+        HydraErrorValidator.validate(tokenResponse, HydraError.INVALID_CLIENT,
+                containsString(authMethodNotSupported("client_secret_post", "client_secret_basic")))
     }
 
     @Feature("ID_TOKEN")

@@ -4,8 +4,10 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import ee.ria.govsso.model.Client
 import ee.ria.govsso.model.ErrorMessage
+import ee.ria.govsso.model.HydraError
 import ee.ria.govsso.model.LoA
 import ee.ria.govsso.util.ErrorValidator
+import ee.ria.govsso.util.HydraErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.response.Response
 import spock.lang.Tag
@@ -440,7 +442,7 @@ class SessionServiceSpec extends GovSsoOidcSpecification {
         Response taraOidcAuth1 = Steps.followRedirect(flow, initLogin)
         Response tarainitLogin = Steps.followRedirect(flow, taraOidcAuth1)
 
-        Map paramsMap = [error_code: REJECT_ERROR_CODE]
+        Map paramsMap = [error_code: "user_cancel"]
 
         Map cookieMap = ["__Host-SESSION": tarainitLogin.getCookie("__Host-SESSION")]
 
@@ -449,8 +451,7 @@ class SessionServiceSpec extends GovSsoOidcSpecification {
         Response taraOidcAuth2 = Steps.followRedirect(flow, taraReject)
 
         assertThat("Correct redirect URL", taraOidcAuth2.getHeader("location").startsWith(flow.sessionService.fullTaraCallbackUrl))
-        assertThat("Correct error in URL", taraOidcAuth2.getHeader("location").contains("error=user_cancel"))
-        assertThat("Correct error description in URL", taraOidcAuth2.getHeader("location").contains("error_description=User+canceled+the+authentication+process."))
+        HydraErrorValidator.validateRedirect(taraOidcAuth2, HydraError.USER_CANCEL)
         assertThat("URL contains state parameter", taraOidcAuth2.getHeader("location").contains("state"))
     }
 

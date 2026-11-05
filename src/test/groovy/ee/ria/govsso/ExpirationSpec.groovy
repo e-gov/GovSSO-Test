@@ -2,11 +2,15 @@ package ee.ria.govsso
 
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.govsso.database.SqlQueries
+import ee.ria.govsso.model.HydraError
+import ee.ria.govsso.util.HydraErrorValidator
 import io.qameta.allure.Epic
 import io.qameta.allure.Feature
 import io.qameta.allure.Story
 import io.restassured.response.Response
 
+import static ee.ria.govsso.util.HydraErrorValidator.HINT_SESSION_EXPIRED
+import static ee.ria.govsso.util.HydraErrorValidator.HINT_TOKEN_VALIDATION_FAILED
 import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.allOf
@@ -16,9 +20,6 @@ import static org.hamcrest.MatcherAssert.assertThat
 @Epic("DATABASE")
 @Feature("EXPIRATION")
 class ExpirationSpec extends GovSsoOidcSpecification {
-
-    static final ERROR_EXPIRED = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed. Authentication session not found or expired."
-    static final ERROR_INACTIVE = "Token is inactive because it is malformed, expired or otherwise invalid. Token validation failed."
 
     @Story("REFRESH_TOKEN_INACTIVE")
     def "Authentication request succeeds after refresh token expiration"() {
@@ -48,9 +49,7 @@ class ExpirationSpec extends GovSsoOidcSpecification {
         Response updateSession = Steps.tryUpdateSession(flow)
 
         then: "Expected status code is 400 and correct error response is returned"
-        assertThat(updateSession.statusCode, is(400))
-        assertThat(updateSession.jsonPath().getString("error"), is("invalid_request"))
-        assertThat(updateSession.jsonPath().getString("error_description"), is(ERROR_EXPIRED))
+        HydraErrorValidator.validate(updateSession, HydraError.INVALID_REQUEST, HINT_SESSION_EXPIRED)
     }
 
     @Story("CONSENT_EXPIRATION")
@@ -65,9 +64,7 @@ class ExpirationSpec extends GovSsoOidcSpecification {
         Response updateSession = Steps.tryUpdateSession(flow)
 
         then: "Expected status code is 400 and correct error response is returned"
-        assertThat(updateSession.statusCode, is(400))
-        assertThat(updateSession.jsonPath().getString("error"), is("invalid_request"))
-        assertThat(updateSession.jsonPath().getString("error_description"), is(ERROR_EXPIRED))
+        HydraErrorValidator.validate(updateSession, HydraError.INVALID_REQUEST, HINT_SESSION_EXPIRED)
     }
 
     @Story("REFRESH_TOKEN_INACTIVE")
@@ -81,10 +78,8 @@ class ExpirationSpec extends GovSsoOidcSpecification {
         when: "Request session update"
         Response updateSession = Steps.tryUpdateSession(flow)
 
-        then: "Expected status code is 400 and correct error response is returned"
-        assertThat(updateSession.statusCode, is(401))
-        assertThat(updateSession.jsonPath().getString("error"), is("token_inactive"))
-        assertThat(updateSession.jsonPath().getString("error_description"), is(ERROR_INACTIVE))
+        then: "Expected status code is 401 and correct error response is returned"
+        HydraErrorValidator.validate(updateSession, HydraError.TOKEN_INACTIVE, HINT_TOKEN_VALIDATION_FAILED)
     }
 
     @Story("SESSION_EXPIRATION")

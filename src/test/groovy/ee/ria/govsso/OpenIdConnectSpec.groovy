@@ -3,6 +3,8 @@ package ee.ria.govsso
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
+import ee.ria.govsso.model.HydraError
+import ee.ria.govsso.util.HydraErrorValidator
 import io.qameta.allure.Feature
 import io.qameta.allure.Step
 import io.restassured.response.Response
@@ -10,7 +12,6 @@ import io.restassured.response.Response
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.hasItem
-import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.Matchers.endsWith
 import static org.hamcrest.MatcherAssert.assertThat
 
@@ -52,10 +53,7 @@ class OpenIdConnectSpec extends GovSsoOidcSpecification {
         Requests.webTokenBasicRequest(flow, authorizationCode)
         // 2
         Response token2 = Requests.webTokenBasicRequest(flow, authorizationCode)
-        assertThat("Correct HTTP status code", token2.statusCode, is(400))
-        assertThat("Correct Content-Type", token2.contentType, startsWith("application/json"))
-        assertThat("Correct error message", token2.body.jsonPath().getString("error"), is("invalid_grant"))
-        assertThat("Correct error_description", token2.body.jsonPath().getString("error_description"), endsWith("The authorization code has already been used."))
+        HydraErrorValidator.validate(token2, HydraError.INVALID_GRANT, endsWith("The authorization code has already been used."))
     }
 
     @Feature("OIDC_TOKEN")
@@ -68,9 +66,7 @@ class OpenIdConnectSpec extends GovSsoOidcSpecification {
         String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
 
         Response token = Requests.webTokenBasicRequest(flow, authorizationCode + "e")
-        assertThat("Correct HTTP status code", token.statusCode, is(400))
-        assertThat("Correct Content-Type", token.contentType, startsWith("application/json"))
-        assertThat("Correct error message", token.body.jsonPath().getString("error"), is("invalid_grant"))
+        HydraErrorValidator.validate(token, HydraError.INVALID_GRANT)
     }
 
     @Feature("OIDC_TOKEN")
@@ -82,17 +78,13 @@ class OpenIdConnectSpec extends GovSsoOidcSpecification {
         formParams.remove(paramName)
         Response token = Requests.tokenRequest(flow, formParams)
 
-        assertThat("Correct HTTP status code", token.statusCode, is(statusCode))
-        assertThat("Correct Content-Type is returned", token.contentType, startsWith("application/json"))
-        assertThat("Correct error message", token.body.jsonPath().getString("error"), is(error))
-        assertThat("Correct error_description prefix", token.body.path("error_description"), startsWith(errorPrefix))
-        assertThat("Correct error_description suffix", token.body.path("error_description"), endsWith(errorSuffix))
+        HydraErrorValidator.validate(token, HydraError.INVALID_REQUEST, endsWith(hintSuffix))
 
         where:
-        paramName      || statusCode || error             || errorPrefix                                   || errorSuffix
-        "code"         || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
-        "grant_type"   || 400        || "invalid_request" || "The request is missing a required parameter" || "Request parameter 'grant_type' is missing"
-        "redirect_uri" || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
+        paramName      || hintSuffix
+        "code"         || "whitelisted the redirect_uri you specified."
+        "grant_type"   || "Request parameter 'grant_type' is missing"
+        "redirect_uri" || "whitelisted the redirect_uri you specified."
     }
 
     @Feature("OIDC_TOKEN")
@@ -104,17 +96,13 @@ class OpenIdConnectSpec extends GovSsoOidcSpecification {
         formParams << [(paramName): paramValue]
         Response token = Requests.tokenRequest(flow, formParams)
 
-        assertThat("Correct HTTP status code", token.statusCode, is(statusCode))
-        assertThat("Correct Content-Type", token.contentType, startsWith("application/json"))
-        assertThat("Correct error message", token.body.jsonPath().getString("error"), is(error))
-        assertThat("Correct error_description prefix", token.body.path("error_description"), startsWith(errorPrefix))
-        assertThat("Correct error_description suffix", token.body.path("error_description"), endsWith(errorSuffix))
+        HydraErrorValidator.validate(token, HydraError.INVALID_REQUEST, endsWith(hintSuffix))
 
         where:
-        paramName      | paramValue                || statusCode || error             || errorPrefix                                   || errorSuffix
-        "redirect_uri" | "https://www.example.com" || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
-        "grant_type"   | "token"                   || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
-        "code"         | "45678"                   || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
+        paramName      | paramValue                || hintSuffix
+        "redirect_uri" | "https://www.example.com" || "whitelisted the redirect_uri you specified."
+        "grant_type"   | "token"                   || "whitelisted the redirect_uri you specified."
+        "code"         | "45678"                   || "whitelisted the redirect_uri you specified."
     }
 
     @Feature("OIDC_TOKEN")
