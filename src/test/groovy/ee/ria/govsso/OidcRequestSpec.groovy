@@ -3,6 +3,8 @@ package ee.ria.govsso
 import com.google.common.hash.Hashing
 import ee.ria.govsso.configuration.ConfigHolder
 import ee.ria.govsso.model.Client
+import ee.ria.govsso.model.ErrorMessage
+import ee.ria.govsso.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.response.Response
 import spock.lang.Tag
@@ -37,11 +39,7 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidcWithParams(flow, paramsMap)
         Response oidcError = Steps.followRedirect(flow, oidcAuth)
 
-        assertThat("Correct HTTP status code", oidcError.statusCode, is(400))
-        assertThat("Correct path", oidcError.jsonPath().getString("path"), is("/error/oidc"))
-        assertThat("Correct error", oidcError.jsonPath().getString("error"), is("USER_INVALID_OIDC_CLIENT"))
-        assertThat("Correct message", oidcError.jsonPath().getString("message"), is("Vale <span translate=\"no\">OIDC</span> klient."))
-        assertThat("Contains incident number", oidcError.jsonPath().getString("incident_nr").size() == 32)
+        ErrorValidator.validate(oidcError, ErrorMessage.USER_INVALID_OIDC_CLIENT, "/error/oidc")
     }
 
     @Unroll
@@ -479,9 +477,7 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
         Response oidcUpdateSession = Steps.startSessionUpdateInSsoOidcWithDefaults(flow, idToken, ClientStore.clientA.fullBaseUrl)
         Response initLogin = Steps.followRedirectWithOrigin(flow, oidcUpdateSession, ClientStore.clientA.fullBaseUrl)
 
-        assertThat("Correct HTTP status code", initLogin.statusCode, is(400))
-        assertThat("Correct error", initLogin.jsonPath().getString("error"), is("USER_INPUT"))
-        assertThat("Correct error message", initLogin.jsonPath().getString("message"), is("Ebakorrektne päring."))
+        ErrorValidator.validate(initLogin, ErrorMessage.USER_INPUT)
     }
 
     @Unroll
@@ -492,10 +488,7 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
         Response oidcAuth = Steps.startAuthenticationInSsoOidc(flow, ClientStore.clientB)
         Response initLogin = Requests.getRequest(oidcAuth.then().extract().response().header("location"))
 
-        assertThat("Correct HTTP status code", initLogin.body.jsonPath().getString("status"), is("400"))
-        assertThat("Correct path", initLogin.body.jsonPath().getString("path"), is("/login/init"))
-        assertThat("Correct error", initLogin.body.jsonPath().getString("error"), is("USER_INPUT"))
-        assertThat("Correct message", initLogin.body.jsonPath().getString("message"), is("Ebakorrektne päring."))
+        ErrorValidator.validate(initLogin, ErrorMessage.USER_INPUT, "/login/init")
     }
 
     @Unroll
@@ -508,9 +501,6 @@ class OidcRequestSpec extends GovSsoOidcSpecification {
         Map cookies = ["__Host-ory_hydra_session": "SW5jb3JyZWN0IHNlc3Npb24gY29va2ll"]
         Response initLogin = Steps.followRedirectWithCookies(flow, oidcAuth, cookies)
 
-        assertThat("Correct HTTP status code", initLogin.body.jsonPath().getString("status"), is("400"))
-        assertThat("Correct path", initLogin.body.jsonPath().getString("path"), is("/login/init"))
-        assertThat("Correct error", initLogin.body.jsonPath().getString("error"), is("USER_INPUT"))
-        assertThat("Correct message", initLogin.body.jsonPath().getString("message"), is("Ebakorrektne päring."))
+        ErrorValidator.validate(initLogin, ErrorMessage.USER_INPUT, "/login/init")
     }
 }

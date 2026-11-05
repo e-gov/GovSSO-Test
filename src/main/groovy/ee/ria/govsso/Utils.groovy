@@ -16,8 +16,12 @@ import java.security.SecureRandom
 import java.security.Signature
 import java.security.cert.Certificate
 import java.time.Duration
+import java.time.ZonedDateTime
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+
+import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.lessThan
 
 class Utils {
 
@@ -171,6 +175,11 @@ class Utils {
                 .plusHours(durationPart(matcher, 2))
                 .plusMinutes(durationPart(matcher, 3))
                 .plusSeconds(durationPart(matcher, 4))
+    }
+
+    static void verifyTimestampAge(ZonedDateTime timeStamp, long secondsRange) {
+        long timestampAge = Duration.between(timeStamp, ZonedDateTime.now()).abs().seconds
+        assertThat("Timestamp should be within " + secondsRange + " seconds", timestampAge, lessThan(secondsRange))
     }
 
     private static long durationPart(Matcher matcher, int group) {

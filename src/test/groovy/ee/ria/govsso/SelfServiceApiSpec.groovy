@@ -3,6 +3,8 @@ package ee.ria.govsso
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.govsso.database.DatabaseConnection
 import ee.ria.govsso.database.SqlQueries
+import ee.ria.govsso.model.ErrorMessage
+import ee.ria.govsso.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.response.Response
 import spock.lang.Isolated
@@ -282,10 +284,7 @@ class SelfServiceApiSpec extends GovSsoOidcSpecification {
         Response response = Requests.requestWithType(requestType, flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT + NONVALID_SESSION_UUID)
 
         then: "Request type: #requestType is unsuccessful and correct error information is returned"
-        assertThat("Correct status code", response.statusCode(), is(500))
-        assertThat("Correct path", response.jsonPath().getString("path"), is(flow.sessionService.sessionsUrl + SUBJECT_ENDPOINT + NONVALID_SESSION_UUID))
-        assertThat("Correct error", response.jsonPath().getString("error"), is("TECHNICAL_GENERAL"))
-        assertThat("Correct error message", response.jsonPath().getString("message"), is("Protsess ebaõnnestus tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+        ErrorValidator.validate(response, ErrorMessage.TECHNICAL_GENERAL, flow.sessionService.sessionsUrl + SUBJECT_ENDPOINT + NONVALID_SESSION_UUID)
 
         where:
         requestType | _
@@ -302,10 +301,7 @@ class SelfServiceApiSpec extends GovSsoOidcSpecification {
         Response sessions = Requests.requestWithType(requestType, flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
 
         then: "Request type: #requestType is unsuccessful and correct error information is returned"
-        assertThat("Correct status code", sessions.statusCode(), is(500))
-        assertThat("Correct path", sessions.jsonPath().getString("path"), is(flow.sessionService.sessionsUrl + SUBJECT_ENDPOINT))
-        assertThat("Correct error", sessions.jsonPath().getString("error"), is("TECHNICAL_GENERAL"))
-        assertThat("Correct error message", sessions.jsonPath().getString("message"), is("Protsess ebaõnnestus tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+        ErrorValidator.validate(sessions, ErrorMessage.TECHNICAL_GENERAL, flow.sessionService.sessionsUrl + SUBJECT_ENDPOINT)
 
         where:
         requestType | _

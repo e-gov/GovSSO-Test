@@ -1,6 +1,8 @@
 package ee.ria.govsso
 
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.govsso.model.ErrorMessage
+import ee.ria.govsso.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
@@ -165,11 +167,6 @@ class SecuredAppSpec extends GovSsoOidcSpecification {
                  _csrf         : csrf])
 
         then:
-        continueSession.then()
-                .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(
-                        "error", is("USER_INPUT"),
-                        "path", is("/login/continuesession"),
-                        "message", is("Ebakorrektne päring."))
+        ErrorValidator.validate(continueSession, ErrorMessage.USER_INPUT, "/login/continuesession")
     }
 }

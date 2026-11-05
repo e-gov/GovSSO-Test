@@ -9,6 +9,8 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import ee.ria.govsso.database.SqlQueries
 import ee.ria.govsso.model.ClientType
+import ee.ria.govsso.model.ErrorMessage
+import ee.ria.govsso.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
@@ -142,12 +144,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response initLogin = Steps.followRedirect(flow, oidcAuth)
 
         then: "Request is rejected"
-        initLogin.then()
-                .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(
-                        "error", is("USER_INPUT"),
-                        "path", is("/login/init"),
-                        "message", is("Ebakorrektne päring."))
+        ErrorValidator.validate(initLogin, ErrorMessage.USER_INPUT, "/login/init")
     }
 
     def "Authentication with auth handover token creates a new session without TARA authentication"() {
@@ -385,7 +382,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
 
         then:
-        initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INPUT"))
+        ErrorValidator.validate(initLogin, ErrorMessage.USER_INPUT)
     }
 
     def "Authentication with ordinary access token as auth handover token fails"() {
@@ -397,7 +394,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientA, accessToken)
 
         then:
-        initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INVALID_OIDC_REQUEST"))
+        ErrorValidator.validate(initLogin, ErrorMessage.USER_INVALID_OIDC_REQUEST)
     }
 
     @Issue("AUT-3272 - rate-limiter may cause test to fail due to different failure message")
@@ -409,7 +406,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientA, forgedToken)
 
         then:
-        initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INVALID_OIDC_REQUEST"))
+        ErrorValidator.validate(initLogin, ErrorMessage.USER_INVALID_OIDC_REQUEST)
     }
 
     @Issue("AUT-3272 - rate-limiter may cause test to fail due to different failure message")
@@ -422,21 +419,16 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientB, handoverToken)
 
         then: "The request is rejected without restarting authentication"
-        initLogin.then()
-                .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(
-                        "error", is(expectedError),
-                        "path", is("/login/init"),
-                        "message", is(expectedMessage))
+        ErrorValidator.validate(initLogin, expectedError, "/login/init")
 
         and: "The existing session survives"
         assertThat("Existing session can still be updated",
                 Steps.tryUpdateSession(webFlow, ClientStore.clientA, [refresh_token: existingRefreshToken]).statusCode, is(HttpStatus.SC_OK))
 
         where:
-        reason        | handoverToken              || expectedError               | expectedMessage
-        "unparseable" | "random"                   || "USER_INPUT"                | "Ebakorrektne päring."
-        "forged"      | craftForgedHandoverToken() || "USER_INVALID_OIDC_REQUEST" | "Vale <span translate=\"no\">OIDC</span> päring."
+        reason        | handoverToken              || expectedError
+        "unparseable" | "random"                   || ErrorMessage.USER_INPUT
+        "forged"      | craftForgedHandoverToken() || ErrorMessage.USER_INVALID_OIDC_REQUEST
     }
 
     @Tag("slow")
@@ -454,7 +446,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response initLogin = Steps.startAuthenticationWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
 
         then:
-        initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INVALID_OIDC_REQUEST"))
+        ErrorValidator.validate(initLogin, ErrorMessage.USER_INVALID_OIDC_REQUEST)
     }
 
     def "Auth handover token can only be used once"() {
@@ -470,7 +462,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response initLogin = Steps.startAuthenticationWithHandoverToken(replayFlow, ClientStore.clientA, handoverToken)
 
         then:
-        initLogin.then().statusCode(HttpStatus.SC_BAD_REQUEST).body("error", is("USER_INPUT"))
+        ErrorValidator.validate(initLogin, ErrorMessage.USER_INPUT)
     }
 
     def "Authentication with auth handover token falls back to TARA for #reason"() {
