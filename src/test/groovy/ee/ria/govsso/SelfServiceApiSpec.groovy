@@ -11,6 +11,7 @@ import spock.lang.Isolated
 import spock.lang.Unroll
 
 import java.time.Instant
+import java.time.OffsetDateTime
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.allOf
@@ -19,7 +20,9 @@ import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasSize
 import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.lessThan
 import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.notNullValue
 
 @Isolated
 class SelfServiceApiSpec extends GovSsoOidcSpecification {
@@ -199,26 +202,36 @@ class SelfServiceApiSpec extends GovSsoOidcSpecification {
     }
 
     @Feature("SELF_SERVICE_API")
-    def "GET sessions returns valid information after log out from one service"() {
-        given: "Create a session"
+    def "GET sessions shows the logged out service as expired and keeps the session for the other service"() {
+        given: "Create a session in client A and continue it in client B"
         Steps.authenticateWithIdCardInGovSso(flow)
-
-        and: "Continue session"
         Response continueSession = Steps.continueWithExistingSession(flow, ClientStore.clientB)
         String idToken = continueSession.path("id_token")
 
-        and: "Logout from one client"
+        and: "Logout from client B and continue the session in client A"
         Steps.logout(flow, idToken, ClientStore.clientB.postLogoutRedirectUri, flow.sessionService.fullLogoutContinueSessionUrl)
 
-        //Sleep for 1 second to allow information to update before requesting session information.
+        // The logout sets the consent expiration of client B to the current time. A service is shown as expired only after that time has passed.
         sleep 1000
 
         when: "GET session information"
         Response sessionInfo = Requests.getRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
+        List<Map> services = sessionInfo.path("services[0]")
+        Map serviceA = services.find { it.client_names.et == "Teenusenimi A" }
+        Map serviceB = services.find { it.client_names.et == "Teenusenimi B" }
 
-        then: "Session information is updated correctly"
-        assertThat("Logged out client is present in session info", sessionInfo.path("services.client_names[0][0]"), hasEntry("et", "Teenusenimi B"))
-        assertThat("Services.expires_at is same value as services.last_updated_at", sessionInfo.path("services[0].expires_at[0]") == sessionInfo.path("services[0].last_updated_at[0]"))
+        then: "The session is kept with both services"
+        assertThat("User has a single session", sessionInfo.path("session_id"), hasSize(1))
+        assertThat("Client A is present in session info", serviceA, notNullValue())
+        assertThat("Logged out client B is present in session info", serviceB, notNullValue())
+
+        and: "Client B is expired, client A is active"
+        assertThat("Client B last_updated_at equals expires_at",
+                OffsetDateTime.parse(serviceB.last_updated_at as String),
+                is(OffsetDateTime.parse(serviceB.expires_at as String)))
+        assertThat("Client A last_updated_at is before expires_at",
+                OffsetDateTime.parse(serviceA.last_updated_at as String),
+                lessThan(OffsetDateTime.parse(serviceA.expires_at as String)))
     }
 
     @Feature("SELF_SERVICE_API")
