@@ -14,6 +14,8 @@ enum HydraError {
     UNSUPPORTED_RESPONSE_TYPE(HttpStatus.SC_BAD_REQUEST, "unsupported_response_type", "The authorization server does not support obtaining a token using this method."),
     LOGIN_REQUIRED(HttpStatus.SC_BAD_REQUEST, "login_required", "The Authorization Server requires End-User authentication."),
     ACCESS_DENIED(HttpStatus.SC_FORBIDDEN, "access_denied", "The resource owner or authorization server denied the request."),
+    // Token request rejected by the GovSSO token hook. Hydra returns only the hook's reason, without a description of its own.
+    TOKEN_HOOK_REJECTION(HttpStatus.SC_BAD_REQUEST, "invalid_request", ""),
     // Login rejection by GovSSO (and TARA), passed through by Hydra.
     USER_CANCEL(HttpStatus.SC_BAD_REQUEST, "user_cancel", "User canceled the authentication process."),
 

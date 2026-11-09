@@ -1,6 +1,8 @@
 package ee.ria.govsso
 
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.govsso.model.HydraError
+import ee.ria.govsso.util.HydraErrorValidator
 import io.qameta.allure.Feature
 import io.qameta.allure.Step
 import io.restassured.response.Response
@@ -224,12 +226,26 @@ class RepresenteeSpec extends GovSsoOidcSpecification {
         Response updateSession = Steps.tryUpdateSession(flow, ClientStore.clientB, [scope: "openid representee.EE97007088"])
 
         then:
-        assertThat("Correct HTTP status code", updateSession.statusCode, is(500))
+        HydraErrorValidator.validate(updateSession, HydraError.TOKEN_HOOK_REJECTION,
+                "Refresh token hook request must not contain a representee scope with subject when 'representee.*' is not in the list of granted scopes.")
 
         where:
         scope                     | _
         "openid"                  | _
         "openid representee_list" | _
+    }
+
+    @Feature("REPRESENTEE")
+    def "Requesting session update with multiple representee scopes should fail"() {
+        given: "Create session"
+        Steps.authenticateInGovSsoWithScope(flow)
+
+        when: "Update session with two representee scopes"
+        Response updateSession = Steps.tryUpdateSession(flow, ClientStore.clientB, [scope: "openid representee.EE97007088 representee.EE10303030002"])
+
+        then:
+        HydraErrorValidator.validate(updateSession, HydraError.TOKEN_HOOK_REJECTION,
+                "Refresh token hook request must not contain multiple representee scopes with subjects.")
     }
 
     @Feature("REPRESENTEE")

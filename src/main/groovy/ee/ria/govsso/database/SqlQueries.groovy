@@ -2,6 +2,11 @@ package ee.ria.govsso.database
 
 import groovy.sql.Sql
 
+import java.time.Duration
+
+import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.greaterThan
+
 class SqlQueries {
 
     static expireSession(Sql sql, String sessionId) {
@@ -17,6 +22,21 @@ class SqlQueries {
     static ageLoginAuthentication(Sql sql, String sessionId, String interval) {
         sql.execute "UPDATE public.hydra_oauth2_authentication_session SET authenticated_at = authenticated_at - CAST(? AS INTERVAL) WHERE id=?", [interval, sessionId]
         sql.execute "UPDATE public.hydra_oauth2_flow SET login_authenticated_at = login_authenticated_at - CAST(? AS INTERVAL) WHERE login_session_id=?", [interval, sessionId]
+    }
+
+    // Moves the TARA authentication time in the session context backwards. GovSSO measures the session max duration from it.
+    static ageTaraAuthentication(Sql sql, String sessionId, Duration age) {
+        ageUserAttributeTime(sql, sessionId, "tara_auth_time", age)
+    }
+
+    // Moves the auth handover time in the session context backwards. GovSSO measures the max duration of a handed over session from it.
+    static ageAuthHandover(Sql sql, String sessionId, Duration age) {
+        ageUserAttributeTime(sql, sessionId, "auth_handover_time", age)
+    }
+
+    private static void ageUserAttributeTime(Sql sql, String sessionId, String attribute, Duration age) {
+        int updatedRows = sql.executeUpdate "UPDATE public.hydra_oauth2_flow SET context = jsonb_set(context, ARRAY['user_attributes', CAST(? AS text)], to_jsonb((context #>> ARRAY['user_attributes', CAST(? AS text)])::bigint - ?)) WHERE login_session_id=? AND context #> ARRAY['user_attributes', CAST(? AS text)] IS NOT NULL", [attribute, attribute, age.toSeconds(), sessionId, attribute]
+        assertThat("Session context contains the user attribute " + attribute, updatedRows, greaterThan(0))
     }
 
     static inactivateRefreshToken(Sql sql, String consentChallenge) {

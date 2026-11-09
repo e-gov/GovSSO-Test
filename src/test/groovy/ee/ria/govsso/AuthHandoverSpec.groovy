@@ -18,10 +18,9 @@ import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import org.spockframework.runtime.model.parallel.ExecutionMode
 import spock.lang.Execution
-import spock.lang.Issue
-import spock.lang.PendingFeature
 import spock.lang.Tag
 
+import java.time.Duration
 import java.time.Instant
 
 import static ee.ria.govsso.Steps.AUTH_HANDOVER_SCOPE
@@ -97,7 +96,6 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Correct lifetime", claims.expirationTime.time - claims.issueTime.time, oneOf(60_000L, 61_000L))
     }
 
-    @Issue("AUT-3290")
     def "Auth handover token request fails when #reason"() {
         given: "Create (app) session with SECURED_APP client"
         Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
@@ -107,15 +105,14 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response tokenResponse = Steps.tryGetHandoverToken(flow, ClientStore.mockSecuredApp, extraParams)
 
         then:
-        HydraErrorValidator.validate(tokenResponse, expectedError)
+        HydraErrorValidator.validate(tokenResponse, expectedError, hint)
 
         where:
-        reason                        | extraParams                                        || expectedError
-        "refresh token is invalid"    | [refresh_token: Utils.generateOryToken("ory_rt_")] || HydraError.INVALID_GRANT
-        // TODO: AUT-3290 Non-informative error needs improving
-//        "scope contains other scopes" | [scope: "openid " + AUTH_HANDOVER_SCOPE]           || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
-//        "audience is empty"           | [audience: ""]                                     || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
-//        "audience is omitted"         | [audience: null]                                   || HttpStatus.SC_INTERNAL_SERVER_ERROR | "server_error"
+        reason                        | extraParams                                        || expectedError                   | hint
+        "refresh token is invalid"    | [refresh_token: Utils.generateOryToken("ory_rt_")] || HydraError.INVALID_GRANT        | ""
+        "scope contains other scopes" | [scope: "openid " + AUTH_HANDOVER_SCOPE]           || HydraError.TOKEN_HOOK_REJECTION | "Auth handover token request requested scopes can contain only auth_handover scope"
+        "audience is empty"           | [audience: ""]                                     || HydraError.TOKEN_HOOK_REJECTION | "Auth handover granted audience can contain only the configured GovSSO base URL"
+        "audience is omitted"         | [audience: null]                                   || HydraError.TOKEN_HOOK_REJECTION | "Auth handover granted audience can contain only the configured GovSSO base URL"
     }
 
     def "Auth handover token request fails when audience #reason"() {
@@ -219,8 +216,6 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Correct phone_number_verified claim", webClaims.getClaim("phone_number_verified"), is(true))
     }
 
-    @Issue("AUT-3272")
-    @PendingFeature(reason = "auth_time is set to the handover token's issue time instead of being copied from the app session, so the authentication age resets at handover")
     def "Handed over session keeps the original authentication time"() {
         given:
         Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
@@ -229,12 +224,23 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         sleep(2000)
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
 
-        when:
-        Response webSession = Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
+        when: "Authenticate with the handover token in a web client that issues JWT access tokens"
+        Response webSession = Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientB, handoverToken)
 
         then:
-        JWTClaimsSet webClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(webFlow, webSession.path("id_token")).JWTClaimsSet
-        assertThat("Same auth_time value", webClaims.getClaim("auth_time"), is(appClaims.getClaim("auth_time")))
+        JWTClaimsSet idTokenClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(webFlow, webSession.path("id_token")).JWTClaimsSet
+        JWTClaimsSet accessTokenClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(webFlow, webSession.path("access_token")).JWTClaimsSet
+        assertThat("Same auth_time in ID token", idTokenClaims.getClaim("auth_time"), is(appClaims.getClaim("auth_time")))
+        assertThat("Same auth_time in access token", accessTokenClaims.getClaim("auth_time"), is(appClaims.getClaim("auth_time")))
+
+        when: "Update the handed over session"
+        Response webUpdate = Steps.updateSession(webFlow, ClientStore.clientB)
+
+        then:
+        JWTClaimsSet updatedIdTokenClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(webFlow, webUpdate.path("id_token")).JWTClaimsSet
+        JWTClaimsSet updatedAccessTokenClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(webFlow, webUpdate.path("access_token")).JWTClaimsSet
+        assertThat("Same auth_time in updated ID token", updatedIdTokenClaims.getClaim("auth_time"), is(appClaims.getClaim("auth_time")))
+        assertThat("Same auth_time in updated access token", updatedAccessTokenClaims.getClaim("auth_time"), is(appClaims.getClaim("auth_time")))
     }
 
     def "Handed over session can be updated independently of the app session"() {
@@ -308,14 +314,13 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Handover is successful", webSession.statusCode, is(HttpStatus.SC_OK))
     }
 
-    @Issue("AUT-3290")
     def "Handed over session cannot be updated once the original authentication exceeds the client's window"() {
         given: "App authentication that is about to reach the end of the target client's handover window"
         Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
         // The handover must complete inside this window.
         long remainingSeconds = 10
-        long windowSeconds = Utils.parseDuration(ClientStore.clientA.securedAppSessionMaxDuration).toSeconds()
-        ageAppAuthentication(appSession, "${windowSeconds - remainingSeconds} seconds")
+        Duration window = Utils.parseDuration(ClientStore.clientA.securedAppSessionMaxDuration)
+        ageAppAuthentication(appSession, "${window.toSeconds() - remainingSeconds} seconds")
 
         and: "Session handed over to a web client while still inside the window"
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
@@ -327,13 +332,34 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response webUpdate = Steps.tryUpdateSession(webFlow, ClientStore.clientA)
 
         then: "The handed over session is bounded by the client's window from the original authentication"
-        // TODO: AUT-3290 - assert expected failure instead of not OK.
-        assertThat("Web session update is refused", webUpdate.statusCode, not(is(HttpStatus.SC_OK)))
+        HydraErrorValidator.validate(webUpdate, HydraError.TOKEN_HOOK_REJECTION,
+                "Session refresh is not allowed: secured app session is older than client's secured app session max age (${window})")
+    }
+
+    def "Handed over session cannot be updated once the handover exceeds the session max duration"() {
+        given: "App session handed over to a web client"
+        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+        String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
+        Response webSession = Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
+        JWTClaimsSet webClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(webFlow, webSession.path("id_token")).JWTClaimsSet
+
+        and: "Handover aged beyond the session max duration, while the app authentication stays inside the client's window"
+        SqlQueries.ageAuthHandover(sql, webClaims.getClaim("sid") as String, Duration.ofHours(13))
+
+        when:
+        Response webUpdate = Steps.tryUpdateSession(webFlow, ClientStore.clientA)
+
+        then: "The handed over session is bounded by the session max duration from the handover"
+        HydraErrorValidator.validate(webUpdate, HydraError.TOKEN_HOOK_REJECTION,
+                "Session refresh is not allowed: handed over session is older than session max duration (PT12H)")
     }
 
     def "Handed over session can be continued into a second web client"() {
         given: "App session handed over to a web client"
-        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+        Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+        JWTClaimsSet appClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, appSession.path("id_token")).JWTClaimsSet
+        // Make sure there is a detectible time difference.
+        sleep(2000)
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
         Response webSession = Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
         JWTClaimsSet webClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(webFlow, webSession.path("id_token")).JWTClaimsSet
@@ -349,6 +375,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         assertThat("Correct audience value", secondClaims.audience[0], is(ClientStore.clientB.clientId))
         assertThat("Same subject value", secondClaims.subject, is(webClaims.subject))
         assertThat("Same session ID", secondClaims.getClaim("sid"), is(webClaims.getClaim("sid")))
+        assertThat("App's auth_time value", secondClaims.getClaim("auth_time"), is(appClaims.getClaim("auth_time")))
     }
 
     def "App session logout does not end the handed over web session"() {
@@ -409,7 +436,6 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         ErrorValidator.validate(initLogin, ErrorMessage.USER_INVALID_OIDC_REQUEST)
     }
 
-    @Issue("AUT-3272 - rate-limiter may cause test to fail due to different failure message")
     def "Authentication with a forged auth handover token fails"() {
         given: "Token with valid claims, signed with a key that is not GovSSO's"
         String forgedToken = craftForgedHandoverToken()
@@ -421,7 +447,6 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         ErrorValidator.validate(initLogin, ErrorMessage.USER_INVALID_OIDC_REQUEST)
     }
 
-    @Issue("AUT-3272 - rate-limiter may cause test to fail due to different failure message")
     def "Authentication with #reason auth handover token is rejected without ending the existing session"() {
         given: "Existing web session"
         Steps.authenticateWithIdCardInGovSso(webFlow, ClientStore.clientA)

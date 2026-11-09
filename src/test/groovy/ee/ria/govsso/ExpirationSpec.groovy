@@ -9,6 +9,8 @@ import io.qameta.allure.Feature
 import io.qameta.allure.Story
 import io.restassured.response.Response
 
+import java.time.Duration
+
 import static ee.ria.govsso.util.HydraErrorValidator.HINT_SESSION_EXPIRED
 import static ee.ria.govsso.util.HydraErrorValidator.HINT_TOKEN_VALIDATION_FAILED
 import static org.hamcrest.Matchers.startsWith
@@ -50,6 +52,22 @@ class ExpirationSpec extends GovSsoOidcSpecification {
 
         then: "Expected status code is 400 and correct error response is returned"
         HydraErrorValidator.validate(updateSession, HydraError.INVALID_REQUEST, HINT_SESSION_EXPIRED)
+    }
+
+    @Story("SESSION_EXPIRATION")
+    def "Session update request fails after session max duration"() {
+        given: "Create a valid session"
+        Response createSession = Steps.authenticateWithIdCardInGovSso(flow)
+        JWTClaimsSet claims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, createSession.path("id_token")).JWTClaimsSet
+
+        and: "Age the authentication beyond the session max duration"
+        SqlQueries.ageTaraAuthentication(sql, claims.getClaim("sid") as String, Duration.ofHours(13))
+
+        when: "Request session update"
+        Response updateSession = Steps.tryUpdateSession(flow)
+
+        then:
+        HydraErrorValidator.validate(updateSession, HydraError.TOKEN_HOOK_REJECTION, "Hydra session has expired")
     }
 
     @Story("CONSENT_EXPIRATION")
