@@ -19,9 +19,9 @@ class SqlQueries {
     }
 
     // Moves the authentication time backwards, so that checks measuring the age of a session do not have to wait it out.
-    static ageLoginAuthentication(Sql sql, String sessionId, String interval) {
-        sql.execute "UPDATE public.hydra_oauth2_authentication_session SET authenticated_at = authenticated_at - CAST(? AS INTERVAL) WHERE id=?", [interval, sessionId]
-        sql.execute "UPDATE public.hydra_oauth2_flow SET login_authenticated_at = login_authenticated_at - CAST(? AS INTERVAL) WHERE login_session_id=?", [interval, sessionId]
+    static ageLoginAuthentication(Sql sql, String sessionId, Duration age) {
+        sql.execute "UPDATE public.hydra_oauth2_authentication_session SET authenticated_at = authenticated_at - ? * INTERVAL '1 second' WHERE id=?", [age.toSeconds(), sessionId]
+        sql.execute "UPDATE public.hydra_oauth2_flow SET login_authenticated_at = login_authenticated_at - ? * INTERVAL '1 second' WHERE login_session_id=?", [age.toSeconds(), sessionId]
     }
 
     // Moves the TARA authentication time in the session context backwards. GovSSO measures the session max duration from it.
@@ -45,7 +45,7 @@ class SqlQueries {
 
     static getConsentRememberFor(Sql sql, String consentChallenge) {
         Object response = sql.firstRow("SELECT consent_remember_for FROM public.hydra_oauth2_flow WHERE consent_challenge_id=?", [consentChallenge])
-        Integer consentRememberFor = response.consent_remember_for
+        Integer consentRememberFor = response.consent_remember_for as Integer
         return consentRememberFor
     }
 

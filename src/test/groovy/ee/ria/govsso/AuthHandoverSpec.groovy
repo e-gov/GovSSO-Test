@@ -320,7 +320,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         // The handover must complete inside this window.
         long remainingSeconds = 10
         Duration window = Utils.parseDuration(ClientStore.clientA.securedAppSessionMaxDuration)
-        ageAppAuthentication(appSession, "${window.toSeconds() - remainingSeconds} seconds")
+        ageAppAuthentication(appSession, window.minusSeconds(remainingSeconds))
 
         and: "Session handed over to a web client while still inside the window"
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
@@ -506,7 +506,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         given:
         Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
         if (appAuthAge != _) {
-            ageAppAuthentication(appSession, appAuthAge as String)
+            ageAppAuthentication(appSession, appAuthAge as Duration)
         }
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
 
@@ -522,7 +522,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         reason                                                          | client                            | appAuthAge
         "a default client without secured app web sessions allowed"     | ClientStore.mockHandoverDisabled  | _
         "a secured app client without secured app web sessions allowed" | ClientStore.mockSecuredApp        | _
-        "an authentication outside the target client's handover window" | ClientStore.mockMinHandoverWindow | "1 hour 1 second"
+        "an authentication outside the target client's handover window" | ClientStore.mockMinHandoverWindow | Duration.ofHours(1).plusSeconds(1)
     }
 
     def "Authentication with auth handover token succeeds within the target client's handover window"() {
@@ -542,7 +542,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         given: "App session handed over to a web client whose window is wide enough to accept it"
         Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
         if (appAuthAge != _) {
-            ageAppAuthentication(appSession, appAuthAge as String)
+            ageAppAuthentication(appSession, appAuthAge as Duration)
         }
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
         Steps.authenticateWithHandoverToken(webFlow, ClientStore.clientA, handoverToken)
@@ -570,7 +570,7 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         where:
         reason                                                    | client                            | appAuthAge
         "it does not allow secured app web sessions"              | ClientStore.mockHandoverDisabled  | _
-        "the authentication exceeds the client's handover window" | ClientStore.mockMinHandoverWindow | "2 hours"
+        "the authentication exceeds the client's handover window" | ClientStore.mockMinHandoverWindow | Duration.ofHours(2)
     }
 
     def "Handed over session cannot be continued from the continuation view once the authentication exceeds the client's window"() {
@@ -578,8 +578,8 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response appSession = Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
         // The continuation view must be opened inside this window.
         long remainingSeconds = 10
-        long windowSeconds = Utils.parseDuration(ClientStore.mockMinHandoverWindow.securedAppSessionMaxDuration).toSeconds()
-        ageAppAuthentication(appSession, "${windowSeconds - remainingSeconds} seconds")
+        Duration window = Utils.parseDuration(ClientStore.mockMinHandoverWindow.securedAppSessionMaxDuration)
+        ageAppAuthentication(appSession, window.minusSeconds(remainingSeconds))
 
         and: "Session handed over to a web client"
         String handoverToken = Steps.getHandoverToken(flow, ClientStore.mockSecuredApp)
@@ -613,9 +613,9 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         HydraErrorValidator.validate(webUpdate, HydraError.INVALID_GRANT)
     }
 
-    private void ageAppAuthentication(Response appSession, String interval) {
+    private void ageAppAuthentication(Response appSession, Duration age) {
         JWTClaimsSet appClaims = OpenIdUtils.verifyTokenAndReturnSignedJwtObject(flow, appSession.path("id_token")).JWTClaimsSet
-        SqlQueries.ageLoginAuthentication(sql, appClaims.getClaim("sid") as String, interval)
+        SqlQueries.ageLoginAuthentication(sql, appClaims.getClaim("sid") as String, age)
     }
 
     /**
