@@ -36,6 +36,8 @@ class SelfServiceApiSpec extends GovSsoOidcSpecification {
     private static final String IPHONE_SAFARI_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
     private static final String LINUX_FIREFOX_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0"
     private static final String WINDOWS_EDGE_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0"
+    private static final String LINUX_UNKNOWN_BROWSER_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) Gecko/20100101 UnknownBrowser/1.0"
+    private static final String UNKNOWN_OS_AND_BROWSER_USER_AGENT = "SomeClient/1.0"
 
     Flow flow2 = new Flow()
 
@@ -98,13 +100,14 @@ class SelfServiceApiSpec extends GovSsoOidcSpecification {
         assertThat("Correct browser", sessionInfo.path("browser[0]"), is(expectedBrowser))
 
         where:
-        description      | userAgent                 | expectedOs | expectedBrowser
-        "Android Chrome" | ANDROID_CHROME_USER_AGENT | "Android"  | "Chrome Mobile"
-        "Mac Safari"     | MAC_SAFARI_USER_AGENT     | "Mac OS X" | "Safari"
-        "iPhone Safari"  | IPHONE_SAFARI_USER_AGENT  | "iOS"      | "Mobile Safari"
-        "Linux Firefox"  | LINUX_FIREFOX_USER_AGENT  | "Linux"    | "Firefox"
-        "Windows Edge"   | WINDOWS_EDGE_USER_AGENT   | "Windows"  | "Edge"
-//      "unknown"        | "Mozilla/5.0 (X11; Linux x86_64) Gecko/20100101 UnknownBrowser/1.0" | null | null   // TODO: AUT-2877 enable when session service handles unrecognised UA without NPE
+        description              | userAgent                         | expectedOs | expectedBrowser
+        "Android Chrome"         | ANDROID_CHROME_USER_AGENT         | "Android"  | "Chrome Mobile"
+        "Mac Safari"             | MAC_SAFARI_USER_AGENT             | "Mac OS X" | "Safari"
+        "iPhone Safari"          | IPHONE_SAFARI_USER_AGENT          | "iOS"      | "Mobile Safari"
+        "Linux Firefox"          | LINUX_FIREFOX_USER_AGENT          | "Linux"    | "Firefox"
+        "Windows Edge"           | WINDOWS_EDGE_USER_AGENT           | "Windows"  | "Edge"
+        "Linux unknown browser"  | LINUX_UNKNOWN_BROWSER_USER_AGENT  | "Linux"    | null
+        "unknown OS and browser" | UNKNOWN_OS_AND_BROWSER_USER_AGENT | null       | null
     }
 
     @Feature("SELF_SERVICE_API")

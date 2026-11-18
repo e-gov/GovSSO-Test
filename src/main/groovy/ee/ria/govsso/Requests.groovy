@@ -11,8 +11,11 @@ import static io.restassured.RestAssured.given
 
 class Requests {
 
-    // TODO: AUT-2877 Once session service handles missing UA without NPE, remove FALLBACK_USER_AGENT and its usages.
-    static final String FALLBACK_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+    // Sends flow.userAgent if the test sets it (used by self-service API tests to set device info).
+    // If not set, no header is added and Apache HttpClient's default is sent (e.g. "Apache-HttpClient/4.5.13 (Java/21)").
+    private static Map<String, String> userAgentHeader(Flow flow) {
+        return flow.userAgent ? ["User-Agent": flow.userAgent] : [:]
+    }
 
     @Step("Follow redirect request")
     static Response followRedirect(Flow flow, String location) {
@@ -21,7 +24,7 @@ class Requests {
                 .filter(flow.cookieFilter)
                 .log().cookies()
                 .redirects().follow(false)
-                .header("User-Agent", flow.userAgent ?: FALLBACK_USER_AGENT)
+                .headers(userAgentHeader(flow))
         if (flow.ipCountry) request = request.header("CF-IPCountry", flow.ipCountry)
         return request.get(location)
     }
@@ -32,7 +35,7 @@ class Requests {
                 .urlEncodingEnabled(false)
                 .filter(flow.cookieFilter)
                 .header("Origin", origin)
-                .header("User-Agent", flow.userAgent ?: FALLBACK_USER_AGENT)
+                .headers(userAgentHeader(flow))
                 .log().cookies()
                 .redirects().follow(false)
                 .get(location)
@@ -120,7 +123,7 @@ class Requests {
                 .filter(flow.cookieFilter)
                 .queryParams(queryParams)
                 .header("Origin", origin)
-                .header("User-Agent", flow.userAgent ?: FALLBACK_USER_AGENT)
+                .headers(userAgentHeader(flow))
                 .log().cookies()
                 .redirects().follow(false)
                 .get(url)
@@ -159,7 +162,7 @@ class Requests {
                 .filter(flow.cookieFilter)
                 .formParams(formParams)
                 .header("Origin", origin)
-                .header("User-Agent", flow.userAgent ?: FALLBACK_USER_AGENT)
+                .headers(userAgentHeader(flow))
                 .log().cookies()
                 .post(url)
     }
@@ -185,7 +188,7 @@ class Requests {
                 .urlEncodingEnabled(true)
                 .filter(flow.cookieFilter)
                 .formParams(formParams)
-                .header("User-Agent", flow.userAgent ?: FALLBACK_USER_AGENT)
+                .headers(userAgentHeader(flow))
                 .log().cookies()
         if (flow.ipCountry) request = request.header("CF-IPCountry", flow.ipCountry)
         return request.post(url)
