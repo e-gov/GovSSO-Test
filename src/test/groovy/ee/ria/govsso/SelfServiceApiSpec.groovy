@@ -12,17 +12,10 @@ import spock.lang.Unroll
 
 import java.time.Instant
 import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.emptyString
-import static org.hamcrest.Matchers.hasEntry
-import static org.hamcrest.Matchers.hasItem
-import static org.hamcrest.Matchers.hasSize
-import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.lessThan
-import static org.hamcrest.Matchers.not
-import static org.hamcrest.Matchers.notNullValue
+import static org.hamcrest.Matchers.*
 
 @Isolated
 class SelfServiceApiSpec extends GovSsoOidcSpecification {
@@ -175,7 +168,7 @@ class SelfServiceApiSpec extends GovSsoOidcSpecification {
 
         then: "Session information is updated correctly"
         assertThat("authenticated_at stays the same", sessionInfo2.path("authenticated_at[0]").toString(), is(sessionInfo1.path("authenticated_at[0]").toString()))
-        assertThat("services.authenticated_at is updated", sessionInfo2.path("services.authenticated_at[0][0]") == (sessionInfo1.path("services.authenticated_at[0][0]")))
+        assertThat("services.authenticated_at stays the same", sessionInfo2.path("services.authenticated_at[0][0]") == (sessionInfo1.path("services.authenticated_at[0][0]")))
         assertThat("services.expires_at is updated", sessionInfo2.path("services.expires_at[0][0]") > sessionInfo1.path("services.expires_at[0][0]"))
         assertThat("services.last_updated_at is updated", sessionInfo2.path("services.last_updated_at[0][0]") > sessionInfo1.path("services.last_updated_at[0][0]"))
     }
@@ -222,6 +215,7 @@ class SelfServiceApiSpec extends GovSsoOidcSpecification {
         List<Map> services = sessionInfo.path("services[0]")
         Map serviceA = services.find { it.client_names.et == "Teenusenimi A" }
         Map serviceB = services.find { it.client_names.et == "Teenusenimi B" }
+        OffsetDateTime responseTime = OffsetDateTime.parse(sessionInfo.header("Date"), DateTimeFormatter.RFC_1123_DATE_TIME)
 
         then: "The session is kept with both services"
         assertThat("User has a single session", sessionInfo.path("session_id"), hasSize(1))
@@ -229,12 +223,39 @@ class SelfServiceApiSpec extends GovSsoOidcSpecification {
         assertThat("Logged out client B is present in session info", serviceB, notNullValue())
 
         and: "Client B is expired, client A is active"
-        assertThat("Client B last_updated_at equals expires_at",
+        assertThat("Client B expires_at is present", serviceB.expires_at, notNullValue())
+        assertThat("Client B has expired",
+                OffsetDateTime.parse(serviceB.expires_at as String),
+                lessThanOrEqualTo(responseTime))
+        assertThat("Client B expires_at is not before its authentication",
+                OffsetDateTime.parse(serviceB.expires_at as String),
+                greaterThanOrEqualTo(OffsetDateTime.parse(serviceB.authenticated_at as String)))
+        assertThat("Client A has not expired",
+                OffsetDateTime.parse(serviceA.expires_at as String),
+                greaterThan(responseTime))
+        assertThat("Client B last_updated_at is its authentication time, as it was used for less than the session update interval",
                 OffsetDateTime.parse(serviceB.last_updated_at as String),
-                is(OffsetDateTime.parse(serviceB.expires_at as String)))
+                is(OffsetDateTime.parse(serviceB.authenticated_at as String)))
         assertThat("Client A last_updated_at is before expires_at",
                 OffsetDateTime.parse(serviceA.last_updated_at as String),
                 lessThan(OffsetDateTime.parse(serviceA.expires_at as String)))
+    }
+
+    @Feature("SELF_SERVICE_API")
+    def "GET sessions returns a secured app service without expiry"() {
+        given: "Create a secured app session"
+        Steps.authenticateWithIdCardInGovSso(flow, ClientStore.mockSecuredApp)
+
+        when: "GET session information"
+        Response sessionInfo = Requests.getRequest(flow.sessionService.baseSessionsUrl + SUBJECT_ENDPOINT)
+
+        then: "The service has no expiry and was last updated at its authentication"
+        assertThat("Correct status code", sessionInfo.statusCode(), is(200))
+        assertThat("Session has a single service", sessionInfo.path("services[0]"), hasSize(1))
+        assertThat("Services.authenticated_at is present", sessionInfo.path("services.authenticated_at[0][0]"), notNullValue())
+        assertThat("Services.expires_at is null", sessionInfo.path("services.expires_at[0][0]"), nullValue())
+        assertThat("Services.last_updated_at equals services.authenticated_at",
+                sessionInfo.path("services.last_updated_at[0][0]"), is(sessionInfo.path("services.authenticated_at[0][0]")))
     }
 
     @Feature("SELF_SERVICE_API")
