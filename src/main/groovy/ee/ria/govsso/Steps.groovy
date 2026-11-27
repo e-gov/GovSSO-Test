@@ -364,10 +364,32 @@ class Steps {
     @Step("Verify session service response headers")
     static void verifyResponseHeaders(Response response) {
         assertThat(response.header("X-Frame-Options"), equalTo("DENY"))
-        String policyString = "connect-src 'self'; default-src 'none'; font-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'; block-all-mixed-content"
-        assertThat(response.header("Content-Security-Policy"), equalTo(policyString))
-        assertThat(response.header("Strict-Transport-Security"), anyOf(containsString("max-age=16070400"), containsString("max-age=31536000")))
-        assertThat(response.header("Strict-Transport-Security"), containsString("includeSubDomains"))
+        boolean viaCloudflare = response.header("CF-RAY") != null
+        // Behind Cloudflare, the CSP is replaced with one that allows the scripts Cloudflare adds to the pages (AUT-1820).
+        String cloudflarePolicy = "connect-src 'self' cloudflareinsights.com; " +
+                "default-src 'none'; " +
+                "font-src 'self'; " +
+                "img-src 'self' data:; " +
+                "script-src 'self' 'unsafe-inline' ajax.cloudflare.com static.cloudflareinsights.com; " +
+                "style-src 'self' 'unsafe-inline'; " +
+                "base-uri 'none'; " +
+                "frame-ancestors 'none'; " +
+                "block-all-mixed-content"
+        String strictPolicy = "connect-src 'self'; " +
+                "default-src 'none'; " +
+                "font-src 'self'; " +
+                "img-src 'self' data:; " +
+                "script-src 'self'; " +
+                "style-src 'self'; " +
+                "base-uri 'none'; " +
+                "frame-ancestors 'none'; " +
+                "block-all-mixed-content"
+        assertThat(response.header("Content-Security-Policy"), equalTo(viaCloudflare ? cloudflarePolicy : strictPolicy))
+        String hsts = response.header("Strict-Transport-Security")
+        assertThat(hsts, anyOf(containsString("max-age=16070400"), containsString("max-age=31536000")))
+        // Behind Cloudflare, the HSTS header currently comes without includeSubDomains.
+        // Revisit this exception if that changes (AUT-1226).
+        assertThat(hsts, viaCloudflare ? not(containsString("includeSubDomains")) : containsString("includeSubDomains"))
         assertThat(response.header("Cache-Control"), equalTo("no-cache, no-store, max-age=0, must-revalidate"))
         assertThat(response.header("X-Content-Type-Options"), equalTo("nosniff"))
         assertThat(response.header("X-XSS-Protection"), equalTo("0"))
