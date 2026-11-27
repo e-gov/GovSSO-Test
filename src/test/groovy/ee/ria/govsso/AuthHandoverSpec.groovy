@@ -25,7 +25,8 @@ import java.time.Instant
 
 import static ee.ria.govsso.Steps.AUTH_HANDOVER_SCOPE
 import static ee.ria.govsso.util.HydraErrorValidator.HINT_TOKEN_VALIDATION_FAILED
-import static ee.ria.govsso.util.HydraErrorValidator.notWhitelisted
+import static ee.ria.govsso.util.HydraErrorValidator.authHandoverAudienceNotAllowed
+import static ee.ria.govsso.util.HydraErrorValidator.authHandoverScopeNotAllowed
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 
@@ -111,7 +112,6 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         reason                        | extraParams                                        || expectedError                   | hint
         "refresh token is invalid"    | [refresh_token: Utils.generateOryToken("ory_rt_")] || HydraError.INVALID_GRANT        | ""
         "scope contains other scopes" | [scope: "openid " + AUTH_HANDOVER_SCOPE]           || HydraError.TOKEN_HOOK_REJECTION | "Auth handover token request requested scopes can contain only auth_handover scope"
-        "audience is empty"           | [audience: ""]                                     || HydraError.TOKEN_HOOK_REJECTION | "Auth handover granted audience can contain only the configured GovSSO base URL"
         "audience is omitted"         | [audience: null]                                   || HydraError.TOKEN_HOOK_REJECTION | "Auth handover granted audience can contain only the configured GovSSO base URL"
     }
 
@@ -122,11 +122,18 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         when: "Request auth handover token"
         Response tokenResponse = Steps.tryGetHandoverToken(flow, ClientStore.mockSecuredApp, [audience: audience])
 
-        then: "Hydra names the first requested audience that is not whitelisted, which in every case is the first one"
-        HydraErrorValidator.validate(tokenResponse, HydraError.INVALID_REQUEST, notWhitelisted(audience.split(" ").first()))
+        then: "Hydra rejects any audience other than GovSSO's base URL alone"
+        HydraErrorValidator.validate(tokenResponse, HydraError.INVALID_REQUEST,
+                authHandoverAudienceNotAllowed(flow.openIdServiceConfiguration.get("issuer") as String, audience))
+
+        and: "The rejected request did not consume the refresh token"
+        Response retry = Steps.tryUpdateSession(flow, ClientStore.mockSecuredApp)
+        assertThat("Session update succeeds with the same refresh token", retry.statusCode, is(HttpStatus.SC_OK))
 
         where:
         reason                                | audience
+        "is empty"                            | ""
+        "is whitelisted by the client"        | ClientStore.mockSecuredApp.accessTokenAudienceUris.first()
         "is not GovSSO's base URL"            | "https://not.govsso/"
         "is issuer without trailing slash"    | openIdConfiguration.getString("issuer").replaceAll('/$', "")
         "is issuer with extra trailing slash" | openIdConfiguration.getString("issuer") + "/"
@@ -145,7 +152,11 @@ class AuthHandoverSpec extends GovSsoOidcSpecification {
         Response tokenResponse = Steps.tryGetHandoverToken(flow, ClientStore.clientA)
 
         then:
-        HydraErrorValidator.validate(tokenResponse, HydraError.INVALID_REQUEST, notWhitelisted(flow.openIdServiceConfiguration.get("issuer") as String))
+        HydraErrorValidator.validate(tokenResponse, HydraError.INVALID_SCOPE, authHandoverScopeNotAllowed(AUTH_HANDOVER_SCOPE))
+
+        and: "The rejected request did not consume the refresh token"
+        Response retry = Steps.tryUpdateSession(flow, ClientStore.clientA)
+        assertThat("Session update succeeds with the same refresh token", retry.statusCode, is(HttpStatus.SC_OK))
     }
 
     def "Auth handover scope cannot be requested in the authentication request"() {

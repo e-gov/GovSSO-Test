@@ -53,9 +53,21 @@ class HydraErrorValidator {
         return "Requested audience '${audience}' has not been whitelisted by the OAuth 2.0 Client."
     }
 
+    // Hint of the invalid_request error for a token request whose audience is not the auth handover audience alone.
+    static String authHandoverAudienceNotAllowed(String authHandoverAudience, String requestedAudience) {
+        List<String> audiences = requestedAudience.split(" ").findAll()
+        String requested = audiences ? "[" + audiences.collect { "'${it}'" }.join(",") + "]" : "null"
+        return "When requesting auth handover token, the requested audience must be ['${authHandoverAudience}'], was ${requested}."
+    }
+
     // Hint of the invalid_scope error for a scope that the client is not allowed to request.
     static String scopeNotAllowed(String scope) {
         return "The OAuth 2.0 Client is not allowed to request scope '${scope}'."
+    }
+
+    // Hint of the invalid_scope error for a token request by a client that is not allowed the scope.
+    static String authHandoverScopeNotAllowed(String scope) {
+        return "The client is not allowed to request an auth handover token, because it has not been granted scope '${scope}'."
     }
 
     // Hint of the unsupported_response_type error for a response type that the client is not allowed to request.
